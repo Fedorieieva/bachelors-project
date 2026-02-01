@@ -1,0 +1,147 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String   @id @default(uuid())
+  email                String   @unique @db.Text
+  password             String?  @default("") @db.Text
+  name                 String?  @default("") @db.Text
+  is_guest             Boolean  @default(false)
+  onboarding_completed Boolean? @default(false)
+  created_at           DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updated_at           DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  sessions  Session[]
+  riddles   Riddles[]
+  comments  Comment[]
+  likes     Like[]
+  Chat      Chat[]
+  followers Follow[]  @relation("following")
+  following Follow[]  @relation("follower")
+
+  @@map("users")
+}
+
+model Follow {
+  follower    User   @relation("follower", fields: [follower_id], references: [id], onDelete: Cascade)
+  follower_id String
+
+  following    User   @relation("following", fields: [following_id], references: [id], onDelete: Cascade)
+  following_id String
+
+  created_at DateTime @default(now())
+
+  @@id([follower_id, following_id])
+  @@map("follows")
+}
+
+model Session {
+  id            String  @id @default(uuid())
+  token         String  @unique
+  refresh_token String? @unique
+
+  created_at       DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  last_activity_at DateTime? @map("last_activity_at") @db.Timestamp(6)
+  expires_at       DateTime  @updatedAt @map("expires_at") @db.Timestamp(6)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  @@map("sessions")
+}
+
+model Riddles {
+  id             String @id @default(uuid())
+  content        String @db.Text
+  answer         String @db.Text
+  prompt_context Json?
+
+  is_public   Boolean @default(false)
+  is_verified Boolean @default(false)
+
+  likes_count    Int @default(0)
+  comments_count Int @default(0)
+
+  created_at DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  author    User   @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  author_id String @map("author_id")
+
+  comments Comment[]
+  likes    Like[]
+
+  @@map("riddles")
+}
+
+model Chat {
+  id        String    @id @default(uuid())
+  user_id   String    @map("user_id")
+  user      User      @relation(fields: [user_id], references: [id])
+  messages  Message[]
+  createdAt DateTime  @default(now())
+
+  @@map("chats")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  chat_id    String
+  chat       Chat     @relation(fields: [chat_id], references: [id])
+  role       String
+  content    String
+  is_initial Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Comment {
+  id      String @id @default(uuid())
+  content String @db.Text
+
+  created_at DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  user      User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id   String  @map("user_id")
+  riddle    Riddles @relation(fields: [riddle_id], references: [id], onDelete: Cascade)
+  riddle_id String  @map("riddle_id")
+
+  @@map("comments")
+}
+
+model Like {
+  id         String   @id @default(uuid())
+  created_at DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  user      User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id   String  @map("user_id")
+  riddle    Riddles @relation(fields: [riddle_id], references: [id], onDelete: Cascade)
+  riddle_id String  @map("riddle_id")
+
+  @@unique([user_id, riddle_id])
+  @@map("likes")
+}
+
+model AIPrompt {
+  id       String @id @default(uuid())
+  name     String @unique
+  template String @db.Text
+
+  created_at DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updated_at DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("ai_prompts")
+}
