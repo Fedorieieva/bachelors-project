@@ -1,4 +1,5 @@
-import { IsString, IsNumber, Min, Max, IsEnum, IsOptional } from 'class-validator';
+import { IsString, IsNumber, Min, Max, IsEnum, IsOptional, IsNotEmpty, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum RiddleType {
@@ -8,24 +9,28 @@ export enum RiddleType {
   MATH = 'math',
 }
 
-export class RiddleDto {
-  @IsOptional()
-  @IsString()
-  topic?: string;
+export class RiddleSettingsDto {
+  @IsEnum(RiddleType)
+  type: RiddleType;
 
   @IsNumber()
   @Min(1)
   @Max(5)
   complexity: number;
 
-  @IsString()
   @IsEnum(['ukrainian', 'english', 'spanish', 'french', 'german'])
   language: string;
+}
 
-  @ApiProperty({ enum: RiddleType, default: RiddleType.DANETKI })
-  @IsEnum(RiddleType)
-  @IsOptional()
-  type?: RiddleType = RiddleType.DANETKI;
+export class RiddleDto {
+  @IsString()
+  @IsNotEmpty()
+  topic: string;
+
+  @ValidateNested()
+  @Type(() => RiddleSettingsDto)
+  @IsNotEmpty()
+  settings: RiddleSettingsDto;
 }
 
 export interface AiRiddleResponse {

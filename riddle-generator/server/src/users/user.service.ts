@@ -8,8 +8,12 @@ import { UpdateUserDto } from './dto/UpdateUserDto';
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findOne(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { id } });
+  async findOne(id: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return user;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -57,10 +61,9 @@ export class UserService {
       },
     });
   }
-
-  async unfollow(followerId: string, followingId: string): Promise<Follow> {
+  async unfollow(followerId: string, followingId: string): Promise<void> {
     try {
-      return await this.prisma.follow.delete({
+      await this.prisma.follow.delete({
         where: {
           follower_id_following_id: {
             follower_id: followerId,

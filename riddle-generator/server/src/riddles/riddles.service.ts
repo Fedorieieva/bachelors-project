@@ -1,13 +1,12 @@
 import {
   Injectable,
   Logger,
-  InternalServerErrorException,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import { AiService } from './ai/ai.service';
 import { PromptsService } from './prompts/prompts.service';
-import { AiRiddleResponse, RiddleDto, RiddleType } from './dto/riddle.dto';
+import { AiRiddleResponse, RiddleDto, RiddleSettingsDto, RiddleType } from './dto/riddle.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Content } from '@google/generative-ai';
 
@@ -26,13 +25,16 @@ export class RiddlesService {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
 
-    const riddleType = dto.type ?? RiddleType.DANETKI;
+    const riddleType = dto.settings.type ?? RiddleType.DANETKI;
+    const { language, complexity } = dto.settings;
+    const topic = dto.topic;
+
     const promptName = `${riddleType}_generator`;
 
     const mainPrompt = await this.promptsService.getRenderedPrompt(promptName, {
-      language: dto.language,
-      topic: dto.topic,
-      complexity: dto.complexity,
+      language: language,
+      topic: topic,
+      complexity: complexity,
     });
 
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
@@ -40,7 +42,7 @@ export class RiddlesService {
       const aiResult = (await this.aiService.askGemini(mainPrompt)) as AiRiddleResponse;
       lastResult = aiResult;
 
-      const evaluation = await this.evaluateRiddle(aiResult, dto.language, riddleType);
+      const evaluation = await this.evaluateRiddle(aiResult, language, riddleType);
 
       if (evaluation.is_good) {
         return this.formatResponse(aiResult, dto, promptName, attempts, riddleType);
@@ -64,9 +66,9 @@ export class RiddlesService {
       content: result.content,
       answer: result.answer,
       prompt_context: {
-        topic: dto.topic,
-        complexity: dto.complexity,
-        language: dto.language,
+        message: dto.topic,
+        complexity: dto.settings.complexity,
+        language: dto.settings.language,
         prompt_name: promptName,
         generation_attempts: attempts,
         type: type,
@@ -99,6 +101,18 @@ export class RiddlesService {
     }
   }
 
+  async createRiddle(userId: string, data: { content: string; answer: string; prompt_context: any }) {
+    return this.prisma.riddles.create({
+      data: {
+        content: data.content,
+        answer: data.answer,
+        prompt_context: data.prompt_context ? JSON.parse(JSON.stringify(data.prompt_context)) : null,
+        author_id: userId,
+        is_public: false,
+      },
+    });
+  }
+
   async createChat(authorId: string) {
     const newChat = await this.prisma.chat.create({
       data: {
@@ -111,7 +125,7 @@ export class RiddlesService {
   async processChatMessage(
     chatId: string,
     userMessage: string,
-    settings: RiddleDto,
+    settings: RiddleSettingsDto,
     authorId: string,
   ) {
     const intent = await this.aiService.classifyIntent(userMessage);
@@ -120,8 +134,8 @@ export class RiddlesService {
       this.logger.log(`Нова генерація. Тема: ${userMessage}`);
 
       const newRiddle = await this.generateRiddle({
-        ...settings,
         topic: userMessage,
+        settings: settings,
       });
 
       await this.saveMessage(chatId, 'user', userMessage, true);
@@ -158,6 +172,16 @@ export class RiddlesService {
     }
   }
 
+  async getChatHistory(chatId: string, userId: string) {
+    return this.prisma.message.findMany({
+      where: {
+        chat_id: chatId,
+        chat: { user_id: userId },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
   private async saveMessage(chatId: string, role: string, content: string, isInitial = false) {
     try {
       return await this.prisma.message.create({
@@ -171,6 +195,57 @@ export class RiddlesService {
     } catch (error) {
       this.logger.error(`Помилка при збереженні повідомлення: ${error.message}`);
     }
+  }
+
+  async getMyRiddles(userId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.riddles.findMany({
+        where: { author_id: userId },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.riddles.count({ where: { author_id: userId } }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getPublicRiddles(page: number, limit: number) {
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      this.prisma.riddles.findMany({
+        where: { is_public: true },
+        include: {
+          author: {
+            select: { id: true, name: true, is_guest: true },
+          },
+        },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.riddles.count({ where: { is_public: true } }),
+    ]);
+
+    return {
+      items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async saveToUserCollection(
