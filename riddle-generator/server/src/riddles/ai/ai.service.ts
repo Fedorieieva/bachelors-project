@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, Content } from '@google/generative-ai';
+import { RiddleIntentAnalysis, RiddleType } from '../dto/riddle.dto';
 
 @Injectable()
 export class AiService {
@@ -56,7 +57,7 @@ export class AiService {
     return false;
   }
 
-  async askGemini(history: Content[] | string, retries: number = 3): Promise<any> {
+  async askGemini<T>(history: Content[] | string, retries: number = 3): Promise<T> {
     try {
       const chatHistory = typeof history === 'string' ? [] : history;
 
@@ -68,12 +69,12 @@ export class AiService {
         generationConfig: { responseMimeType: 'application/json' },
       });
 
-      const result = await chat.sendMessage(typeof history === 'string' ? history : messageContent);
+      const result = await chat.sendMessage(messageContent);
       const text = result.response.text();
       const cleanText = text.replace(/```json|```/g, '').trim();
       return JSON.parse(cleanText);
-    } catch (error: any) {
-      const status = error.status;
+    } catch (error: unknown) {
+      const status = (error as { status?: number }).status;
 
       if (status === 404 || status === 403) {
         this.logger.warn(
@@ -97,27 +98,61 @@ export class AiService {
         );
       }
 
-      this.logger.error(`Gemini API Error: ${error.message}`);
+      this.logger.error(
+        `Gemini API Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
       throw new InternalServerErrorException('Помилка генерації контенту ШІ');
     }
   }
 
-  async classifyIntent(message: string): Promise<'NEW' | 'REFINE'> {
+  async classifyIntent(message: string): Promise<RiddleIntentAnalysis> {
     const classificationPrompt = `
-    Analyze the following user message for a riddle-solving chat.
-    Determine if the user wants to start a completely NEW riddle with a new topic, or REFINE/discuss the current one.
+    Analyze the user message for a riddle-solving application.
 
-    Message: "${message}"
+    Tasks:
+    1. Determine intent:
+       - "NEW": user wants a new riddle.
+       - "REFINE": user is asking a question, making a guess, or discussing the current riddle.
+       - "OFF_TOPIC": user is asking for something unrelated (recipes, code, general facts).
+    2. Extract Type (only for NEW): "classic", "math", "logic", or "danetki".
+    3. Extract Style: (e.g., "cyberpunk", "sherlock holmes", "medieval fantasy").
+    4. Extract Topic: What is the riddle about?
 
-    Return JSON only: {"intent": "NEW" | "REFINE"}
+    User Message: "${message}"
+
+    Return JSON only:
+    {
+      "intent": "NEW" | "REFINE" | "OFF_TOPIC",
+      "type": "string | null",
+      "style": "string | null",
+      "topic": "string | null"
+    }
   `;
 
     try {
-      const result = await this.askGemini(classificationPrompt);
-      return result.intent === 'NEW' ? 'NEW' : 'REFINE';
-    } catch (error) {
-      this.logger.error('Failed to classify intent, defaulting to REFINE');
-      return 'REFINE';
+      const rawResult = await this.askGemini<{
+        intent: 'NEW' | 'REFINE' | 'OFF_TOPIC';
+        type?: string;
+        style?: string;
+        topic?: string;
+      }>(classificationPrompt);
+
+      const analysis: RiddleIntentAnalysis = {
+        intent: rawResult.intent,
+        style: rawResult.style,
+        topic: rawResult.topic,
+      };
+
+      if (rawResult.type && Object.values(RiddleType).includes(rawResult.type as RiddleType)) {
+        analysis.type = rawResult.type as RiddleType;
+      } else if (rawResult.intent === 'NEW') {
+        analysis.type = RiddleType.DANETKI;
+      }
+
+      return analysis;
+    } catch (error: unknown) {
+      this.logger.error('Помилка класифікації наміру');
+      return { intent: 'REFINE' };
     }
   }
 

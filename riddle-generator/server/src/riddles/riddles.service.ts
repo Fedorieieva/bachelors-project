@@ -1,7 +1,23 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { AiService } from './ai/ai.service';
 import { PromptsService } from './prompts/prompts.service';
-import { AiRiddleResponse, RiddleDto, RiddleSettingsDto, RiddleType } from './dto/riddle.dto';
+import {
+  AiRiddleResponse,
+  ChatResponseDto,
+  ChatResponseType,
+  EvaluationResult,
+  RiddleDto,
+  RiddleIntentAnalysis,
+  RiddleSettingsDto,
+  RiddleType,
+} from './dto/riddle.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Content } from '@google/generative-ai';
 
@@ -16,38 +32,68 @@ export class RiddlesService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async generateRiddle(dto: RiddleDto) {
+  async generateRiddle(
+    dto: RiddleDto,
+    aiAnalysis?: RiddleIntentAnalysis,
+  ): Promise<{
+    content: string;
+    answer: string;
+    prompt_context: Record<string, unknown>;
+  }> {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
 
-    const riddleType = dto.settings.type ?? RiddleType.DANETKI;
+    const riddleType = aiAnalysis?.type || dto.settings.type || RiddleType.DANETKI;
+    const style = aiAnalysis?.style || 'neutral';
+    const topic = aiAnalysis?.topic || dto.topic;
     const { language, complexity } = dto.settings;
-    const topic = dto.topic;
 
     const promptName = `${riddleType}_generator`;
 
-    const mainPrompt = await this.promptsService.getRenderedPrompt(promptName, {
-      language: language,
-      topic: topic,
-      complexity: complexity,
+    let mainPrompt = await this.promptsService.getRenderedPrompt(promptName, {
+      language,
+      topic,
+      complexity,
     });
+
+    if (style !== 'neutral') {
+      mainPrompt += `\n\nSTYLE INSTRUCTION:
+    Generate this riddle strictly in the style of "${style}".
+    Use specific vocabulary, tone, and atmosphere characteristic of this style.`;
+    }
+
+    mainPrompt += `\n\nSAFETY AND CONTENT RULES:
+  1. You are a specialized Riddle Generator.
+  2. If the user's topic is a request for a recipe, code, general advice, or anything that is NOT a riddle,
+     you MUST return exactly this JSON: {"content": "ERROR_OFF_TOPIC", "answer": "NONE"}.
+  3. Do not break character. Do not provide information outside the riddle context.`;
 
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
       attempts++;
-      const aiResult = (await this.aiService.askGemini(mainPrompt)) as AiRiddleResponse;
+
+      const aiResult = await this.aiService.askGemini<AiRiddleResponse>(mainPrompt);
       lastResult = aiResult;
+
+      if (aiResult.content === 'ERROR_OFF_TOPIC') {
+        throw new BadRequestException(
+          'Вибачте, я можу створювати лише загадки. Будь ласка, введіть тему для нової задачі.',
+        );
+      }
 
       const evaluation = await this.evaluateRiddle(aiResult, language, riddleType);
 
       if (evaluation.is_good) {
-        return this.formatResponse(aiResult, dto, promptName, attempts, riddleType);
+        return this.formatResponse(aiResult, dto, promptName, attempts, riddleType, style);
       }
 
-      this.logger.warn(`Спроба #${attempts} не пройшла критик: ${evaluation.reason}`);
+      this.logger.warn(`Спроба #${attempts} відхилена критиком: ${evaluation.reason}`);
     }
 
-    this.logger.error(`Всі спроби вичерпано. Повертаємо найкращий наявний варіант.`);
-    return this.formatResponse(lastResult!, dto, promptName, attempts, riddleType);
+    if (!lastResult) {
+      throw new InternalServerErrorException('Не вдалося згенерувати контент. Спробуйте пізніше.');
+    }
+
+    return this.formatResponse(lastResult, dto, promptName, attempts, riddleType, style);
   }
 
   private formatResponse(
@@ -56,6 +102,7 @@ export class RiddlesService {
     promptName: string,
     attempts: number,
     type: RiddleType,
+    style: string,
   ) {
     return {
       content: result.content,
@@ -67,30 +114,32 @@ export class RiddlesService {
         prompt_name: promptName,
         generation_attempts: attempts,
         type: type,
+        style: style,
       },
     };
   }
 
-  private async evaluateRiddle(riddle: AiRiddleResponse, language: string, type: RiddleType) {
-    const criteria =
-      type === RiddleType.DANETKI
-        ? "Чи є ситуація загадковою, а розв'язок логічним і неочевидним?"
-        : 'Чи є загадка цікавою та чи відповідає відповідь питанню?';
-
+  private async evaluateRiddle(
+    riddle: AiRiddleResponse,
+    language: string,
+    type: RiddleType,
+  ): Promise<EvaluationResult> {
     const evalPrompt = `
-      Ти — контролер якості контенту. Оціни загадку типу "${type}".
-      Текст: "${riddle.content}"
-      Відповідь: "${riddle.answer}"
-      Мова: ${language}
+    Evaluate this riddle of type "${type}".
+    Text: "${riddle.content}"
+    Answer: "${riddle.answer}"
+    Language: ${language}
 
-      Критерій: ${criteria}
-      Також перевір, чи немає граматичних помилок.
+    Check:
+    1. Is it a valid riddle?
+    2. Does the answer match the logic?
+    3. Are there grammar errors?
 
-      Поверни JSON: {"is_good": boolean, "reason": "чому не пройшло (якщо false)"}
-    `;
+    Return JSON: {"is_good": boolean, "reason": "string"}
+  `;
 
     try {
-      return await this.aiService.askGemini(evalPrompt);
+      return await this.aiService.askGemini<EvaluationResult>(evalPrompt);
     } catch (e) {
       return { is_good: true };
     }
@@ -152,31 +201,53 @@ export class RiddlesService {
     userMessage: string,
     settings: RiddleSettingsDto,
     authorId: string,
-  ) {
-    const intent = await this.aiService.classifyIntent(userMessage);
+  ): Promise<ChatResponseDto> {
+    const analysis: RiddleIntentAnalysis = await this.aiService.classifyIntent(userMessage);
 
-    if (intent === 'NEW') {
-      this.logger.log(`Нова генерація. Тема: ${userMessage}`);
+    if (analysis.intent === 'OFF_TOPIC') {
+      return {
+        type: ChatResponseType.SYSTEM_MESSAGE,
+        data: {
+          content:
+            'Вибачте, я спеціалізуюся лише на загадках. Чим я можу допомогти у межах цієї теми?',
+        },
+      };
+    }
 
-      const newRiddle = await this.generateRiddle({
-        topic: userMessage,
-        settings: settings,
-      });
+    if (analysis.intent === 'NEW') {
+      const newRiddle = await this.generateRiddle(
+        {
+          topic: analysis.topic || userMessage,
+          settings: settings,
+        },
+        analysis,
+      );
 
       await this.saveMessage(chatId, 'user', userMessage, true);
       await this.saveMessage(chatId, 'model', JSON.stringify(newRiddle));
 
-      return { type: 'NEW_RIDDLE', data: newRiddle };
+      return {
+        type: ChatResponseType.NEW_RIDDLE,
+        data: {
+          content: newRiddle.content,
+          answer: newRiddle.answer,
+          prompt_context: newRiddle.prompt_context,
+        },
+      };
     }
 
     const rawHistory = await this.getHistory(chatId);
-
     const aiUpdate = await this.aiService.askGeminiChat(rawHistory, userMessage);
 
     await this.saveMessage(chatId, 'user', userMessage);
     await this.saveMessage(chatId, 'model', JSON.stringify(aiUpdate));
 
-    return { type: 'REFINE_RIDDLE', data: aiUpdate };
+    return {
+      type: ChatResponseType.REFINE_RIDDLE,
+      data: {
+        content: aiUpdate.content || aiUpdate.text || JSON.stringify(aiUpdate),
+      },
+    };
   }
 
   private async getHistory(chatId: string): Promise<Content[]> {
