@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { AiService } from './ai/ai.service';
 import { PromptsService } from './prompts/prompts.service';
 import { AiRiddleResponse, RiddleDto, RiddleSettingsDto, RiddleType } from './dto/riddle.dto';
@@ -101,12 +96,17 @@ export class RiddlesService {
     }
   }
 
-  async createRiddle(userId: string, data: { content: string; answer: string; prompt_context: any }) {
+  async createRiddle(
+    userId: string,
+    data: { content: string; answer: string; prompt_context: any },
+  ) {
     return this.prisma.riddles.create({
       data: {
         content: data.content,
         answer: data.answer,
-        prompt_context: data.prompt_context ? JSON.parse(JSON.stringify(data.prompt_context)) : null,
+        prompt_context: data.prompt_context
+          ? JSON.parse(JSON.stringify(data.prompt_context))
+          : null,
         author_id: userId,
         is_public: false,
       },

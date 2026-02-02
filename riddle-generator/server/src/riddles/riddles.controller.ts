@@ -17,21 +17,16 @@ import * as PrismaModels from '@prisma/client';
 
 @Controller('riddles')
 export class RiddlesController {
-  constructor(
-    private readonly riddlesService: RiddlesService,
-  ) {}
+  constructor(private readonly riddlesService: RiddlesService) {}
 
   @Post('generate')
-  async createGeneratedRiddle(
-    @Body() dto: RiddleDto,
-    @CurrentUser() user: PrismaModels.User
-  ) {
+  async createGeneratedRiddle(@Body() dto: RiddleDto, @CurrentUser() user: PrismaModels.User) {
     const generatedData = await this.riddlesService.generateRiddle(dto);
     return this.riddlesService.createRiddle(user.id, generatedData);
   }
 
   @Post('chat/init')
-  async initializeChat( @CurrentUser() user: PrismaModels.User) {
+  async initializeChat(@CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.createChat(user.id);
   }
 
@@ -45,20 +40,20 @@ export class RiddlesController {
   }
 
   @Get('chat/:chatId/history')
-  async getChatHistory(@Param('chatId') chatId: string,  @CurrentUser() user: PrismaModels.User) {
+  async getChatHistory(@Param('chatId') chatId: string, @CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.getChatHistory(chatId, user.id);
   }
 
   @Post('save')
   async saveRiddle(
     @Body() riddleData: { content: string; answer: string; prompt_context: any },
-    @CurrentUser() user: PrismaModels.User
+    @CurrentUser() user: PrismaModels.User,
   ) {
     return this.riddlesService.saveToUserCollection(user.id, riddleData);
   }
 
   @Put(':id/public')
-  async togglePublic(@Param('id') riddleId: string,  @CurrentUser() user: PrismaModels.User) {
+  async togglePublic(@Param('id') riddleId: string, @CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.makeRiddlePublic(user.id, riddleId);
   }
 
@@ -78,7 +73,10 @@ export class RiddlesController {
   }
 
   @Delete(':id')
-  async removeRiddle(@Param('id', ParseUUIDPipe) id: string,  @CurrentUser() user: PrismaModels.User) {
+  async removeRiddle(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: PrismaModels.User,
+  ) {
     await this.riddlesService.remove(id, user.id);
     return { message: 'Riddle deleted successfully' };
   }
