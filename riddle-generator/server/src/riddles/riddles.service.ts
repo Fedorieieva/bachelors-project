@@ -113,6 +113,31 @@ export class RiddlesService {
     });
   }
 
+  async regenerateLastRiddle(chatId: string, settings: RiddleSettingsDto, authorId: string) {
+    const lastUserMessage = await this.prisma.message.findFirst({
+      where: {
+        chat_id: chatId,
+        role: 'user',
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!lastUserMessage) {
+      throw new NotFoundException('Message history not found for regeneration');
+    }
+
+    this.logger.log(`Riddle regeneration for chat ${chatId}. Topic: ${lastUserMessage.content}`);
+
+    const newRiddle = await this.generateRiddle({
+      topic: lastUserMessage.content,
+      settings: settings,
+    });
+
+    await this.saveMessage(chatId, 'model', JSON.stringify(newRiddle));
+
+    return { type: 'NEW_RIDDLE', data: newRiddle };
+  }
+
   async createChat(authorId: string) {
     const newChat = await this.prisma.chat.create({
       data: {

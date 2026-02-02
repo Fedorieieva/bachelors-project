@@ -10,7 +10,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { RiddlesService } from './riddles.service';
-import { RiddleDto } from './dto/riddle.dto';
+import { RiddleDto, RiddleSettingsDto } from './dto/riddle.dto';
 import { Public } from '../utils/decorators/public.decorator';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
@@ -23,6 +23,15 @@ export class RiddlesController {
   async createGeneratedRiddle(@Body() dto: RiddleDto, @CurrentUser() user: PrismaModels.User) {
     const generatedData = await this.riddlesService.generateRiddle(dto);
     return this.riddlesService.createRiddle(user.id, generatedData);
+  }
+
+  @Post('chat/:chatId/regenerate')
+  async regenerateRiddle(
+    @Param('chatId') chatId: string,
+    @Body() settings: RiddleSettingsDto,
+    @CurrentUser() user: PrismaModels.User,
+  ) {
+    return this.riddlesService.regenerateLastRiddle(chatId, settings, user.id);
   }
 
   @Post('chat/init')
