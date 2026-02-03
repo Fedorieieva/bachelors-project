@@ -171,4 +171,34 @@ export class AiService {
       throw new InternalServerErrorException('ШІ не зміг відповісти у чаті');
     }
   }
+
+  async getContextualHint(
+    history: Content[],
+    userMessage: string,
+    correctAnswer: string,
+  ): Promise<{ content: string }> {
+    const hintPrompt = `
+      Ти — ігровий помічник у вебзастосунку із загадками.
+      ПРАВИЛЬНА ВІДПОВІДЬ (секретно): "${correctAnswer}"
+      КОРИСТУВАЧ ПИШЕ: "${userMessage}"
+
+      ЗАВДАННЯ:
+      1. Якщо користувач вгадав (відповідь близька за змістом), привітай його і підтверди розв'язок.
+      2. Якщо не вгадав, проаналізуй його помилку та дай тонку підказку, що наближає до цілі.
+      3. ЖОРСТКЕ ПРАВИЛО: Не називай слово "${correctAnswer}" прямо, якщо користувач його ще не вгадав.
+      4. Використовуй історію діалогу, щоб не повторювати однакові підказки.
+
+      Пиши тільки текст відповіді або підказки.
+  `;
+
+    try {
+      const chat = this.model.startChat({ history });
+      const result = await chat.sendMessage(hintPrompt);
+      const text = result.response.text().trim();
+      return { content: text };
+    } catch (error) {
+      this.logger.error(`Hint Error: ${(error as Error).message}`);
+      return { content: 'Спробуй подумати ще раз, ти на правильному шляху!' };
+    }
+  }
 }

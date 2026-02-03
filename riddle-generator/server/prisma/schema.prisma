@@ -88,11 +88,13 @@ model Riddles {
 }
 
 model Chat {
-  id        String    @id @default(uuid())
-  user_id   String    @map("user_id")
-  user      User      @relation(fields: [user_id], references: [id])
-  messages  Message[]
-  createdAt DateTime  @default(now())
+  id                    String    @id @default(uuid())
+  user_id               String    @map("user_id")
+  user                  User      @relation(fields: [user_id], references: [id])
+  messages              Message[]
+  is_interactive        Boolean   @default(false)
+  current_riddle_answer String?   @db.Text
+  createdAt             DateTime  @default(now())
 
   @@map("chats")
 }

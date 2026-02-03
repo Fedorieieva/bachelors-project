@@ -48,6 +48,14 @@ export class RiddlesController {
     return this.riddlesService.processChatMessage(chatId, dto.topic, dto.settings, user.id);
   }
 
+  @Post('chat/:chatId/reveal')
+  async revealAnswer(
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @CurrentUser() user: PrismaModels.User,
+  ) {
+    return this.riddlesService.revealAnswer(chatId, user.id);
+  }
+
   @Get('chat/:chatId/history')
   async getChatHistory(@Param('chatId') chatId: string, @CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.getChatHistory(chatId, user.id);

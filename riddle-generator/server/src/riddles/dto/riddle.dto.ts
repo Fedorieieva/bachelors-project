@@ -6,7 +6,7 @@ import {
   IsEnum,
   IsOptional,
   IsNotEmpty,
-  ValidateNested,
+  ValidateNested, IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -29,8 +29,13 @@ export class RiddleSettingsDto {
   @Max(5)
   complexity: number;
 
+  @IsOptional()
   @IsEnum(['ukrainian', 'english', 'spanish', 'french', 'german'])
-  language: string;
+  language?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_interactive?: boolean;
 }
 
 export class RiddleDto {
