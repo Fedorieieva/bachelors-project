@@ -74,19 +74,12 @@ export class RiddlesController {
     return this.riddlesService.makeRiddlePublic(user.id, riddleId);
   }
 
-  @Get('my')
-  async getMyRiddles(
+  @Post(':id/save')
+  async toggleSave(
+    @Param('id', ParseUUIDPipe) riddleId: string,
     @CurrentUser() user: PrismaModels.User,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
   ) {
-    return this.riddlesService.getMyRiddles(user.id, Number(page), Number(limit));
-  }
-
-  @Public()
-  @Get('public')
-  async getPublicFeed(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
-    return this.riddlesService.getPublicRiddles(Number(page), Number(limit));
+    return this.riddlesService.toggleSaveRiddle(user.id, riddleId);
   }
 
   @Delete(':id')

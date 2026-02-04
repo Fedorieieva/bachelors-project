@@ -1,38 +1,37 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../utils/decorators/public.decorator';
+import { FeedService } from './feed.service';
+import { CurrentUser } from '../utils/decorators/user.decorator';
+import * as PrismaModels from '@prisma/client';
 
 @Controller('feed')
 export class FeedController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly feedService: FeedService) {}
 
   @Get('public')
   @Public()
-  async getPublicFeed(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
-    const skip = (Number(page) - 1) * Number(limit);
-    const take = Number(limit);
+  async getPublicFeed(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
+  ) {
+    return this.feedService.getPublicFeed(Number(page), Number(limit));
+  }
 
-    const [items, total] = await Promise.all([
-      this.prisma.riddles.findMany({
-        where: { is_public: true },
-        include: {
-          author: { select: { name: true } },
-        },
-        orderBy: { created_at: 'desc' },
-        skip,
-        take,
-      }),
-      this.prisma.riddles.count({ where: { is_public: true } }),
-    ]);
+  @Get('saved')
+  async getSaved(
+    @CurrentUser() user: PrismaModels.User,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.feedService.getSavedFeed(user.id, Number(page), Number(limit));
+  }
 
-    return {
-      items,
-      meta: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(total / take),
-      },
-    };
+  @Get('my')
+  async getMyRiddles(
+    @CurrentUser() user: PrismaModels.User,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.feedService.getUserFeed(user.id, Number(page), Number(limit));
   }
 }

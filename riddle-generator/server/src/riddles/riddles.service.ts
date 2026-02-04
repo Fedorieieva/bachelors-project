@@ -482,57 +482,6 @@ export class RiddlesService {
     }
   }
 
-  async getMyRiddles(userId: string, page: number, limit: number) {
-    const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      this.prisma.riddles.findMany({
-        where: { author_id: userId },
-        orderBy: { created_at: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.riddles.count({ where: { author_id: userId } }),
-    ]);
-
-    return {
-      items,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getPublicRiddles(page: number, limit: number) {
-    const skip = (page - 1) * limit;
-    const [items, total] = await Promise.all([
-      this.prisma.riddles.findMany({
-        where: { is_public: true },
-        include: {
-          author: {
-            select: { id: true, name: true, is_guest: true },
-          },
-        },
-        orderBy: { created_at: 'desc' },
-        skip,
-        take: limit,
-      }),
-      this.prisma.riddles.count({ where: { is_public: true } }),
-    ]);
-
-    return {
-      items,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
   async saveToUserCollection(
     userId: string,
     riddleData: { content: string; answer: string; prompt_context: any },
@@ -567,6 +516,31 @@ export class RiddlesService {
       where: { id: riddleId },
       data: { is_public: true },
     });
+  }
+
+  async toggleSaveRiddle(userId: string, riddleId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.is_guest) {
+      throw new ForbiddenException('Тільки зареєстровані користувачі можуть зберігати загадки');
+    }
+
+    const existingSave = await this.prisma.savedRiddles.findUnique({
+      where: {
+        user_id_riddle_id: { user_id: userId, riddle_id: riddleId },
+      },
+    });
+
+    if (existingSave) {
+      await this.prisma.savedRiddles.delete({
+        where: { id: existingSave.id },
+      });
+      return { saved: false };
+    }
+
+    await this.prisma.savedRiddles.create({
+      data: { user_id: userId, riddle_id: riddleId },
+    });
+    return { saved: true };
   }
 
   async remove(id: string, userId: string) {

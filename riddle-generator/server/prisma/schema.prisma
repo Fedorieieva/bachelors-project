@@ -28,13 +28,14 @@ model User {
   banned_until      DateTime?
   last_violation_at DateTime?
 
-  sessions  Session[]
-  riddles   Riddles[]
-  comments  Comment[]
-  likes     Like[]
-  Chat      Chat[]
-  followers Follow[]  @relation("following")
-  following Follow[]  @relation("follower")
+  sessions      Session[]
+  riddles       Riddles[]
+  saved_riddles SavedRiddles[]
+  comments      Comment[]
+  likes         Like[]
+  Chat          Chat[]
+  followers     Follow[]       @relation("following")
+  following     Follow[]       @relation("follower")
 
   @@map("users")
 }
@@ -85,10 +86,26 @@ model Riddles {
   author    User   @relation(fields: [author_id], references: [id], onDelete: Cascade)
   author_id String @map("author_id")
 
+  saved_by SavedRiddles[]
+
   comments Comment[]
   likes    Like[]
 
   @@map("riddles")
+}
+
+model SavedRiddles {
+  id         String   @id @default(uuid())
+  created_at DateTime @default(now()) @db.Timestamp(6)
+
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id String
+
+  riddle    Riddles @relation(fields: [riddle_id], references: [id], onDelete: Cascade)
+  riddle_id String
+
+  @@unique([user_id, riddle_id])
+  @@map("saved_riddles")
 }
 
 model Chat {
