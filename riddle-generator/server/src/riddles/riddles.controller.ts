@@ -14,11 +14,18 @@ import * as PrismaModels from '@prisma/client';
 import { RiddleDto, RiddleSettingsDto } from './dto/riddle-settings.dto';
 import { SaveRiddleDto } from './dto/riddle-persistence.dto';
 import { Public } from '../utils/decorators/public.decorator';
+import { ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 
 @Controller('riddles')
 export class RiddlesController {
   constructor(private readonly riddlesService: RiddlesService) {}
 
+  @ApiOperation({
+    summary: 'Generate Riddle',
+    description: 'Trigger AI to generate a riddle based on a topic and specific settings.'
+  })
+  @ApiResponse({ status: 201, description: 'Riddle successfully generated.' })
+  @ApiResponse({ status: 400, description: 'Invalid parameters or safety violation.' })
   @Public()
   @Post('generate')
   async createGeneratedRiddle(
@@ -36,12 +43,20 @@ export class RiddlesController {
     return this.riddlesService.regenerateLastRiddle(chatId, settings);
   }
 
+  @ApiOperation({ summary: 'Initialize a new game chat session' })
   @Public()
   @Post('chat/init')
   async initializeChat(@CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.createChat(user.id);
   }
 
+  @ApiOperation({
+    summary: 'Process Chat Message',
+    description: 'The main engine for playing. Handles guesses, requests for hints, or generating new content within an existing chat.'
+  })
+  @ApiParam({ name: 'chatId', format: 'uuid', description: 'The active game session ID.' })
+  @ApiResponse({ status: 200, description: 'Successfully processed message.' })
+  @ApiResponse({ status: 403, description: 'User is banned due to content violations.' })
   @Public()
   @Post('chat/:chatId')
   async handleChat(
@@ -52,6 +67,11 @@ export class RiddlesController {
     return this.riddlesService.processChatMessage(chatId, dto.topic, dto.settings, user.id);
   }
 
+  @ApiOperation({
+    summary: 'Reveal Answer',
+    description: 'Force reveal the answer to the current riddle and disable interactive mode for this session.'
+  })
+  @ApiResponse({ status: 200, description: 'Answer revealed.' })
   @Public()
   @Post('chat/:chatId/reveal')
   async revealAnswer(
@@ -70,6 +90,12 @@ export class RiddlesController {
     return this.riddlesService.getChatHistory(chatId, user.id);
   }
 
+  @ApiOperation({
+    summary: 'Save to Collection',
+    description: 'Persistently store a generated riddle in the database. Only available for registered users.'
+  })
+  @ApiResponse({ status: 201, description: 'Riddle saved to personal collection.' })
+  @ApiResponse({ status: 403, description: 'Guests cannot save riddles.' })
   @Post('save')
   async saveRiddle(
     @Body() riddleData: { content: string; answer: string; prompt_context: SaveRiddleDto },

@@ -1,5 +1,6 @@
 import { IsString, IsNotEmpty } from 'class-validator';
 import { RiddleType } from './riddle-settings.dto';
+import { ApiProperty } from '@nestjs/swagger';
 
 export interface RiddleMetadata {
   message: string;
@@ -12,14 +13,32 @@ export interface RiddleMetadata {
 }
 
 export class SaveRiddleDto {
+  @ApiProperty({
+    example: 'What has keys but no locks?',
+    description: 'The riddle text'
+  })
   @IsString()
   @IsNotEmpty()
   content: string;
 
+  @ApiProperty({
+    example: 'A piano',
+    description: 'The correct answer'
+  })
   @IsString()
   @IsNotEmpty()
   answer: string;
 
+  @ApiProperty({
+    description: 'Technical metadata for the riddle',
+    example: {
+      message: 'piano',
+      complexity: 2,
+      language: 'english',
+      type: 'classic',
+      style: 'neutral'
+    }
+  })
   @IsNotEmpty()
   prompt_context: Record<string, unknown>;
 }

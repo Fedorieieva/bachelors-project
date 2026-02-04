@@ -1,5 +1,6 @@
 import { IsString, IsNumber, Min, Max, IsEnum, IsOptional, IsNotEmpty, ValidateNested, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum RiddleType {
   DANETKI = 'danetki',
@@ -9,30 +10,51 @@ export enum RiddleType {
 }
 
 export class RiddleSettingsDto {
+  @ApiPropertyOptional({
+    enum: RiddleType,
+    example: RiddleType.LOGIC,
+    description: 'The category of the riddle'
+  })
   @IsOptional()
   @IsEnum(RiddleType)
   type: RiddleType;
 
+  @ApiPropertyOptional({
+    minimum: 1,
+    maximum: 5,
+    example: 3,
+    description: 'Difficulty level from 1 to 5'
+  })
   @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(5)
   complexity: number;
 
+  @ApiPropertyOptional({
+    example: 'english',
+    description: 'Language of the generated content'
+  })
   @IsOptional()
   @IsEnum(['ukrainian', 'english', 'spanish', 'french', 'german'])
   language?: string;
 
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Enables interactive hint mode'
+  })
   @IsOptional()
   @IsBoolean()
   is_interactive?: boolean;
 }
 
 export class RiddleDto {
+  @ApiProperty({ example: 'Що стоїть посеред Києва?' })
   @IsString()
   @IsNotEmpty()
   topic: string;
 
+  @ApiProperty({ type: RiddleSettingsDto })
   @ValidateNested()
   @Type(() => RiddleSettingsDto)
   @IsNotEmpty()
