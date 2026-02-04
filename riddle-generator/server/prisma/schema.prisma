@@ -111,7 +111,7 @@ model SavedRiddles {
 model Chat {
   id                    String    @id @default(uuid())
   user_id               String    @map("user_id")
-  user                  User      @relation(fields: [user_id], references: [id])
+  user                  User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   messages              Message[]
   is_interactive        Boolean   @default(false)
   current_riddle_answer String?   @db.Text
@@ -123,7 +123,7 @@ model Chat {
 model Message {
   id         String   @id @default(uuid())
   chat_id    String
-  chat       Chat     @relation(fields: [chat_id], references: [id])
+  chat       Chat     @relation(fields: [chat_id], references: [id], onDelete: Cascade)
   role       String
   content    String
   is_initial Boolean  @default(false)
