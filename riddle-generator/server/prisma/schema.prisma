@@ -24,6 +24,10 @@ model User {
   created_at           DateTime @default(now()) @map("created_at") @db.Timestamp(6)
   updated_at           DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
+  violation_count   Int       @default(0)
+  banned_until      DateTime?
+  last_violation_at DateTime?
+
   sessions  Session[]
   riddles   Riddles[]
   comments  Comment[]

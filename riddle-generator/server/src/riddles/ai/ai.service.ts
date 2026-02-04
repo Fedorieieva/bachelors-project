@@ -110,19 +110,21 @@ export class AiService {
     Analyze the user message for a riddle-solving application.
 
     Tasks:
-    1. Determine intent:
+    1. Detect "INAPPROPRIATE" content: Sexual acts, pornography, graphic gore, detailed physical torture, or extreme violence.
+    2. Determine intent:
        - "NEW": user wants a new riddle.
        - "REFINE": user is asking a question, making a guess, or discussing the current riddle.
        - "OFF_TOPIC": user is asking for something unrelated (recipes, code, general facts).
-    2. Extract Type (only for NEW): "classic", "math", "logic", or "danetki".
-    3. Extract Style: (e.g., "cyberpunk", "sherlock holmes", "medieval fantasy").
-    4. Extract Topic: What is the riddle about?
+    3. Extract Type (only for NEW): "classic", "math", "logic", or "danetki".
+    4. Extract Style: (e.g., "cyberpunk", "sherlock holmes", "medieval fantasy").
+    5. Extract Topic: What is the riddle about?
 
     User Message: "${message}"
 
     Return JSON only:
     {
-      "intent": "NEW" | "REFINE" | "OFF_TOPIC",
+      "intent": "NEW" | "REFINE" | "OFF_TOPIC" | "INAPPROPRIATE",
+      "reason": "short explanation if inappropriate",
       "type": "string | null",
       "style": "string | null",
       "topic": "string | null"
@@ -131,7 +133,7 @@ export class AiService {
 
     try {
       const rawResult = await this.askGemini<{
-        intent: 'NEW' | 'REFINE' | 'OFF_TOPIC';
+        intent: 'NEW' | 'REFINE' | 'OFF_TOPIC' | 'INAPPROPRIATE';
         type?: string;
         style?: string;
         topic?: string;

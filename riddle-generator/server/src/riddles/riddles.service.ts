@@ -25,6 +25,8 @@ import { Content } from '@google/generative-ai';
 export class RiddlesService {
   private readonly logger = new Logger(RiddlesService.name);
   private readonly MAX_REGENERATION_ATTEMPTS = 3;
+  private readonly BAN_DURATION_MINUTES = 320;
+  private readonly MAX_VIOLATIONS = 3;
 
   constructor(
     private readonly aiService: AiService,
@@ -58,15 +60,15 @@ export class RiddlesService {
 
     if (style !== 'neutral') {
       mainPrompt += `\n\nSTYLE INSTRUCTION:
-    Generate this riddle strictly in the style of "${style}".
-    Use specific vocabulary, tone, and atmosphere characteristic of this style.`;
+        Generate this riddle strictly in the style of "${style}".
+        Use specific vocabulary, tone, and atmosphere characteristic of this style.`;
     }
 
     mainPrompt += `\n\nSAFETY AND CONTENT RULES:
-  1. You are a specialized Riddle Generator.
-  2. If the user's topic is a request for a recipe, code, general advice, or anything that is NOT a riddle,
-     you MUST return exactly this JSON: {"content": "ERROR_OFF_TOPIC", "answer": "NONE"}.
-  3. Do not break character. Do not provide information outside the riddle context.`;
+        1. You are a specialized Riddle Generator.
+        2. If the user's topic is a request for a recipe, code, general advice, or anything that is NOT a riddle,
+           you MUST return exactly this JSON: {"content": "ERROR_OFF_TOPIC", "answer": "NONE"}.
+        3. Do not break character. Do not provide information outside the riddle context.`;
 
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
       attempts++;
@@ -76,11 +78,18 @@ export class RiddlesService {
 
       if (aiResult.content === 'ERROR_OFF_TOPIC') {
         throw new BadRequestException(
-          'Вибачте, я можу створювати лише загадки. Будь ласка, введіть тему для нової задачі.',
+          'Згенерований контент не відповідає правилам безпеки. Спробуйте змінити тему.',
         );
       }
 
       const evaluation = await this.evaluateRiddle(aiResult, riddleType, language);
+
+      if (!evaluation.is_safe) {
+        this.logger.error(`🚨 Спроба #${attempts} заблокована через SAFETY: ${evaluation.reason}`);
+        throw new BadRequestException(
+          'Тема містить неприпустимий рівень жорстокості. Будь ласка, оберіть іншу тему.',
+        );
+      }
 
       if (evaluation.is_good) {
         return this.formatResponse(aiResult, dto, promptName, attempts, riddleType, style);
@@ -125,23 +134,43 @@ export class RiddlesService {
     language?: string,
   ): Promise<EvaluationResult> {
     const evalPrompt = `
-    Evaluate this riddle of type "${type}".
-    Text: "${riddle.content}"
-    Answer: "${riddle.answer}"
-    Language: ${language}
+      Analyze this riddle for quality and safety.
+      Type: "${type}"
+      Content: "${riddle.content}"
+      Answer: "${riddle.answer}"
 
-    Check:
-    1. Is it a valid riddle?
-    2. Does the answer match the logic?
-    3. Are there grammar errors?
+      BLOCK (is_safe: false) if:
+        - Any sexual content or innuendos.
+        - Graphic gore/blood (descriptions of wounds, organs, etc.).
+        - Physical cruelty.
 
-    Return JSON: {"is_good": boolean, "reason": "string"}
-  `;
+      ALLOW (is_safe: true) if:
+        - Mystery death/suicide (classic detective/danetki style) without graphic details.
+
+      CRITICAL SAFETY CHECK:
+      - Allowed: Dark themes, mentions of mystery deaths, or "danetki" style suicides.
+      - Prohibited: Graphic gore, detailed descriptions of physical violence, torture, or cruelty.
+      - No detailed descriptions of bodies, blood, or suffering.
+
+      TECHNICAL CHECK:
+      1. Is the logic sound?
+      2. Does the answer make sense?
+      3. Correct language: ${language}.
+
+      Return JSON ONLY:
+      {
+        "is_good": boolean,
+        "is_safe": boolean,
+        "reason": "string"
+      }
+    `;
 
     try {
-      return await this.aiService.askGemini<EvaluationResult>(evalPrompt);
+      const evaluation = await this.aiService.askGemini<EvaluationResult>(evalPrompt);
+      return evaluation;
     } catch (e) {
-      return { is_good: true };
+      this.logger.error('Критична помилка оцінки ШІ, пропускаємо перевірку');
+      return { is_good: true, is_safe: true };
     }
   }
 
@@ -162,11 +191,7 @@ export class RiddlesService {
     });
   }
 
-  async regenerateLastRiddle(
-    chatId: string,
-    settings: RiddleSettingsDto,
-    authorId: string,
-  ) {
+  async regenerateLastRiddle(chatId: string, settings: RiddleSettingsDto, authorId: string) {
     const lastUserMessage = await this.prisma.message.findFirst({
       where: {
         chat_id: chatId,
@@ -219,15 +244,43 @@ export class RiddlesService {
     settings: RiddleSettingsDto,
     authorId: string,
   ): Promise<ChatResponseDto> {
+    const user = await this.prisma.user.findUnique({ where: { id: authorId } });
+    if (user?.banned_until && user.banned_until > new Date()) {
+      const remainingTime = Math.ceil((user.banned_until.getTime() - Date.now()) / 60000);
+      throw new ForbiddenException(
+        `Ви тимчасово заблоковані за порушення правил контенту. Спробуйте через ${remainingTime} хв.`,
+      );
+    }
+
     const analysis: RiddleIntentAnalysis = await this.aiService.classifyIntent(userMessage);
 
+    if (analysis.intent === 'INAPPROPRIATE') {
+      await this.handleUserViolation(authorId);
+
+      return {
+        type: ChatResponseType.SYSTEM_MESSAGE,
+        data: {
+          content:
+            'Ваш запит містить неприпустимий контент. Будь ласка, дотримуйтесь правил спільноти.',
+        },
+      };
+    }
     if (analysis.intent === 'OFF_TOPIC') {
       return {
         type: ChatResponseType.SYSTEM_MESSAGE,
         data: {
-          content: 'Вибачте, я спеціалізуюся лише на загадках. Чим я можу допомогти у межах цієї теми?',
+          content:
+            'Вибачте, я спеціалізуюся лише на загадках. Чим я можу допомогти у межах цієї теми?',
         },
       };
+    }
+    if (analysis.intent === 'NEW' || analysis.intent === 'REFINE') {
+      if (user && user.violation_count > 0) {
+        await this.prisma.user.update({
+          where: { id: authorId },
+          data: { violation_count: 0 },
+        });
+      }
     }
 
     const chat = await this.prisma.chat.findUnique({
@@ -315,6 +368,32 @@ export class RiddlesService {
     };
   }
 
+  private async handleUserViolation(userId: string) {
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        violation_count: { increment: 1 },
+        last_violation_at: new Date(),
+      },
+    });
+
+    this.logger.warn(`Порушення для ${userId}: спроба ${updatedUser.violation_count}/3`);
+
+    if (updatedUser.violation_count >= this.MAX_VIOLATIONS) {
+      const bannedUntil = new Date();
+      bannedUntil.setMinutes(bannedUntil.getMinutes() + this.BAN_DURATION_MINUTES);
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          violation_count: 0,
+          banned_until: bannedUntil,
+        },
+      });
+      this.logger.error(`🚨 Користувач ${userId} забанений до ${bannedUntil}`);
+    }
+  }
+
   async revealAnswer(chatId: string, userId: string): Promise<ChatResponseDto> {
     const chat = await this.prisma.chat.findFirst({
       where: { id: chatId, user_id: userId },
@@ -361,8 +440,7 @@ export class RiddlesService {
           try {
             const parsed = JSON.parse(msg.content);
             textContent = parsed.content;
-          } catch (e) {
-          }
+          } catch (e) {}
         }
 
         return {
@@ -388,7 +466,9 @@ export class RiddlesService {
 
   private async saveMessage(chatId: string, role: string, content: string, isInitial = false) {
     try {
-      this.logger.debug(`Збереження повідомлення: role=${role}, is_initial=${isInitial}, довжина=${content.length}`);
+      this.logger.debug(
+        `Збереження повідомлення: role=${role}, is_initial=${isInitial}, довжина=${content.length}`,
+      );
       return await this.prisma.message.create({
         data: {
           chat_id: chatId,
