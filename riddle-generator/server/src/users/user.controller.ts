@@ -14,6 +14,7 @@ import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/UpdateUserDto';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
+import { Follow, User } from '@prisma/client';
 
 @ApiTags('Users')
 @Controller('users')
@@ -25,7 +26,7 @@ export class UserController {
   @ApiParam({ name: 'id', type: 'string', description: 'User ID (UUID)' })
   @ApiResponse({ status: 200, description: 'User found' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<User> {
     const user = await this.userService.findOne(id);
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -38,7 +39,7 @@ export class UserController {
   @ApiParam({ name: 'id', type: 'string', description: 'User ID (UUID)' })
   @ApiResponse({ status: 200, description: 'User updated' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async update(@Param('id', ParseUUIDPipe) id: string, @Body() data: UpdateUserDto) {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() data: UpdateUserDto): Promise<User> {
     return this.userService.update(id, data);
   }
 
@@ -54,25 +55,31 @@ export class UserController {
 
   @Post(':id/follow')
   @ApiOperation({ summary: 'Follow user' })
-  async follow(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: PrismaModels.User) {
+  async follow(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: PrismaModels.User,
+  ): Promise<Follow> {
     return this.userService.follow(user.id, id);
   }
 
   @Delete(':id/unfollow')
   @ApiOperation({ summary: 'Unfollow user' })
-  async unfollow(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: PrismaModels.User) {
+  async unfollow(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: PrismaModels.User,
+  ): Promise<void> {
     return this.userService.unfollow(user.id, id);
   }
 
   @Get(':id/followers')
   @ApiOperation({ summary: 'Followers list' })
-  async getFollowers(@Param('id', ParseUUIDPipe) id: string) {
+  async getFollowers(@Param('id', ParseUUIDPipe) id: string): Promise<User[]> {
     return this.userService.getFollowers(id);
   }
 
   @Get(':id/following')
   @ApiOperation({ summary: 'Following list' })
-  async getFollowing(@Param('id', ParseUUIDPipe) id: string) {
+  async getFollowing(@Param('id', ParseUUIDPipe) id: string): Promise<User[]> {
     return this.userService.getFollowing(id);
   }
 }

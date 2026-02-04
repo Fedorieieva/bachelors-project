@@ -61,6 +61,7 @@ export class UserService {
       },
     });
   }
+
   async unfollow(followerId: string, followingId: string): Promise<void> {
     try {
       await this.prisma.follow.delete({

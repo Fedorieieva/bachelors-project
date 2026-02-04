@@ -8,18 +8,13 @@ import {
 } from '@nestjs/common';
 import { AiService } from './ai/ai.service';
 import { PromptsService } from './prompts/prompts.service';
-import {
-  AiRiddleResponse,
-  ChatResponseDto,
-  ChatResponseType,
-  EvaluationResult,
-  RiddleDto,
-  RiddleIntentAnalysis,
-  RiddleSettingsDto,
-  RiddleType,
-} from './dto/riddle.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Content } from '@google/generative-ai';
+import { Prisma, Riddles } from '@prisma/client';
+import { AiRiddleResponse, EvaluationResult, RiddleIntentAnalysis } from './ai/ai-responses.dto';
+import { RiddleMetadata, SaveRiddleDto, ToggleSaveResponse } from './dto/riddle-persistence.dto';
+import { RiddleDto, RiddleSettingsDto, RiddleType } from './dto/riddle-settings.dto';
+import { ChatResponseDto, ChatResponseType } from './dto/chat-response.dto';
 
 @Injectable()
 export class RiddlesService {
@@ -40,7 +35,7 @@ export class RiddlesService {
   ): Promise<{
     content: string;
     answer: string;
-    prompt_context: Record<string, unknown>;
+    prompt_context: RiddleMetadata;
   }> {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
@@ -112,14 +107,14 @@ export class RiddlesService {
     attempts: number,
     type: RiddleType,
     style: string,
-  ) {
+  ): { content: string; answer: string; prompt_context: RiddleMetadata } {
     return {
       content: result.content,
       answer: result.answer,
       prompt_context: {
         message: dto.topic,
         complexity: dto.settings.complexity,
-        language: dto.settings.language,
+        language: dto.settings.language || 'ukrainian',
         prompt_name: promptName,
         generation_attempts: attempts,
         type: type,
@@ -174,24 +169,7 @@ export class RiddlesService {
     }
   }
 
-  async createRiddle(
-    userId: string,
-    data: { content: string; answer: string; prompt_context: any },
-  ) {
-    return this.prisma.riddles.create({
-      data: {
-        content: data.content,
-        answer: data.answer,
-        prompt_context: data.prompt_context
-          ? JSON.parse(JSON.stringify(data.prompt_context))
-          : null,
-        author_id: userId,
-        is_public: false,
-      },
-    });
-  }
-
-  async regenerateLastRiddle(chatId: string, settings: RiddleSettingsDto, authorId: string) {
+  async regenerateLastRiddle(chatId: string, settings: RiddleSettingsDto) {
     const lastUserMessage = await this.prisma.message.findFirst({
       where: {
         chat_id: chatId,
@@ -354,16 +332,12 @@ export class RiddlesService {
     const aiUpdate = await this.aiService.askGeminiChat(rawHistory, userMessage);
 
     await this.saveMessage(chatId, 'user', userMessage);
-    await this.saveMessage(
-      chatId,
-      'model',
-      typeof aiUpdate === 'string' ? aiUpdate : JSON.stringify(aiUpdate),
-    );
+    await this.saveMessage(chatId, 'model', JSON.stringify(aiUpdate));
 
     return {
       type: ChatResponseType.REFINE_RIDDLE,
       data: {
-        content: aiUpdate.content || aiUpdate.text || JSON.stringify(aiUpdate),
+        content: aiUpdate.content,
       },
     };
   }
@@ -484,7 +458,7 @@ export class RiddlesService {
 
   async saveToUserCollection(
     userId: string,
-    riddleData: { content: string; answer: string; prompt_context: any },
+    riddleData: { content: string; answer: string; prompt_context: SaveRiddleDto },
   ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
@@ -496,7 +470,7 @@ export class RiddlesService {
       data: {
         content: riddleData.content,
         answer: riddleData.answer,
-        prompt_context: riddleData.prompt_context,
+        prompt_context: riddleData.prompt_context as unknown as Prisma.InputJsonValue,
         author_id: userId,
         is_public: false,
       },
@@ -518,7 +492,7 @@ export class RiddlesService {
     });
   }
 
-  async toggleSaveRiddle(userId: string, riddleId: string) {
+  async toggleSaveRiddle(userId: string, riddleId: string): Promise<ToggleSaveResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.is_guest) {
       throw new ForbiddenException('Тільки зареєстровані користувачі можуть зберігати загадки');

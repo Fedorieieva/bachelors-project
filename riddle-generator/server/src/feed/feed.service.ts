@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FeedResponseDto } from './feed.dto';
+import { Riddles } from '@prisma/client';
 
 @Injectable()
 export class FeedService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getPublicFeed(page: number, limit: number) {
+  async getPublicFeed(page: number, limit: number): Promise<FeedResponseDto<Riddles>> {
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
@@ -36,7 +38,11 @@ export class FeedService {
     };
   }
 
-  async getSavedFeed(userId: string, page: number, limit: number) {
+  async getSavedFeed(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<FeedResponseDto<Riddles>> {
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
@@ -67,7 +73,11 @@ export class FeedService {
     };
   }
 
-  async getUserFeed(userId: string, page: number, limit: number) {
+  async getUserFeed(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<FeedResponseDto<Riddles>> {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       this.prisma.riddles.findMany({
@@ -90,7 +100,11 @@ export class FeedService {
     };
   }
 
-  async getFollowingFeed(userId: string, page: number, limit: number) {
+  async getFollowingFeed(
+    userId: string,
+    page: number,
+    limit: number,
+  ): Promise<FeedResponseDto<Riddles>> {
     const skip = (page - 1) * limit;
 
     const following = await this.prisma.follow.findMany({

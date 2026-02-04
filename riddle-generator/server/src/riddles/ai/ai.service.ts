@@ -1,7 +1,8 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, Content } from '@google/generative-ai';
-import { RiddleIntentAnalysis, RiddleType } from '../dto/riddle.dto';
+import { AiHintResponse, AiRiddleResponse, RiddleIntentAnalysis } from './ai-responses.dto';
+import { RiddleType } from '../dto/riddle-settings.dto';
 
 @Injectable()
 export class AiService {
@@ -35,7 +36,7 @@ export class AiService {
     this.initModel();
   }
 
-  private initModel() {
+  private initModel(): void {
     const modelName = this.modelCandidates[this.currentModelIndex];
     this.logger.log(`Ініціалізація моделі: ${modelName}`);
 
@@ -158,7 +159,10 @@ export class AiService {
     }
   }
 
-  async askGeminiChat(history: any[], newMessage: string): Promise<any> {
+  async askGeminiChat(
+    history: any[],
+    newMessage: string,
+  ): Promise<AiHintResponse | AiRiddleResponse> {
     try {
       const chat = this.model.startChat({
         history: history,
