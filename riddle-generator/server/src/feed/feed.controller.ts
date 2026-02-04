@@ -34,4 +34,13 @@ export class FeedController {
   ) {
     return this.feedService.getUserFeed(user.id, Number(page), Number(limit));
   }
+
+  @Get('following')
+  async getFollowingFeed(
+    @CurrentUser() user: PrismaModels.User,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    return this.feedService.getFollowingFeed(user.id, Number(page), Number(limit));
+  }
 }
