@@ -1,9 +1,47 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ExperienceService } from '../experience/experience.service';
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly experienceService: ExperienceService,
+  ) {}
+
+  async create(userId: string, riddleId: string, content: string) {
+    const comment = await this.prisma.$transaction(async (tx) => {
+      const newComment = await tx.comment.create({
+        data: {
+          content,
+          user_id: userId,
+          riddle_id: riddleId,
+        },
+      });
+
+      await tx.riddles.update({
+        where: { id: riddleId },
+        data: { comments_count: { increment: 1 } },
+      });
+
+      return newComment;
+    });
+
+    const riddle = await this.prisma.riddles.findUnique({
+      where: { id: riddleId },
+      select: { author_id: true },
+    });
+
+    if (riddle && riddle.author_id !== userId) {
+      await this.experienceService.awardXpForActivity(
+        riddle.author_id,
+        'COMMENT_RECEIVED',
+        10
+      );
+    }
+
+    return comment;
+  }
 
   async findPaginated(riddleId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;

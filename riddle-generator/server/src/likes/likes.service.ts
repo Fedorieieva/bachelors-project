@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ExperienceService } from '../experience/experience.service';
 
 @Injectable()
 export class LikesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private experienceService: ExperienceService,
+  ) {}
 
   async toggleLike(userId: string, riddleId: string) {
     const existingLike = await this.prisma.like.findUnique({
@@ -21,6 +25,11 @@ export class LikesService {
       return { liked: false };
     }
 
+    const riddle = await this.prisma.riddles.findUnique({
+      where: { id: riddleId },
+      select: { author_id: true, content: true }
+    });
+
     await this.prisma.$transaction([
       this.prisma.like.create({
         data: { user_id: userId, riddle_id: riddleId },
@@ -30,6 +39,11 @@ export class LikesService {
         data: { likes_count: { increment: 1 } },
       }),
     ]);
+
+    if (riddle) {
+      await this.experienceService.awardXpForActivity(riddle.author_id, 'LIKE_RECEIVED', 5);
+    }
+
     return { liked: true };
   }
 }
