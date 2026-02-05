@@ -7,11 +7,11 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Response } from 'express';
-import { SessionService } from '../../sessions/session.service';
-import { AuthRequest } from './dto/auth.request.dto';
-import { IS_PUBLIC_KEY } from '../../utils/decorators/public.decorator';
-import { setAuthCookies } from '../../utils/setAuthCookies';
-import { AuthService } from './auth.service';
+import { SessionService } from '../../../sessions/session.service';
+import { AuthRequest } from '../dto/auth.request.dto';
+import { IS_PUBLIC_KEY } from '../../../utils/decorators/public.decorator';
+import { setAuthCookies } from '../../../utils/setAuthCookies';
+import { AuthService } from '../auth.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
