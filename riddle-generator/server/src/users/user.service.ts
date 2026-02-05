@@ -3,6 +3,7 @@ import { User, Follow } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/CreateUserDto';
 import { UpdateUserDto } from './dto/UpdateUserDto';
+import { UserStatsResponseDto } from './dto/user-stats.dto';
 
 @Injectable()
 export class UserService {
@@ -91,5 +92,48 @@ export class UserService {
       include: { following: true },
     });
     return follows.map(f => f.following);
+  }
+
+  async getUserStats(userId: string): Promise<UserStatsResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        name: true,
+        xp: true,
+        level: true,
+        riddles_solved: true,
+        rating: true,
+        _count: {
+          select: {
+            riddles: true,
+            followers: true,
+            following: true,
+            likes: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    return {
+      profile: {
+        name: user.name,
+        level: user.level,
+        xp: user.xp,
+      },
+      activity: {
+        solvedRiddles: user.riddles_solved,
+        createdRiddles: user._count.riddles,
+        totalLikes: user._count.likes,
+      },
+      social: {
+        followersCount: user._count.followers,
+        followingCount: user._count.following,
+      },
+      reputation: user.rating,
+    };
   }
 }

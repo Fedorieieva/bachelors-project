@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Param,
-  Get,
-  Put,
-  Delete,
-  ParseUUIDPipe,
-} from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Put, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { RiddlesService } from './riddles.service';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
@@ -22,24 +13,19 @@ export class RiddlesController {
 
   @ApiOperation({
     summary: 'Generate Riddle',
-    description: 'Trigger AI to generate a riddle based on a topic and specific settings.'
+    description: 'Trigger AI to generate a riddle based on a topic and specific settings.',
   })
   @ApiResponse({ status: 201, description: 'Riddle successfully generated.' })
   @ApiResponse({ status: 400, description: 'Invalid parameters or safety violation.' })
   @Public()
   @Post('generate')
-  async createGeneratedRiddle(
-    @Body() dto: RiddleDto,
-  ) {
+  async createGeneratedRiddle(@Body() dto: RiddleDto) {
     return this.riddlesService.generateRiddle(dto);
   }
 
   @Public()
   @Post('chat/:chatId/regenerate')
-  async regenerateRiddle(
-    @Param('chatId') chatId: string,
-    @Body() settings: RiddleSettingsDto,
-  ) {
+  async regenerateRiddle(@Param('chatId') chatId: string, @Body() settings: RiddleSettingsDto) {
     return this.riddlesService.regenerateLastRiddle(chatId, settings);
   }
 
@@ -52,7 +38,8 @@ export class RiddlesController {
 
   @ApiOperation({
     summary: 'Process Chat Message',
-    description: 'The main engine for playing. Handles guesses, requests for hints, or generating new content within an existing chat.'
+    description:
+      'The main engine for playing. Handles guesses, requests for hints, or generating new content within an existing chat.',
   })
   @ApiParam({ name: 'chatId', format: 'uuid', description: 'The active game session ID.' })
   @ApiResponse({ status: 200, description: 'Successfully processed message.' })
@@ -69,7 +56,8 @@ export class RiddlesController {
 
   @ApiOperation({
     summary: 'Reveal Answer',
-    description: 'Force reveal the answer to the current riddle and disable interactive mode for this session.'
+    description:
+      'Force reveal the answer to the current riddle and disable interactive mode for this session.',
   })
   @ApiResponse({ status: 200, description: 'Answer revealed.' })
   @Public()
@@ -83,16 +71,14 @@ export class RiddlesController {
 
   @Public()
   @Get('chat/:chatId/history')
-  async getChatHistory(
-    @Param('chatId') chatId: string,
-    @CurrentUser() user: PrismaModels.User
-  ) {
+  async getChatHistory(@Param('chatId') chatId: string, @CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.getChatHistory(chatId, user.id);
   }
 
   @ApiOperation({
     summary: 'Save to Collection',
-    description: 'Persistently store a generated riddle in the database. Only available for registered users.'
+    description:
+      'Persistently store a generated riddle in the database. Only available for registered users.',
   })
   @ApiResponse({ status: 201, description: 'Riddle saved to personal collection.' })
   @ApiResponse({ status: 403, description: 'Guests cannot save riddles.' })
@@ -105,10 +91,7 @@ export class RiddlesController {
   }
 
   @Put(':id/public')
-  async togglePublic(
-    @Param('id') riddleId: string,
-    @CurrentUser() user: PrismaModels.User
-  ) {
+  async togglePublic(@Param('id') riddleId: string, @CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.makeRiddlePublic(user.id, riddleId);
   }
 

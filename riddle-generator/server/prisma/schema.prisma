@@ -28,6 +28,11 @@ model User {
   banned_until      DateTime?
   last_violation_at DateTime?
 
+  xp             Int   @default(0)
+  level          Int   @default(1)
+  riddles_solved Int   @default(0)
+  rating         Float @default(0.0)
+
   sessions      Session[]
   riddles       Riddles[]
   saved_riddles SavedRiddles[]
@@ -36,6 +41,7 @@ model User {
   Chat          Chat[]
   followers     Follow[]       @relation("following")
   following     Follow[]       @relation("follower")
+  SolvedRiddle  SolvedRiddle[]
 
   @@map("users")
 }
@@ -92,6 +98,18 @@ model Riddles {
   likes    Like[]
 
   @@map("riddles")
+}
+
+model SolvedRiddle {
+  id      String @id @default(uuid())
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  content_preview String   @db.Text
+  xp_earned       Int
+  at              DateTime @default(now())
+
+  @@map("solved_riddles")
 }
 
 model SavedRiddles {

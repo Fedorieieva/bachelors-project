@@ -15,7 +15,7 @@ export interface RiddleMetadata {
 export class SaveRiddleDto {
   @ApiProperty({
     example: 'What has keys but no locks?',
-    description: 'The riddle text'
+    description: 'The riddle text',
   })
   @IsString()
   @IsNotEmpty()
@@ -23,7 +23,7 @@ export class SaveRiddleDto {
 
   @ApiProperty({
     example: 'A piano',
-    description: 'The correct answer'
+    description: 'The correct answer',
   })
   @IsString()
   @IsNotEmpty()
@@ -36,8 +36,8 @@ export class SaveRiddleDto {
       complexity: 2,
       language: 'english',
       type: 'classic',
-      style: 'neutral'
-    }
+      style: 'neutral',
+    },
   })
   @IsNotEmpty()
   prompt_context: Record<string, unknown>;

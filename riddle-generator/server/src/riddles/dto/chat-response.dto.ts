@@ -1,6 +1,5 @@
 import { RiddleMetadata } from './riddle-persistence.dto';
 
-
 export enum ChatResponseType {
   NEW_RIDDLE = 'NEW_RIDDLE',
   REFINE_RIDDLE = 'REFINE_RIDDLE',

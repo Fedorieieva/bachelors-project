@@ -15,6 +15,7 @@ import { AiRiddleResponse, EvaluationResult, RiddleIntentAnalysis } from './ai/a
 import { RiddleMetadata, SaveRiddleDto, ToggleSaveResponse } from './dto/riddle-persistence.dto';
 import { RiddleDto, RiddleSettingsDto, RiddleType } from './dto/riddle-settings.dto';
 import { ChatResponseDto, ChatResponseType } from './dto/chat-response.dto';
+import { ExperienceService } from '../experience/experience.service';
 
 @Injectable()
 export class RiddlesService {
@@ -27,6 +28,7 @@ export class RiddlesService {
     private readonly aiService: AiService,
     private readonly promptsService: PromptsService,
     private readonly prisma: PrismaService,
+    private readonly experienceService: ExperienceService,
   ) {}
 
   async generateRiddle(
@@ -321,6 +323,19 @@ export class RiddlesService {
 
       await this.saveMessage(chatId, 'user', userMessage);
       await this.saveMessage(chatId, 'model', JSON.stringify(hintObj));
+
+      if (hintObj.is_solved) {
+        const previewText = history[0]?.parts[0]?.text || 'Загадка з чату';
+        await this.experienceService.awardXpForSolving(authorId, previewText, 50);
+
+        await this.prisma.chat.update({
+          where: { id: chatId },
+          data: {
+            is_interactive: false,
+            current_riddle_answer: null,
+          },
+        });
+      }
 
       return {
         type: ChatResponseType.REFINE_RIDDLE,

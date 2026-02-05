@@ -182,7 +182,7 @@ export class AiService {
     history: Content[],
     userMessage: string,
     correctAnswer: string,
-  ): Promise<{ content: string }> {
+  ): Promise<AiHintResponse> {
     const hintPrompt = `
       Ти — ігровий помічник у вебзастосунку із загадками.
       ПРАВИЛЬНА ВІДПОВІДЬ (секретно): "${correctAnswer}"
@@ -194,17 +194,27 @@ export class AiService {
       3. ЖОРСТКЕ ПРАВИЛО: Не називай слово "${correctAnswer}" прямо, якщо користувач його ще не вгадав.
       4. Використовуй історію діалогу, щоб не повторювати однакові підказки.
 
-      Пиши тільки текст відповіді або підказки.
-  `;
+      ПОВЕРНИ ТІЛЬКИ JSON:
+      {
+        "content": "текст відповіді або підказки",
+        "is_solved": boolean
+      }
+    `;
 
     try {
       const chat = this.model.startChat({ history });
       const result = await chat.sendMessage(hintPrompt);
-      const text = result.response.text().trim();
-      return { content: text };
+      const text = result.response
+        .text()
+        .replace(/```json|```/g, '')
+        .trim();
+      return JSON.parse(text);
     } catch (error) {
       this.logger.error(`Hint Error: ${(error as Error).message}`);
-      return { content: 'Спробуй подумати ще раз, ти на правильному шляху!' };
+      return {
+        content: 'Спробуй подумати ще раз, ти на правильному шляху!',
+        is_solved: false,
+      };
     }
   }
 }

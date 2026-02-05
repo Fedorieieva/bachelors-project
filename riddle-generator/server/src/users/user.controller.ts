@@ -15,6 +15,7 @@ import { UpdateUserDto } from './dto/UpdateUserDto';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
 import { Follow, User } from '@prisma/client';
+import { Public } from '../utils/decorators/public.decorator';
 
 @ApiTags('Users')
 @Controller('users')
@@ -81,5 +82,16 @@ export class UserController {
   @ApiOperation({ summary: 'Following list' })
   async getFollowing(@Param('id', ParseUUIDPipe) id: string): Promise<User[]> {
     return this.userService.getFollowing(id);
+  }
+
+  @Get('profile/stats')
+  async getMyStats(@CurrentUser() user: PrismaModels.User) {
+    return this.userService.getUserStats(user.id);
+  }
+
+  @Public()
+  @Get(':id/stats')
+  async getUserStats(@Param('id', ParseUUIDPipe) userId: string) {
+    return this.userService.getUserStats(userId);
   }
 }

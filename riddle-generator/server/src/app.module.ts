@@ -17,6 +17,7 @@ import { AiModule } from './riddles/ai/ai.module';
 import { FeedModule } from './feed/feed.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
+import { ExperienceModule } from './experience/experience.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { CommentsModule } from './comments/comments.module';
     FeedModule,
     LikesModule,
     CommentsModule,
+    ExperienceModule,
   ],
   controllers: [AppController],
   providers: [
