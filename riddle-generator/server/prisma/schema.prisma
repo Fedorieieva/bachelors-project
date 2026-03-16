@@ -39,9 +39,10 @@ model User {
   comments      Comment[]
   likes         Like[]
   Chat          Chat[]
-  followers     Follow[]       @relation("following")
-  following     Follow[]       @relation("follower")
+  followers     Follow[]        @relation("following")
+  following     Follow[]        @relation("follower")
   SolvedRiddle  SolvedRiddle[]
+  RiddleAttempt RiddleAttempt[]
 
   @@map("users")
 }
@@ -94,8 +95,9 @@ model Riddles {
 
   saved_by SavedRiddles[]
 
-  comments Comment[]
-  likes    Like[]
+  comments      Comment[]
+  likes         Like[]
+  RiddleAttempt RiddleAttempt[]
 
   @@map("riddles")
 }
@@ -124,6 +126,20 @@ model SavedRiddles {
 
   @@unique([user_id, riddle_id])
   @@map("saved_riddles")
+}
+
+model RiddleAttempt {
+  id         String   @id @default(uuid())
+  user_id    String
+  riddle_id  String
+  attempts   Int      @default(0)
+  last_try   DateTime @default(now())
+  is_blocked Boolean  @default(false)
+
+  user   User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  riddle Riddles @relation(fields: [riddle_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, riddle_id])
 }
 
 model Chat {

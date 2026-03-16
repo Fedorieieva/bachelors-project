@@ -29,16 +29,13 @@ export class RiddlesService {
     private readonly promptsService: PromptsService,
     private readonly prisma: PrismaService,
     private readonly experienceService: ExperienceService,
-  ) {}
+  ) {
+  }
 
   async generateRiddle(
     dto: RiddleDto,
     aiAnalysis?: RiddleIntentAnalysis,
-  ): Promise<{
-    content: string;
-    answer: string;
-    prompt_context: RiddleMetadata;
-  }> {
+  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; }> {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
 
@@ -357,6 +354,101 @@ export class RiddlesService {
     };
   }
 
+  async solveChallenge(userId: string, riddleId: string, guess: string) {
+    const riddle = await this.prisma.riddles.findUnique({ where: { id: riddleId } });
+    if (!riddle) throw new NotFoundException('Загадка не знайдена');
+
+    let attempt = await this.prisma.riddleAttempt.findUnique({
+      where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
+    });
+
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    if (attempt?.is_blocked && attempt.last_try < oneHourAgo) {
+      attempt = await this.prisma.riddleAttempt.update({
+        where: { id: attempt.id },
+        data: { is_blocked: false, attempts: 0 },
+      });
+    }
+
+    if (attempt?.is_blocked) {
+      throw new ForbiddenException('Спроби вичерпано. Зачекайте годину або скористайтеся розблокуванням за XP.');
+    }
+
+    const result = await this.aiService.getContextualHint([], guess, riddle.answer);
+
+    if (result.is_solved) {
+      await this.experienceService.awardXpForSolving(userId, riddle.content, 20);
+      await this.prisma.riddleAttempt.upsert({
+        where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
+        update: { attempts: -1, is_blocked: false, last_try: now },
+        create: { user_id: userId, riddle_id: riddleId, attempts: -1, last_try: now },
+      });
+      return { success: true, message: 'Геніально! +20 XP', answer: riddle.answer };
+    } else {
+      const newAttempts = (attempt?.attempts || 0) + 1;
+      const isBlocked = newAttempts >= 3;
+
+      await this.prisma.riddleAttempt.upsert({
+        where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
+        update: { attempts: newAttempts, is_blocked: isBlocked, last_try: now },
+        create: { user_id: userId, riddle_id: riddleId, attempts: newAttempts, is_blocked: isBlocked, last_try: now },
+      });
+
+      return {
+        success: false,
+        message: isBlocked ? 'Спроби вичерпано!' : 'Не вгадали.',
+        remaining_attempts: 3 - newAttempts,
+        is_blocked: isBlocked
+      };
+    }
+  }
+
+  async buyExtraAttempt(userId: string, riddleId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.xp < 10) throw new BadRequestException('Недостатньо XP');
+
+    const attempt = await this.prisma.riddleAttempt.findUnique({
+      where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } }
+    });
+
+    if (!attempt || !attempt.is_blocked) throw new BadRequestException('Загадка не заблокована');
+
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { xp: { decrement: 10 } }
+      });
+
+      return tx.riddleAttempt.update({
+        where: { id: attempt.id },
+        data: { is_blocked: false, attempts: 2 }
+      });
+    });
+  }
+
+  async getHintForXp(userId: string, riddleId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.is_guest) {
+      throw new ForbiddenException('Тільки зареєстровані користувачі можуть зберігати загадки');
+    } else if (user.xp < 10) {
+      throw new BadRequestException('Недостатньо XP для підказки');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { xp: { decrement: 10 } },
+    });
+
+    const riddle = await this.prisma.riddles.findUnique({ where: { id: riddleId } });
+    if (!riddle) {
+      throw new NotFoundException('Загадку не знайдено');
+    }
+
+    return { hint: `Підказка: Перша літера "${riddle.answer[0]}"` };
+  }
+
   private async handleUserViolation(userId: string) {
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
@@ -429,7 +521,8 @@ export class RiddlesService {
           try {
             const parsed = JSON.parse(msg.content);
             textContent = parsed.content;
-          } catch (e) {}
+          } catch (e) {
+          }
         }
 
         return {

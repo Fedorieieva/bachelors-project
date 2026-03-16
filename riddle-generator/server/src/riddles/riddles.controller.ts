@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, Put, Delete, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Put, Delete, ParseUUIDPipe, NotFoundException } from '@nestjs/common';
 import { RiddlesService } from './riddles.service';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
@@ -6,10 +6,14 @@ import { RiddleDto, RiddleSettingsDto } from './dto/riddle-settings.dto';
 import { SaveRiddleDto } from './dto/riddle-persistence.dto';
 import { Public } from '../utils/decorators/public.decorator';
 import { ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('riddles')
 export class RiddlesController {
-  constructor(private readonly riddlesService: RiddlesService) {}
+  constructor(
+    private readonly riddlesService: RiddlesService,
+    private readonly prisma: PrismaService,
+    ) {}
 
   @ApiOperation({
     summary: 'Generate Riddle',
@@ -111,4 +115,35 @@ export class RiddlesController {
     await this.riddlesService.remove(id, user.id);
     return { message: 'Riddle deleted successfully' };
   }
+
+  @Post(':id/solve')
+  async solve(
+    @Param('id') id: string,
+    @Body('guess') guess: string,
+    @CurrentUser() user: PrismaModels.User,
+    ) {
+    return this.riddlesService.solveChallenge(user.id, id, guess);
+  }
+
+  @Post(':id/surrender')
+  async surrender(
+    @Param('id') id: string,
+    @CurrentUser() user: PrismaModels.User,
+  ) {
+    const riddle = await this.prisma.riddles.findUnique({ where: { id } });
+
+    if (!riddle) {
+      throw new NotFoundException('Riddle not found');
+    }
+
+    return { answer: riddle.answer };
+  }
+  @Post(':id/buy-attempt')
+  async buyAttempt(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: PrismaModels.User,
+  ) {
+    return this.riddlesService.buyExtraAttempt(user.id, id);
+  }
+
 }

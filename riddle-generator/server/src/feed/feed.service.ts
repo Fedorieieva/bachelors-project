@@ -7,34 +7,44 @@ import { Riddles } from '@prisma/client';
 export class FeedService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getPublicFeed(page: number, limit: number): Promise<FeedResponseDto<Riddles>> {
+  async getPublicFeed(userId: string, page: number, limit: number): Promise<FeedResponseDto<any>> {
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
       this.prisma.riddles.findMany({
         where: { is_public: true },
         include: {
-          author: {
-            select: { id: true, name: true, is_guest: true },
-          },
+          author: { select: { id: true, name: true, level: true } },
+          RiddleAttempt: { where: { user_id: userId } }
         },
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.riddles.count({
-        where: { is_public: true },
-      }),
+      this.prisma.riddles.count({ where: { is_public: true } }),
     ]);
 
+    const formattedItems = items.map(riddle => {
+      const attempt = riddle.RiddleAttempt[0];
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+      const isCurrentlyBlocked = attempt?.is_blocked && attempt.last_try > oneHourAgo;
+      const isSolved = attempt?.attempts === -1;
+
+      return {
+        ...riddle,
+        answer: isSolved ? riddle.answer : null,
+        is_solved: isSolved,
+        can_attempt: !isCurrentlyBlocked,
+        remaining_attempts: isSolved ? 0 : Math.max(0, 3 - (attempt?.attempts || 0)),
+        needs_unlock: isCurrentlyBlocked
+      };
+    });
+
     return {
-      items,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      items: formattedItems,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
 

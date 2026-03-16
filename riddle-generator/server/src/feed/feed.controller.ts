@@ -12,9 +12,11 @@ export class FeedController {
 
   @Public()
   @Get('public')
-  @Public()
-  async getPublicFeed(@Query() query: FeedPaginationDto): Promise<FeedResponseDto<Riddles>> {
-    return this.feedService.getPublicFeed(query.page, query.limit);
+  async getPublicFeed(
+    @CurrentUser() user: PrismaModels.User,
+    @Query() query: FeedPaginationDto
+  ): Promise<FeedResponseDto<Riddles>> {
+    return this.feedService.getPublicFeed(user?.id, query.page, query.limit);
   }
 
   @Get('saved')
