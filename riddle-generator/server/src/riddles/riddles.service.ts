@@ -64,6 +64,14 @@ export class RiddlesService {
            you MUST return exactly this JSON: {"content": "ERROR_OFF_TOPIC", "answer": "NONE"}.
         3. Do not break character. Do not provide information outside the riddle context.`;
 
+    mainPrompt += `\n\nCHAIN-OF-THOUGHT INSTRUCTION:
+    Before generating the final riddle, you must:
+    1. Analyze the chosen topic and identify its unique characteristics.
+    2. Think about how to describe these characteristics metaphorically or indirectly.
+    3. Ensure the answer is logical and directly follows from the clues provided.
+
+    You MUST provide your thought process in the "reasoning" field of the JSON.`;
+
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
       attempts++;
 
@@ -336,7 +344,7 @@ export class RiddlesService {
 
       return {
         type: ChatResponseType.REFINE_RIDDLE,
-        data: { content: hintObj.content },
+        data: { content: hintObj.content || 'На жаль, не вдалося згенерувати підказку.' },
       };
     }
 
@@ -546,6 +554,17 @@ export class RiddlesService {
     });
   }
 
+  async getOnlyRiddlesFromChat(chatId: string, userId: string) {
+    return this.prisma.message.findMany({
+      where: {
+        chat_id: chatId,
+        chat: { user_id: userId },
+        is_initial: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   private async saveMessage(chatId: string, role: string, content: string, isInitial = false) {
     try {
       this.logger.debug(
@@ -564,21 +583,32 @@ export class RiddlesService {
     }
   }
 
-  async saveToUserCollection(
-    userId: string,
-    riddleData: { content: string; answer: string; prompt_context: SaveRiddleDto },
-  ) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  async saveToUserCollection(userId: string, messageId: string) {
+    const message = await this.prisma.message.findFirst({
+      where: {
+        id: messageId,
+        chat: { user_id: userId },
+        role: 'model',
+        is_initial: true,
+      },
+    });
 
-    if (!user || user.is_guest) {
-      throw new ForbiddenException('Тільки зареєстровані користувачі можуть зберігати загадки');
+    if (!message) {
+      throw new NotFoundException('Загадку не знайдено у цьому повідомленні або доступ заборонено');
+    }
+
+    let riddleData;
+    try {
+      riddleData = JSON.parse(message.content);
+    } catch (e) {
+      throw new BadRequestException('Повідомлення не містить валідної структури загадки');
     }
 
     return this.prisma.riddles.create({
       data: {
         content: riddleData.content,
         answer: riddleData.answer,
-        prompt_context: riddleData.prompt_context as unknown as Prisma.InputJsonValue,
+        prompt_context: riddleData.prompt_context as any,
         author_id: userId,
         is_public: false,
       },

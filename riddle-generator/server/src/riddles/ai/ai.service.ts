@@ -77,7 +77,7 @@ export class AiService {
     } catch (error: unknown) {
       const status = (error as { status?: number }).status;
 
-      if (status === 404 || status === 403) {
+      if (status === 404 || status === 403 || status === 503 || status === 500) {
         this.logger.warn(
           `Модель ${this.modelCandidates[this.currentModelIndex]} недоступна (${status}). Перемикання...`,
         );
@@ -102,7 +102,9 @@ export class AiService {
       this.logger.error(
         `Gemini API Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
-      throw new InternalServerErrorException('Помилка генерації контенту ШІ');
+      throw new InternalServerErrorException(
+        'ШІ сервіс наразі перевантажений. Спробуйте змінити тему або зачекайте кілька секунд.',
+      );
     }
   }
 
@@ -113,12 +115,14 @@ export class AiService {
     Tasks:
     1. Detect "INAPPROPRIATE" content: Sexual acts, pornography, graphic gore, detailed physical torture, or extreme violence.
     2. Determine intent:
-       - "NEW": user wants a new riddle.
-       - "REFINE": user is asking a question, making a guess, or discussing the current riddle.
+       - "NEW": User explicitly asks for a new riddle (e.g., "give me another one", "new topic", "start again").
+       - "REFINE": User is making a guess (usually 1-3 words in some cases may be more), asking for a hint, or discussing the current riddle.
        - "OFF_TOPIC": user is asking for something unrelated (recipes, code, general facts).
     3. Extract Type (only for NEW): "classic", "math", "logic", or "danetki".
     4. Extract Style: (e.g., "cyberpunk", "sherlock holmes", "medieval fantasy").
     5. Extract Topic: What is the riddle about?
+
+    CRITICAL RULE: If the user provides a single word or a short phrase that could be an answer, it MUST be classified as "REFINE".
 
     User Message: "${message}"
 
@@ -182,20 +186,24 @@ export class AiService {
     history: Content[],
     userMessage: string,
     correctAnswer: string,
-  ): Promise<AiHintResponse> {
+  ): Promise<Partial<AiHintResponse>> {
     const hintPrompt = `
       Ти — ігровий помічник у вебзастосунку із загадками.
       ПРАВИЛЬНА ВІДПОВІДЬ (секретно): "${correctAnswer}"
       КОРИСТУВАЧ ПИШЕ: "${userMessage}"
 
       ЗАВДАННЯ:
-      1. Якщо користувач вгадав (відповідь близька за змістом), привітай його і підтверди розв'язок.
-      2. Якщо не вгадав, проаналізуй його помилку та дай тонку підказку, що наближає до цілі.
-      3. ЖОРСТКЕ ПРАВИЛО: Не називай слово "${correctAnswer}" прямо, якщо користувач його ще не вгадав.
-      4. Використовуй історію діалогу, щоб не повторювати однакові підказки.
+      1. Спочатку в полі "reasoning" проаналізуй повідомлення користувача: чи це синонім, чи це частина слова, чи це абсолютно хибна здогадка.
+      2. На основі аналізу виріши: підтвердити розв'язок (is_solved: true) або дати підказку.
+      3. Якщо користувач вгадав (відповідь близька за змістом, точно відповідє правильній відповіді загадки чи загалом має схожий сенс до правильної відпоаіді),
+         привітай його і підтверди розв'язок.
+      4. Якщо не вгадав, проаналізуй його помилку та дай тонку підказку, що наближає до цілі.
+      5. ЖОРСТКЕ ПРАВИЛО: Не називай слово "${correctAnswer}" прямо, якщо користувач його ще не вгадав.
+      6. Використовуй історію діалогу, щоб не повторювати однакові підказки.
 
       ПОВЕРНИ ТІЛЬКИ JSON:
       {
+      "reasoning": "твій покроковий аналіз здогадки користувача",
         "content": "текст відповіді або підказки",
         "is_solved": boolean
       }

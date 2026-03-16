@@ -75,8 +75,20 @@ export class RiddlesController {
 
   @Public()
   @Get('chat/:chatId/history')
-  async getChatHistory(@Param('chatId') chatId: string, @CurrentUser() user: PrismaModels.User) {
+  async getChatHistory(
+    @Param('chatId') chatId: string,
+    @CurrentUser() user: PrismaModels.User
+  ) {
     return this.riddlesService.getChatHistory(chatId, user.id);
+  }
+
+  @Public()
+  @Get('chat/:chatId/riddle-messages')
+  async getOnlyRiddlesFromChat(
+    @Param('chatId') chatId: string,
+    @CurrentUser() user: PrismaModels.User
+  ) {
+    return this.riddlesService.getOnlyRiddlesFromChat(chatId, user.id);
   }
 
   @ApiOperation({
@@ -88,10 +100,10 @@ export class RiddlesController {
   @ApiResponse({ status: 403, description: 'Guests cannot save riddles.' })
   @Post('save')
   async saveRiddle(
-    @Body() riddleData: { content: string; answer: string; prompt_context: SaveRiddleDto },
+    @Param('messageId', ParseUUIDPipe) messageId: string,
     @CurrentUser() user: PrismaModels.User,
   ) {
-    return this.riddlesService.saveToUserCollection(user.id, riddleData);
+    return this.riddlesService.saveToUserCollection(user.id, messageId);
   }
 
   @Put(':id/public')

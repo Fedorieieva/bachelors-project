@@ -1,6 +1,7 @@
 import { RiddleType } from '../dto/riddle-settings.dto';
 
 export interface AiRiddleResponse {
+  reasoning: string;
   content: string;
   answer: string;
 }
@@ -20,6 +21,7 @@ export interface EvaluationResult {
 }
 
 export interface AiHintResponse {
+  reasoning: string;
   content: string;
   is_solved: boolean;
 }
