@@ -18,6 +18,7 @@ import { FeedModule } from './feed/feed.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
 import { ExperienceModule } from './experience/experience.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { ExperienceModule } from './experience/experience.module';
     LikesModule,
     CommentsModule,
     ExperienceModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [

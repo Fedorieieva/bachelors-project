@@ -9,6 +9,8 @@ export class UserProfileStatsDto {
 
   @ApiProperty({ example: 2450 })
   xp: number;
+
+  avatar_url: string | null;
 }
 
 export class UserActivityStatsDto {

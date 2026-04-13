@@ -99,6 +99,7 @@ export class UserService {
       where: { id: userId },
       select: {
         name: true,
+        avatar_url: true,
         xp: true,
         level: true,
         riddles_solved: true,
@@ -121,6 +122,7 @@ export class UserService {
     return {
       profile: {
         name: user.name,
+        avatar_url: user.avatar_url,
         level: user.level,
         xp: user.xp,
       },

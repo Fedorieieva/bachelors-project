@@ -30,7 +30,15 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(loginDto);
-    setAuthCookies(res, { accessToken: result.token, refreshToken: result.refreshToken });
-    return { message: 'Login successful', expiresAt: result.expiresAt };
+    setAuthCookies(res, {
+      accessToken: result.token,
+      refreshToken: result.refreshToken
+    });
+
+    return {
+      message: 'Login successful',
+      user: result.user,
+      expiresAt: result.expiresAt,
+    };
   }
 }

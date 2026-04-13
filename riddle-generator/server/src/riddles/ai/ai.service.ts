@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, Content } from '@google/generative-ai';
 import { AiHintResponse, AiRiddleResponse, RiddleIntentAnalysis } from './ai-responses.dto';
-import { RiddleType } from '../dto/riddle-settings.dto';
+import { RiddleType } from '@prisma/client';
 
 @Injectable()
 export class AiService {
@@ -164,18 +164,25 @@ export class AiService {
   }
 
   async askGeminiChat(
-    history: any[],
+    history: Content[],
     newMessage: string,
+    language: string,
   ): Promise<AiHintResponse | AiRiddleResponse> {
-    try {
-      const chat = this.model.startChat({
-        history: history,
-      });
+    const chatPrompt = `
+      Ти — ігровий помічник у застосунку із загадками.
+      Спілкуйся з користувачем виключно мовою: ${language}.
+      Дай відповідь на наступне повідомлення: "${newMessage}"
 
-      const result = await chat.sendMessage(newMessage);
-      const text = result.response.text();
-      const cleanText = text.replace(/```json|```/g, '').trim();
-      return JSON.parse(cleanText);
+      ПОВЕРНИ ТІЛЬКИ JSON.
+    `;
+
+    const updatedHistory: Content[] = [
+      ...history,
+      { role: 'user', parts: [{ text: chatPrompt }] }
+    ];
+
+    try {
+      return this.askGemini<AiHintResponse | AiRiddleResponse>(updatedHistory);
     } catch (error) {
       this.logger.error(`Chat Error: ${error.message}`);
       throw new InternalServerErrorException('ШІ не зміг відповісти у чаті');
@@ -186,25 +193,28 @@ export class AiService {
     history: Content[],
     userMessage: string,
     correctAnswer: string,
+    language: string,
+    retries: number = 3,
   ): Promise<Partial<AiHintResponse>> {
     const hintPrompt = `
-      Ти — ігровий помічник у вебзастосунку із загадками.
-      ПРАВИЛЬНА ВІДПОВІДЬ (секретно): "${correctAnswer}"
-      КОРИСТУВАЧ ПИШЕ: "${userMessage}"
+    Ти — ігровий помічник у вебзастосунку із загадками.
+    МОВА СПІЛКУВАННЯ: ${language} (відповідай тільки цією мовою).
+    ПРАВИЛЬНА ВІДПОВІДЬ (секретно): "${correctAnswer}"
+    КОРИСТУВАЧ ПИШЕ: "${userMessage}"
 
       ЗАВДАННЯ:
       1. Спочатку в полі "reasoning" проаналізуй повідомлення користувача: чи це синонім, чи це частина слова, чи це абсолютно хибна здогадка.
       2. На основі аналізу виріши: підтвердити розв'язок (is_solved: true) або дати підказку.
       3. Якщо користувач вгадав (відповідь близька за змістом, точно відповідє правильній відповіді загадки чи загалом має схожий сенс до правильної відпоаіді),
-         привітай його і підтверди розв'язок.
-      4. Якщо не вгадав, проаналізуй його помилку та дай тонку підказку, що наближає до цілі.
+         привітай його мовою ${language} і підтверди розв'язок -> is_solved: true.
+      4. Якщо не вгадав, проаналізуй його помилку та дай тонку підказку мовою ${language}, що наближає до цілі.
       5. ЖОРСТКЕ ПРАВИЛО: Не називай слово "${correctAnswer}" прямо, якщо користувач його ще не вгадав.
       6. Використовуй історію діалогу, щоб не повторювати однакові підказки.
 
       ПОВЕРНИ ТІЛЬКИ JSON:
       {
-      "reasoning": "твій покроковий аналіз здогадки користувача",
-        "content": "текст відповіді або підказки",
+        "reasoning": "твій покроковий аналіз здогадки користувача" ("string"),
+        "content": "текст відповіді або підказки" ("string"),
         "is_solved": boolean
       }
     `;
@@ -212,15 +222,30 @@ export class AiService {
     try {
       const chat = this.model.startChat({ history });
       const result = await chat.sendMessage(hintPrompt);
-      const text = result.response
-        .text()
-        .replace(/```json|```/g, '')
-        .trim();
-      return JSON.parse(text);
-    } catch (error) {
-      this.logger.error(`Hint Error: ${(error as Error).message}`);
+      const text = result.response.text();
+      const cleanText = text.replace(/```json|```/g, '').trim();
+      return JSON.parse(cleanText);
+    } catch (error: any) {
+      const status = error?.status;
+
+      if (status === 429 || status === 500 || status === 503) {
+        this.logger.warn(`Модель ${this.modelCandidates[this.currentModelIndex]} помилка ${status}.`);
+
+        if (this.switchToNextModel()) {
+          this.logger.log(`Перемикаємося на наступну модель...`);
+          return this.getContextualHint(history, userMessage, correctAnswer, language, retries);
+        }
+
+        if (status === 429 && retries > 0) {
+          this.logger.warn(`Квоту вичерпано всюди. Очікування 5с...`);
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          return this.getContextualHint(history, userMessage, correctAnswer, language, retries - 1);
+        }
+      }
+
+      this.logger.error(`Hint Error: ${error.message}`);
       return {
-        content: 'Спробуй подумати ще раз, ти на правильному шляху!',
+        content: 'Ой! ШІ трохи втомився. Спробуй ще раз через мить або перевір свою здогадку пізніше.',
         is_solved: false,
       };
     }

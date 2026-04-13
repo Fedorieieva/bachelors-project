@@ -3,7 +3,6 @@ import { RiddlesService } from './riddles.service';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
 import { RiddleDto, RiddleSettingsDto } from './dto/riddle-settings.dto';
-import { SaveRiddleDto } from './dto/riddle-persistence.dto';
 import { Public } from '../utils/decorators/public.decorator';
 import { ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,11 +32,12 @@ export class RiddlesController {
     return this.riddlesService.regenerateLastRiddle(chatId, settings);
   }
 
-  @ApiOperation({ summary: 'Initialize a new game chat session' })
-  @Public()
   @Post('chat/init')
-  async initializeChat(@CurrentUser() user: PrismaModels.User) {
-    return this.riddlesService.createChat(user.id);
+  async initializeChat(
+    @CurrentUser() user: PrismaModels.User,
+    @Body() settings: RiddleSettingsDto,
+  ) {
+    return this.riddlesService.createChat(user.id, settings);
   }
 
   @ApiOperation({
@@ -52,10 +52,10 @@ export class RiddlesController {
   @Post('chat/:chatId')
   async handleChat(
     @Param('chatId') chatId: string,
-    @Body() dto: RiddleDto,
+    @Body('topic') topic: string,
     @CurrentUser() user: PrismaModels.User,
   ) {
-    return this.riddlesService.processChatMessage(chatId, dto.topic, dto.settings, user.id);
+    return this.riddlesService.processChatMessage(chatId, topic, user.id);
   }
 
   @ApiOperation({
@@ -94,11 +94,11 @@ export class RiddlesController {
   @ApiOperation({
     summary: 'Save to Collection',
     description:
-      'Persistently store a generated riddle in the database. Only available for registered users.',
+      'Persistently storage a generated riddle in the database. Only available for registered users.',
   })
   @ApiResponse({ status: 201, description: 'Riddle saved to personal collection.' })
   @ApiResponse({ status: 403, description: 'Guests cannot save riddles.' })
-  @Post('save')
+  @Post('save/:messageId')
   async saveRiddle(
     @Param('messageId', ParseUUIDPipe) messageId: string,
     @CurrentUser() user: PrismaModels.User,
@@ -150,6 +150,7 @@ export class RiddlesController {
 
     return { answer: riddle.answer };
   }
+
   @Post(':id/buy-attempt')
   async buyAttempt(
     @Param('id', ParseUUIDPipe) id: string,
@@ -158,4 +159,32 @@ export class RiddlesController {
     return this.riddlesService.buyExtraAttempt(user.id, id);
   }
 
+  @Get(':id/hint-xp')
+  async getHint(@Param('id') id: string, @CurrentUser() user: PrismaModels.User) {
+    return this.riddlesService.getHintForXp(user.id, id);
+  }
+
+  @Get('chats')
+  async getUserChats(@CurrentUser() user: PrismaModels.User) {
+    const chats = await this.prisma.chat.findMany({
+      where: { user_id: user.id },
+      include: {
+        messages: {
+          where: { role: 'user' },
+          orderBy: { createdAt: 'asc' },
+          take: 1,
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return chats.map(chat => {
+      const firstMessage = chat.messages[0]?.content || 'Нова загадка';
+      return {
+        id: chat.id,
+        title: firstMessage,
+        createdAt: chat.createdAt,
+      };
+    });
+  }
 }

@@ -11,13 +11,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-export enum RiddleType {
-  DANETKI = 'danetki',
-  CLASSIC = 'classic',
-  LOGIC = 'logic',
-  MATH = 'math',
-}
+import { RiddleType } from '@prisma/client';
 
 export class RiddleSettingsDto {
   @ApiPropertyOptional({

@@ -19,6 +19,7 @@ model User {
   email                String   @unique @db.Text
   password             String?  @default("") @db.Text
   name                 String?  @default("") @db.Text
+  avatar_url           String?  @db.Text
   is_guest             Boolean  @default(false)
   onboarding_completed Boolean? @default(false)
   created_at           DateTime @default(now()) @map("created_at") @db.Timestamp(6)
@@ -75,11 +76,21 @@ model Session {
   @@map("sessions")
 }
 
+enum RiddleType {
+  DANETKI
+  CLASSIC
+  LOGIC
+  MATH
+}
+
 model Riddles {
   id             String @id @default(uuid())
   content        String @db.Text
   answer         String @db.Text
   prompt_context Json?
+
+  complexity Int        @default(1)
+  type       RiddleType @default(CLASSIC)
 
   is_public   Boolean @default(false)
   is_verified Boolean @default(false)
@@ -143,13 +154,19 @@ model RiddleAttempt {
 }
 
 model Chat {
-  id                    String    @id @default(uuid())
-  user_id               String    @map("user_id")
-  user                  User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  messages              Message[]
-  is_interactive        Boolean   @default(false)
-  current_riddle_answer String?   @db.Text
-  createdAt             DateTime  @default(now())
+  id      String @id @default(uuid())
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  is_interactive        Boolean @default(false)
+  current_riddle_answer String? @db.Text
+
+  complexity Int        @default(1)
+  type       RiddleType @default(LOGIC)
+  language   String     @default("ukrainian")
+
+  messages  Message[]
+  createdAt DateTime  @default(now())
 
   @@map("chats")
 }

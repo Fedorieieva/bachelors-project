@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ExperienceService {
+  private readonly XP_PER_LEVEL = 500;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async awardXpForSolving(userId: string, content: string, amount: number) {
@@ -43,12 +45,16 @@ export class ExperienceService {
       },
     });
 
-    const calculatedLevel = Math.floor(user.xp / 500) + 1;
+    if (user.xp >= this.XP_PER_LEVEL) {
+      const levelsGained = Math.floor(user.xp / this.XP_PER_LEVEL);
+      const remainingXp = user.xp % this.XP_PER_LEVEL;
 
-    if (calculatedLevel > user.level) {
       await tx.user.update({
         where: { id: userId },
-        data: { level: calculatedLevel },
+        data: {
+          level: { increment: levelsGained },
+          xp: remainingXp,
+        },
       });
     }
   }

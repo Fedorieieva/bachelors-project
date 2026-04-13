@@ -16,16 +16,24 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     const { email, password, name } = registerDto;
+
     const existingUser = await this.userService.findByEmail(email);
     if (existingUser) {
       throw new HttpException('Email already in use', HttpStatus.CONFLICT);
     }
 
     const hashedPassword = await bcrypt.hash(password as string, 10);
-    const createUserDto: CreateUserDto = { email, password: hashedPassword, name };
+
+    const createUserDto: CreateUserDto = {
+      email,
+      password: hashedPassword,
+      name,
+    };
+
     const user = await this.userService.createUserOnly(createUserDto);
 
     const session = await this.sessionService.createForUser(user);
+
     return {
       message: 'User registered successfully',
       user,
@@ -37,12 +45,13 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
+
     const user = await this.userService.findByEmail(email);
     if (!user) {
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     }
 
-    if (user.is_guest || user.password === null) {
+    if (user.is_guest || !user.password) {
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     }
 
@@ -56,6 +65,7 @@ export class AuthService {
 
     return {
       message: 'Login successful',
+      user,
       token: session.token,
       refreshToken: session.refresh_token,
       expiresAt: session.expires_at,
@@ -65,15 +75,18 @@ export class AuthService {
   async createAnonymousUser() {
     const tempId = uuidv4();
 
-    const user = await this.userService.createUserOnly({
+    const createGuestDto: CreateUserDto = {
       email: `guest_${tempId}@internal.app`,
       name: 'Гість',
       is_guest: true,
       password: null,
       onboarding_completed: false,
-    } as any);
+    };
+
+    const user = await this.userService.createUserOnly(createGuestDto);
 
     const session = await this.sessionService.createForUser(user);
+
     return {
       user,
       token: session.token,

@@ -1,4 +1,5 @@
-import { RiddleType } from '../dto/riddle-settings.dto';
+import { RiddleType } from '@prisma/client';
+
 
 export interface AiRiddleResponse {
   reasoning: string;

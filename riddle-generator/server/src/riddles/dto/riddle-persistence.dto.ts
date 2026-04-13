@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty } from 'class-validator';
-import { RiddleType } from './riddle-settings.dto';
+import { RiddleType } from '@prisma/client';
 import { ApiProperty } from '@nestjs/swagger';
 
 export interface RiddleMetadata {

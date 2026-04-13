@@ -12,13 +12,14 @@ async function bootstrap() {
     bodyParser: false,
   });
   const logger = new Logger('Bootstrap');
+  app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.use(express.json());
 
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') ?? [
       'http://localhost:5173',
-      'http://localhost:8000',
+      'http://localhost:3000',
     ],
     credentials: true,
   });

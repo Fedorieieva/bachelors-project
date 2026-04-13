@@ -9,8 +9,9 @@ export enum ChatResponseType {
 export interface ChatResponseDto {
   type: ChatResponseType;
   data: {
-    content: string;
+    content?: string;
     answer?: string;
     prompt_context?: RiddleMetadata;
+    xp_earned?: number;
   };
 }

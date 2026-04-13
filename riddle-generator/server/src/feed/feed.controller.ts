@@ -3,8 +3,7 @@ import { Public } from '../utils/decorators/public.decorator';
 import { FeedService } from './feed.service';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
-import { FeedPaginationDto, FeedResponseDto } from './feed.dto';
-import { Riddles } from '@prisma/client';
+import { FeedPaginationDto, FeedResponseDto, FeedRiddleItem } from './feed.dto';
 
 @Controller('feed')
 export class FeedController {
@@ -13,9 +12,9 @@ export class FeedController {
   @Public()
   @Get('public')
   async getPublicFeed(
-    @CurrentUser() user: PrismaModels.User,
+    @CurrentUser() user: PrismaModels.User | undefined,
     @Query() query: FeedPaginationDto
-  ): Promise<FeedResponseDto<Riddles>> {
+  ): Promise<FeedResponseDto<FeedRiddleItem>> {
     return this.feedService.getPublicFeed(user?.id, query.page, query.limit);
   }
 
@@ -23,23 +22,31 @@ export class FeedController {
   async getSaved(
     @CurrentUser() user: PrismaModels.User,
     @Query() query: FeedPaginationDto,
-  ): Promise<FeedResponseDto<Riddles>> {
-    return this.feedService.getSavedFeed(user.id, query.page, query.limit);
+  ): Promise<FeedResponseDto<FeedRiddleItem>> {
+    return this.feedService.getSavedOtherFeed(user.id, query.page, query.limit);
   }
 
-  @Get('my')
-  async getMyRiddles(
+  @Get('my-public')
+  async getMyPublicRiddles(
     @CurrentUser() user: PrismaModels.User,
     @Query() query: FeedPaginationDto,
-  ): Promise<FeedResponseDto<Riddles>> {
-    return this.feedService.getUserFeed(user.id, query.page, query.limit);
+  ): Promise<FeedResponseDto<FeedRiddleItem>> {
+    return this.feedService.getMyPublicFeed(user.id, query.page, query.limit);
+  }
+
+  @Get('my-private')
+  async getMyPrivateRiddles(
+    @CurrentUser() user: PrismaModels.User,
+    @Query() query: FeedPaginationDto,
+  ): Promise<FeedResponseDto<FeedRiddleItem>> {
+    return this.feedService.getMyPrivateFeed(user.id, query.page, query.limit);
   }
 
   @Get('following')
   async getFollowingFeed(
     @CurrentUser() user: PrismaModels.User,
     @Query() query: FeedPaginationDto,
-  ): Promise<FeedResponseDto<Riddles>> {
+  ): Promise<FeedResponseDto<FeedRiddleItem>> {
     return this.feedService.getFollowingFeed(user.id, query.page, query.limit);
   }
 }

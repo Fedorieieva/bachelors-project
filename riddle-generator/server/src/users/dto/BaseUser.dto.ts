@@ -9,7 +9,7 @@ export class BaseUserDto {
   @ApiProperty({ example: 'securePassword123', required: false, description: 'User password' })
   @IsOptional()
   @MinLength(6)
-  password?: string;
+  password?: string | null;
 
   @ApiProperty({ example: 'John Doe', required: false, description: 'User name' })
   @IsOptional()

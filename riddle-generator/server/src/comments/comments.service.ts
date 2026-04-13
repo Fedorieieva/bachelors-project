@@ -54,7 +54,7 @@ export class CommentsService {
         orderBy: { created_at: 'desc' },
         include: {
           user: {
-            select: { id: true, name: true },
+            select: { id: true, name: true, avatar_url: true },
           },
         },
       }),

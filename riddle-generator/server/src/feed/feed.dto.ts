@@ -27,3 +27,27 @@ export class FeedResponseDto<T> {
   items: T[];
   meta: FeedMetaDto;
 }
+
+export interface FeedRiddleItem {
+  id: string;
+  content: string;
+  answer: string | null;
+  complexity: number;
+  type: string;
+  is_public: boolean;
+  created_at: Date;
+  author: {
+    id: string;
+    name: string | null;
+    level: number;
+    avatar_url: string | null;
+  };
+  is_solved: boolean;
+  can_attempt: boolean;
+  remaining_attempts: number;
+  needs_unlock: boolean;
+  is_liked: boolean;
+  is_saved: boolean;
+  likes_count: number;
+  comments_count: number;
+}
