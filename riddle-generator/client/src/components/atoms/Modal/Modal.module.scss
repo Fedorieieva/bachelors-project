@@ -1,0 +1,93 @@
+@use "../../../styles/abstracts/variables" as *;
+@use "../../../styles/abstracts/mixins" as *;
+
+@property --glass-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: -45deg;
+}
+
+@keyframes glass-spin {
+  from { --glass-angle: -45deg; }
+  to   { --glass-angle: 135deg; }
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba($dark-blue, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 2;
+}
+
+.contentWrapper {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+  padding: 20px;
+}
+
+.content {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  max-width: 650px;
+  min-height: 200px;
+  background-color: $bg-transp-glass-auth-form;
+  border-radius: $border-radius-secondary;
+  border: 1px solid rgba($white, 0.05);
+  @include glass-border-spin($border-width: 1px, $opacity: 0.4, $infinite: false);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+
+  padding: 0;
+
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+
+  &::after {
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &:hover:not(:disabled)::after,
+  &:hover::after {
+    opacity: 1;
+    animation: glass-spin 5s cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 20px 0 0;
+  width: 100%;
+}
+
+.closeBtn {
+  padding: 0 !important;
+  cursor: pointer;
+}
+
+.body {
+  width: 100%;
+  padding: 0 20px 35px 20px;
+
+  @include tablet {
+    padding: 0 40px 40px 40px;
+  }
+}
+
+.titleWrapper {
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 32px;
+  width: 100%;
+}

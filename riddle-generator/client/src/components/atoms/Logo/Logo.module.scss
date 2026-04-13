@@ -1,0 +1,57 @@
+@use "../../../styles/abstracts/variables" as *;
+@import "../../../styles/abstracts/mixins";
+
+$md-width: 50px;
+$md-height: 57px;
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.iconWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+  }
+}
+
+.sm {
+  width: 32px;
+  height: 36px;
+}
+
+.md {
+  width: $md-width;
+  height: $md-height;
+}
+
+.lg {
+  width: 75px;
+  height: 85px;
+}
+
+.logoText {
+  color: $white;
+  font-family: $font-main;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  margin: 0;
+  white-space: nowrap;
+
+  .sm + & { font-size: 16px; }
+  .lg + & { font-size: 26px; }
+}

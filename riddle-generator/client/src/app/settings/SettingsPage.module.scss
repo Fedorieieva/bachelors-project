@@ -1,0 +1,91 @@
+@use "../../styles/abstracts/variables" as *;
+@use "../../styles/abstracts/mixins" as *;
+
+.page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+  @include glass-panel(15px, $bg-transp-glass-auth-form, rgba($white, 0.1));
+  border-radius: $border-radius-secondary;
+  @include shadow-violet-glow-soft;
+}
+
+.title {
+  margin-bottom: 40px;
+  text-align: center;
+  background: $gradient-primary;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.saveBtn {
+  margin-top: 10px;
+  max-width: 100%;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid rgba($white, 0.1);
+  margin: 40px 0;
+  width: 100%;
+}
+
+.dangerZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  border-radius: $border-radius-primary;
+  background: rgba($error, 0.03);
+  border: 1px dashed rgba($error, 0.2);
+}
+
+.dangerTitle {
+  color: $error !important;
+  margin-bottom: 8px;
+}
+
+.deleteBtn {
+  color: rgba($error, 0.8) !important;
+  border-color: rgba($error, 0.2) !important;
+  min-width: 100% !important;
+
+  &:hover {
+    background: rgba($error, 0.1) !important;
+    color: $error !important;
+    border-color: $error !important;
+    @include glow($error, 0.3);
+  }
+}
+
+@include respond-to('xs') {
+  .container {
+    padding: 24px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+}

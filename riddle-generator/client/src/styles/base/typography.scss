@@ -1,0 +1,72 @@
+@use "../abstracts/variables";
+
+.h1 {
+  font-family: variables.$font-second;
+  font-weight: 600;
+  font-size: 36px;
+  line-height: 1.2;
+  color: variables.$white;
+}
+
+.h2 {
+  font-family: variables.$font-second;
+  font-weight: 500;
+  font-size: 32px;
+  color: variables.$white;
+}
+
+.h3 {
+  font-family: variables.$font-second;
+  font-weight: 500;
+  font-size: 24px;
+  color: variables.$white;
+  text-align: center;
+}
+
+.body {
+  font-family: variables.$font-main;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.5;
+  color: variables.$white;
+}
+
+.btn-text {
+  font-family: variables.$font-main;
+  font-weight: 600;
+  font-size: 20px;
+  color: variables.$white;
+}
+
+.caption {
+  font-family: variables.$font-main;
+  font-weight: 400;
+  font-size: 16px;
+  color: variables.$white;
+
+  &--placeholder {
+    color: variables.$white-2;
+  }
+}
+
+.input-secondary {
+  font-family: variables.$font-second;
+  font-weight: 400;
+  font-size: 20px;
+  color: variables.$white-2;
+
+  &::placeholder {
+    color: variables.$white-2;
+  }
+}
+
+.details {
+  font-family: variables.$font-main;
+  font-size: 14px;
+  font-weight: 300;
+  color: variables.$white;
+
+  &--error {
+    color: variables.$error;
+  }
+}

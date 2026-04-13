@@ -1,0 +1,38 @@
+@use "../styles/abstracts/variables" as *;
+
+.layoutWrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $dark-blue;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.contentWrapper {
+  flex-grow: 1;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  padding-top: 80px;
+}
+
+.mobileTopBar {
+  display: flex;
+  align-items: center;
+  padding: 16px 0;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+.burgerButton {
+  padding: 8px !important;
+  min-width: auto !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,138 @@
+@use "../../../styles/abstracts/variables" as *;
+@import "../../../styles/abstracts/mixins";
+
+$block-width: 650px;
+$block-height: 700px;
+$overlap-desktop: 100px;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  background-color: $dark-blue;
+  overflow-x: hidden;
+  position: relative;
+}
+
+.logo {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 3;
+
+  @media (max-width: $md) {
+    position: static;
+    align-self: flex-start;
+  }
+
+  @media (max-width: $md) {
+    margin: 24px;
+  }
+}
+
+.contentWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex-grow: 1;
+}
+
+.mainContent {
+  width: 1px;
+  min-height: 80vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 1199px) and (min-width: $md) {
+    width: 100%;
+    max-width: 520px;
+    height: $block-height;
+  }
+
+  @media (max-width: $md) {
+    width: 100%;
+    height: auto;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+}
+
+.motionBlock {
+  position: absolute;
+  width: $block-width;
+  height: $block-height;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  will-change: transform, z-index;
+
+  @media (max-width: 1199px) and (min-width: $md) {
+    transform: none !important;
+    width: 100%;
+  }
+
+  @media (max-width: $md) {
+    width: 100%;
+    height: auto;
+    transform: none !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+  }
+}
+
+.formSide {
+  z-index: 2;
+
+  @media (max-width: 1199px) and (min-width: $md) {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+  }
+
+  @media (max-width: $md) {
+    position: relative;
+    z-index: 20;
+    width: 100%;
+    max-width: 480px;
+  }
+}
+
+.visualSide {
+  z-index: 1;
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  @media (max-width: 1199px) and (min-width: $md) {
+    left: calc(50% - #{$block-width} - 20px) !important;
+    pointer-events: none;
+  }
+
+  @media (max-width: $md) {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 10;
+    pointer-events: none;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+  }
+}

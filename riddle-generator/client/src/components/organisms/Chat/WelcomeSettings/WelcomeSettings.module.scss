@@ -1,0 +1,150 @@
+@use "../../../../styles/abstracts/variables" as *;
+@use "../../../../styles/abstracts/mixins" as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 700px;
+  margin: auto;
+  padding: 60px 24px;
+}
+
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  margin-top: 32px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.label {
+  margin-bottom: 16px;
+  color: rgba($white, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 500;
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  width: 100%;
+
+  @include respond-to('md') {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 40px;
+
+  @include respond-to('md') {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+}
+
+.complexityRow {
+  display: flex;
+  gap: 8px;
+}
+
+.levelDot {
+  width: 36px;
+  height: 8px;
+  background: rgba($white, 0.1);
+  border-radius: $border-radius-primary;
+  border: none;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.active {
+    background: $pink;
+    @include glow($pink, 0.6);
+    transform: scaleY(1.2);
+  }
+}
+
+.gameToggle {
+  width: 54px;
+  height: 54px;
+  border-radius: 16px !important;
+  position: relative; // Для позиціонування закреслення
+
+  // Використовуємо твій міксін для ефекту скла
+  @include glass-panel(12px, rgba($white, 0.03), rgba($white, 0.1));
+
+  // Анімація рамки, як на кнопках
+  @include glass-border-spin(1px, 0.5, -45deg, 2s, false);
+
+  .icon {
+    width: 28px;
+    height: 28px;
+    stroke: rgba($white, 0.3); // Білий, приглушений, коли не активний
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2; // Іконка під лінією закреслення
+  }
+
+  // --- Створення лінії закреслення (коли не активний) ---
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 15%; // Трохи відступаємо від країв
+    width: 70%;
+    height: 2px;
+    background: rgba($white, 0.5); // Біла лінія
+    border-radius: 2px;
+    // Нахиляємо лінію під кутом
+    transform: translateY(-50%) rotate(-45deg);
+    transition: all 0.3s ease;
+    z-index: 3; // Лінія поверх іконки
+    opacity: 1;
+    visibility: visible;
+  }
+
+  // --- Стан, коли Game Mode АКТИВНИЙ ---
+  &.active {
+    background: rgba($violet, 0.1) !important; // Фіолетовий фон скла
+    border-color: rgba($violet, 0.3) !important; // Фіолетова рамка
+
+    .icon {
+      stroke: $violet; // Іконка стає фіолетовою
+      // Додаємо фіолетовий неоновий drop-shadow
+      filter: drop-shadow(0 0 5px rgba($violet, 0.7));
+    }
+
+    // Ховаємо лінію закреслення, коли мод активний
+    &::after {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-50%) rotate(0deg) scaleX(0); // Красива анімація зникнення
+    }
+  }
+
+  // Ховер-ефект
+  &:hover:not(.active) {
+    background: rgba($white, 0.08) !important;
+    .icon {
+      stroke: $white;
+    }
+    &::after {
+      background: $white;
+    }
+  }
+}

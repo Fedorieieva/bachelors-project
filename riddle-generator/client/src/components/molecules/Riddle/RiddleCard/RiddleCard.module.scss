@@ -1,0 +1,92 @@
+@use "../../../../styles/abstracts/variables" as *;
+@use "../../../../styles/abstracts/mixins" as *;
+
+.card {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  position: relative;
+  overflow: visible;
+
+  @include respond-to('md') {
+    max-width: 625px;
+    padding: 0;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 19px;
+
+  @media (max-width: $sm) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.badgeContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  @media (max-width: $xs) {
+    flex-wrap: wrap;
+  }
+}
+
+.riddleBody {
+  margin-bottom: 15px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.icon {
+  stroke: $white-2;
+  fill: transparent;
+  transition: all 0.2s ease;
+
+  &.active {
+    &.heart {
+      stroke: $pink;
+      fill: $pink;
+      filter: drop-shadow(0 0 5px rgba($pink, 0.5));
+    }
+
+    &.save {
+      stroke: $violet;
+      fill: $violet;
+      filter: drop-shadow(0 0 5px rgba($violet, 0.5));
+    }
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  &Container {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+}
+
+.puzzle {
+  stroke: $pink;
+  transition: stroke 0.2s ease, filter 0.2s ease;
+
+  &:hover {
+    @include drop-shadow-pink-glow;
+  }
+}

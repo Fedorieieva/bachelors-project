@@ -1,0 +1,58 @@
+@use "../abstracts/variables";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: variables.$blue-muted variables.$dark-blue;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  background-color: variables.$dark-blue;
+  color: variables.$white;
+  font-family: variables.$font-main;
+}
+
+input, textarea, button {
+  font-family: inherit;
+  font-size: 16px;
+  background: none;
+  border: none;
+  color: inherit;
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: variables.$dark-blue;
+}
+
+::-webkit-scrollbar-thumb {
+  background: variables.$blue-muted;
+  border-radius: 10px;
+  border: 2px solid variables.$dark-blue;
+
+  &:hover {
+    background: variables.$violet;
+  }
+}

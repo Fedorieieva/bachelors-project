@@ -1,0 +1,12 @@
+@use "../../../styles/base/typography" as *;
+
+.h1 { @extend .h1; }
+.h2 { @extend .h2; }
+.h3 { @extend .h3; }
+.body { @extend .body; }
+.btnPrimary { @extend .btn-text; }
+.caption { @extend .caption; }
+.captionPlaceholder { @extend .caption--placeholder; }
+.inputSecondary { @extend .input-secondary; }
+.details { @extend .details; }
+.detailsError { @extend .details--error; }

@@ -1,0 +1,45 @@
+@use "../../../styles/abstracts/variables" as *;
+
+.container {
+  padding: 15px 0;
+  border-top: 1px solid rgba($white, 0.05);
+  background: rgba($dark-blue, 0.2);
+  border-radius: 0 0 $border-radius-primary $border-radius-primary;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 12px;
+
+  @media (min-width: $sm) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
+  gap: 4px;
+
+  &::-webkit-scrollbar {
+    width: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba($violet, 0.2);
+    border-radius: 10px;
+  }
+}
+
+.loading, .empty {
+  text-align: center;
+  padding: 20px;
+  color: rgba($white-2, 0.5);
+}

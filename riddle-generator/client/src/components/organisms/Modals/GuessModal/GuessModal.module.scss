@@ -1,0 +1,26 @@
+@use "../../../../styles/abstracts/variables" as *;
+@use "../../../../styles/abstracts/mixins" as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 42px;
+  padding: 10px 0;
+  width: 100%;
+}
+
+:global(.h2) {
+  margin-bottom: 32px;
+
+  @include respond-to('md') {
+    margin-bottom: 48px;
+  }
+}
+
+.buttonWrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  width: 100%;
+}

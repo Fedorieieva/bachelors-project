@@ -1,0 +1,100 @@
+@use "../../../styles/abstracts/variables" as *;
+@import "../../../styles/abstracts/mixins";
+
+.authCard {
+  width: 100%;
+  max-width: 650px;
+  height: auto;
+  min-height: 530px;
+  background: $bg-transp-glass;
+  backdrop-filter: blur(25px);
+  border-radius: 40px;
+
+  padding: 48px 98px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+
+  @include glass-border-spin($border-width: 1px, $opacity: 0.4);
+
+  @media (max-width: $lg) {
+    padding: 40px 60px;
+  }
+
+  @media (max-width: $md) {
+    padding: 32px 24px;
+    border-radius: 32px;
+    min-height: auto;
+  }
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 60px;
+  width: 100%;
+
+  @media (max-width: $md) {
+    margin-bottom: 32px;
+    gap: 8px;
+  }
+
+  @media (max-width: $sm) {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.tabBtn {
+  min-width: 200px;
+  width: 100%;
+
+  @media (max-width: $xs) {
+    padding: 10px 4px;
+    font-size: 14px;
+  }
+
+  @media (max-width: $sm) {
+    min-width: 100%;
+  }
+}
+
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.collapsableContainer {
+  width: 100%;
+  will-change: height, opacity, margin-bottom;
+}
+
+.inputWrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.stableField {
+  width: 100%;
+  margin-bottom: 28px;
+
+  @media (max-width: $md) {
+    margin-bottom: 20px;
+  }
+}
+
+.submitBtn {
+  margin-top: 32px;
+  min-width: 100%;
+
+  @media (max-width: $md) {
+    margin-top: 24px;
+  }
+}

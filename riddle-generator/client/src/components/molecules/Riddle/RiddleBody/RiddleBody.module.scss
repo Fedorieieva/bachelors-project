@@ -1,0 +1,26 @@
+@use "../../../../styles/abstracts/variables" as *;
+@use "../../../../styles/abstracts/mixins" as *;
+
+.riddleBody {
+  width: 100%;
+  padding: 21px 12px;
+  border-radius: $border-radius-primary;
+  background: $bg-transp-glass-auth-form;
+  position: relative;
+  overflow: hidden;
+
+  @include glass-border-spin($opacity: 0.25);
+
+  &::after {
+    opacity: 1;
+  }
+}
+
+.content {
+  color: $white-2;
+  margin: 0;
+  line-height: 1.5;
+  word-wrap: break-word;
+  position: relative;
+  z-index: 1;
+}

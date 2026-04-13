@@ -1,0 +1,49 @@
+@use "../../../styles/abstracts/variables" as *;
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  background-color: $dark-blue;
+}
+
+.puzzleGrid {
+  position: relative;
+  width: 200px;
+  height: 180px;
+}
+
+.part {
+  position: absolute;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.1));
+  will-change: transform, opacity;
+
+  &.topLeft, &.topRight, &.bottomLeft, &.bottomRight {
+    transform-origin: center center;
+  }
+
+  &.topLeft {
+    top: 0;
+    left: -3px;
+    z-index: 10;
+  }
+
+  &.topRight {
+    top: 0;
+    left: 102px;
+    z-index: 9;
+  }
+
+  &.bottomLeft {
+    top: 78px;
+    left: 23px;
+    z-index: 11;
+  }
+
+  &.bottomRight {
+    top: 103px;
+    left: 76px;
+    z-index: 8;
+  }
+}

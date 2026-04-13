@@ -1,0 +1,127 @@
+@use "../../../styles/abstracts/variables" as *;
+
+.sidebarContainer {
+  height: 100vh;
+  height: 100dvh;
+  width: 295px;
+  padding: 40px 20px;
+  background-color: $bg-sidebar;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  display: none;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  margin-top: 32px;
+  overflow: hidden;
+}
+
+.actionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.historySection {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+
+  .historyTitle {
+    padding: 0 12px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+
+  button, a {
+    min-width: 0;
+    max-width: 100%;
+
+    > * {
+      min-width: 0;
+    }
+  }
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+}
+
+.chatTitle {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  flex: 1 1 0;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid $bg-transp-glass-auth-form;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba($dark-blue, 0.8);
+
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+
+  z-index: 3;
+
+  @media (min-width: $md) {
+    display: none;
+  }
+}
+
+.mobileSidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: 295px;
+  padding: 40px 20px;
+  background-color: $bg-sidebar;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid $bg-grey-light;
+  z-index: 4;
+  overflow-y: auto;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}

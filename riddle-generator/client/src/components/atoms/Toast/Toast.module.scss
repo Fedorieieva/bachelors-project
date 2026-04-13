@@ -1,0 +1,35 @@
+@use "../../../styles/abstracts/variables" as *;
+@use "../../../styles/abstracts/mixins" as *;
+
+.toast {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-radius: $border-radius-primary;
+  z-index: 2;
+  min-width: 280px;
+
+  background: $dark-blue;
+  border: 1px solid rgba($white, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  &.success {
+    border-color: rgba($success, 0.6);
+    .icon { color: $success; }
+  }
+
+  &.error {
+    border-color: rgba($error, 0.6);
+    .icon { color: $error; }
+  }
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}

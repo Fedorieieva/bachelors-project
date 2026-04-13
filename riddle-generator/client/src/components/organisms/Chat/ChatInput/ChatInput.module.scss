@@ -1,0 +1,44 @@
+@use "../../../../styles/abstracts/variables" as *;
+
+.inputSection {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: $dark-blue;
+  padding: 20px 0 25px 0;
+  z-index: 1;
+
+  @media (min-width: 768px) {
+    left: 295px;
+    width: calc(100% - 295px);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to top, $dark-blue 40%, transparent 100%);
+    pointer-events: none;
+  }
+}
+
+.inputWrapper {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+:global(.input--multiline) {
+  background: rgba($white, 0.02);
+  border: 1px solid rgba($white, 0.05);
+  transition: border-color 0.2s ease;
+
+  &:focus-within {
+    border-color: rgba($violet, 0.3);
+  }
+}

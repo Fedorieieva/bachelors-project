@@ -1,0 +1,107 @@
+@use "../../../../styles/abstracts/variables" as *;
+@use "../../../../styles/abstracts/mixins" as *;
+
+.messageRow {
+  display: flex;
+  width: 100%;
+  margin-bottom: 24px;
+  justify-content: flex-start;
+  will-change: transform, opacity;
+
+  // Глобальне перевизначення стилів RiddleBody всередині чату
+  :global(.riddleBody) {
+    width: fit-content;
+    max-width: 80%;
+    min-width: 60px;
+    transition: all 0.3s ease;
+    // Звичайний стиль для підказок та розгадувань
+    background: rgba($white, 0.015);
+    border: 1px solid rgba($white, 0.05);
+  }
+
+  &.userRow {
+    justify-content: flex-end;
+
+    .messageContentWrapper {
+      align-items: flex-end;
+    }
+
+    // Стиль для повідомлень користувача
+    :global(.riddleBody) {
+      background: rgba($white, 0.03);
+      border-color: rgba($white, 0.08);
+    }
+  }
+}
+
+.messageContentWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+// СПЕЦІАЛЬНИЙ СТИЛЬ ДЛЯ ЗАГАДКИ (початкового повідомлення)
+.riddleStyle {
+  background: rgba($violet, 0.1) !important; // Перекриваємо дефолтний фон чату
+  border-color: rgba($violet, 0.2) !important;
+  box-shadow: 0 0 20px rgba($violet, 0.2);
+  position: relative; // Для псевдоелемента
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    background: conic-gradient(
+                    from var(--glass-angle, -45deg) at 50% 50%,
+                    rgba($violet, 0.6) 0%,
+                    rgba($pink, 0.6) 50%,
+                    rgba($violet, 0.6) 100%
+    );
+    animation: glass-spin 3s linear infinite;
+  }
+
+  // Робимо текст загадки трохи виразнішим
+  span, p {
+    color: $white;
+    font-weight: 500;
+  }
+}
+
+.actionsRow {
+  display: flex;
+  padding-left: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+.regenerateButton {
+  background: transparent;
+  border: none;
+  color: rgba($white, 0.4);
+  padding: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: $violet;
+    transform: rotate(15deg);
+    background: rgba($white, 0.05);
+    border-radius: 50%;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glass-spin {
+  from { --glass-angle: 0deg; }
+  to { --glass-angle: 360deg; }
+}

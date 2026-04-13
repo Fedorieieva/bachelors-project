@@ -1,0 +1,337 @@
+@use "../../../styles/abstracts/variables" as *;
+@import "../../../styles/abstracts/mixins";
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  white-space: nowrap;
+  text-align: center;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  border-radius: 30px;
+  padding: 10px;
+  max-width: max-content;
+  text-decoration: none;
+  border: none;
+
+
+  transition:
+          opacity      0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          filter       0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow   0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          border-color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          background   0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          background-color 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          color        0.45s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+}
+
+.iconOnly {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  overflow: visible;
+
+  &:hover {
+    filter: brightness(1.2);
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  span {
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.simple {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  overflow: visible !important;
+  color: rgba($white, 0.7);
+  position: relative;
+  transition: color 0.3s ease, opacity 0.3s ease;
+
+  &::before {
+    display: none !important;
+  }
+
+  &:hover:not(:disabled) {
+    color: $white;
+    opacity: 1;
+  }
+
+  &::after {
+    display: block;
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, $pink, $violet);
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+}
+
+.simpleTab {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  overflow: visible !important;
+  color: $white;
+  position: relative;
+  pointer-events: none;
+  transition: color 0.3s ease, opacity 0.3s ease;
+
+  &::before {
+    display: none !important;
+  }
+
+  &::after {
+    content: '';
+    display: block !important;
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: $white;
+    border-radius: 1px;
+    opacity: 1 !important;
+  }
+}
+
+/* ===================== PRIMARY З ГРАДІЄНТОМ ===================== */
+.primary {
+  position: relative;
+  background-color: $violet;
+  color: $white;
+  border-radius: $border-radius-secondary;
+  min-width: 220px;
+  min-height: 48px;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: $gradient-primary;
+    opacity: 0;
+    transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    border-radius: inherit;
+    z-index: 1;
+  }
+
+  > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    &::before {
+      opacity: 1;
+    }
+    @include shadow-violet-glow-soft;
+  }
+}
+
+.primaryGlow {
+  @extend .primary;
+  @include shadow-violet-glow-soft;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    filter: brightness(1.1);
+  }
+}
+
+/* ===================== COLORED GLASS ===================== */
+.coloredGlass {
+  position: relative;
+  background: $gradient-glass;
+  backdrop-filter: blur(10px) saturate(1.4) brightness(1.08);
+  -webkit-backdrop-filter: blur(10px) saturate(1.4) brightness(1.08);
+  min-width: 220px;
+  height: 50px;
+  padding: 12px 17px;
+  color: $white;
+
+  border: 1px solid transparent;
+
+  box-shadow:
+          inset  1px 0 1px -1px $white,
+          inset -1px 0 1px -1px $white;
+
+  transition:
+          opacity      0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          filter       0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow   0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          border-color 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    border-color: $white;
+    box-shadow: none;
+    opacity: 1;
+
+    @include drop-shadow-violet-glow;
+  }
+}
+
+.coloredGlassActive {
+  @extend .coloredGlass;
+  opacity: 1;
+  border-color: rgba($white, 0.6);
+  //@include drop-shadow-violet-glow;
+  pointer-events: none;
+}
+
+.coloredGlassInactive {
+  @extend .coloredGlass;
+  background: $gradient-glass;
+  opacity: 0.6;
+  border-color: transparent;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+    border-color: rgba($white, 0.3);
+  }
+}
+
+/* ===================== GREY GLASS LINK ===================== */
+
+// @property і @keyframes для glass-border-spin міксіну —
+// мають бути задекларовані глобально (не всередині селектора)
+@property --glass-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: -45deg;
+}
+
+@keyframes glass-spin {
+  from { --glass-angle: -45deg; }
+  to   { --glass-angle: 135deg; }
+}
+
+.greyGlassLink {
+  position: relative;
+  background: transparent;
+  color: rgba($white, 0.7);
+  border-radius: $border-radius-primary;
+  min-width: 238px;
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  transition:
+          background      0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          color           0.45s cubic-bezier(0.4, 0, 0.2, 1),
+          backdrop-filter 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @include glass-border-spin;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: $bg-transp-glass;
+    color: $white;
+    -webkit-backdrop-filter: blur(10px) brightness(1.02);
+    backdrop-filter: blur(10px) brightness(1.02);
+  }
+}
+
+.greyGlassTab {
+  @extend .greyGlassLink;
+  background: $bg-transp-glass-hover;
+  color: $white;
+  -webkit-backdrop-filter: blur(10px) brightness(1.02);
+  backdrop-filter: blur(10px) brightness(1.02);
+
+  &::after {
+    opacity: 1;
+  }
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: $bg-transp-glass-hover;
+    filter: brightness(1.08);
+  }
+}
+
+/*
+ * ============================================================
+ * ЗБЕРЕЖЕНІ СТИЛІ (закоментовано, повернутись при необхідності)
+ * ============================================================
+ *
+ * // ::before — inner shine highlight
+ * &::before {
+ *   background: linear-gradient(
+ *     var(--glass-angle),
+ *     rgba($white, 0)    0%,
+ *     rgba($white, 0.07) 40%,
+ *     rgba($white, 0.12) 50%,
+ *     rgba($white, 0)    60%
+ *   );
+ * }
+ *
+ * // box-shadow on hover:
+ * // box-shadow:
+ * //   inset 0 1px 1px rgba($white, 0.06),
+ * //   inset 0 -1px 1px rgba($white, 0.03),
+ * //   0 2px 8px rgba(0, 0, 0, 0.25);
+ */
+
+/* ===================== SIZES & SPINNER ===================== */
+.sizeDefault { max-width: 350px; }
+.sizeFull { width: 100%; }
+.sizeAuto { min-width: 0; width: 100%; }
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid $white;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

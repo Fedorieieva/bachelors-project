@@ -1,0 +1,146 @@
+@use "../../../styles/abstracts/variables" as *;
+@use "../../../styles/abstracts/mixins" as *;
+
+.inputWrapper {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+
+  &.fullWidth {
+    width: 100%;
+  }
+}
+
+.formGap { gap: 12px; }
+.multilineGap { gap: 8px; }
+
+.label {
+  font-family: $font-main;
+  font-size: 14px;
+  color: $white;
+}
+
+.inputContainer {
+  display: flex;
+  position: relative;
+  width: 100%;
+  transition: all 0.3s ease;
+  border-radius: $border-radius-primary;
+
+  &.transparent {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+
+    &:hover:not(.disabled), &:focus-within:not(.disabled) {
+      border-color: transparent !important;
+      box-shadow: none !important;
+    }
+  }
+
+  &.form {
+    height: 46px;
+    align-items: center;
+    background: $bg-dark-violet-glass;
+    border: 0.5px solid rgba($white, 1);
+    position: relative;
+    isolation: isolate;
+
+    &:hover {
+      border-color: transparent;
+      box-shadow: $shadow-pink-glow;
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        background: $gradient-primary;
+        z-index: -1;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: $blue;
+        z-index: -1;
+      }
+    }
+
+    .baseInput {
+      padding: 0 16px;
+    }
+  }
+
+  &.multiline {
+    min-height: 60px;
+    max-height: 144px;
+    background: $bg-grey-light;
+    align-items: flex-end;
+
+    &:hover:not(.disabled), &:focus-within:not(.disabled) {
+      border: 1px solid $white;
+      box-shadow: $shadow-white-glow;
+    }
+
+    .baseInput {
+      padding: 20px;
+    }
+
+    .iconWrapper {
+      padding-bottom: 20px;
+    }
+  }
+
+  &.error {
+    border: 1px solid $error !important;
+    box-shadow: none !important;
+  }
+
+  &.disabled {
+    background: $grey;
+    border: 1px solid $border-inactive;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.baseInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: $white;
+  font-family: $font-main;
+  font-size: 16px;
+  width: 100%;
+  resize: none;
+
+  &::placeholder {
+    color: rgba($white, 0.4);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  flex-shrink: 0;
+  color: $white;
+}
+
+.helperText {
+  font-size: 12px;
+  color: rgba($white, 0.6);
+
+  &.errorText {
+    color: $error;
+  }
+}

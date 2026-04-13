@@ -1,0 +1,64 @@
+@use "../../../styles/abstracts/variables" as *;
+@use "../../../styles/abstracts/mixins" as *;
+
+.wrapper {
+  position: relative;
+  width: 100%;
+  min-width: 220px;
+}
+
+.selectHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-radius: $border-radius-primary;
+  cursor: pointer;
+
+  @include glass-panel(10px, rgba($white, 0.05), rgba($white, 0.08));
+  @include glass-border-spin(1px, 0.4, -45deg, 2.5s, false);
+
+  &:hover, &.open {
+    background: rgba($white, 0.1);
+    color: $white;
+  }
+}
+
+.chevron {
+  width: 18px;
+  height: 18px;
+  stroke: $white-2;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  &.rotate { transform: rotate(180deg); }
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  border-radius: $border-radius-primary;
+  overflow: hidden;
+
+  @include glass-panel(20px, rgba($dark-blue, 0.85), rgba($white, 0.1));
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+.option {
+  padding: 14px 20px;
+  cursor: pointer;
+  color: $white-2;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba($white, 0.07);
+    color: $white;
+  }
+
+  &.selected {
+    color: $violet;
+    background: rgba($violet, 0.08);
+    font-weight: 500;
+  }
+}

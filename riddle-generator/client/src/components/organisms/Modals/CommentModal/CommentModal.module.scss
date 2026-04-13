@@ -1,0 +1,83 @@
+@use "../../../../styles/abstracts/variables" as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.emojiTrigger {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  outline: none;
+
+
+  .icon {
+    width: 24px;
+    height: 24px;
+    color: rgba($white, 0.4);
+    transition: all 0.2s ease;
+    justify-self: flex-end;
+
+    &:hover {
+      color: $white;
+      transform: scale(1.1);
+    }
+  }
+}
+
+.portalWrapper {
+  position: fixed;
+  pointer-events: auto !important;
+  touch-action: auto !important;
+
+  :global(.EmojiPickerReact) {
+    --epr-bg-color: #1a1c2e !important;
+    --epr-category-label-bg-color: #1a1c2e !important;
+    border-radius: 16px !important;
+    border: 1px solid $bg-grey-light !important;
+
+    :global(.epr-body) {
+      overflow-y: auto !important;
+      scroll-behavior: smooth !important;
+      -webkit-overflow-scrolling: touch !important;
+
+      &::-webkit-scrollbar {
+        width: 6px !important;
+        display: block !important;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent !important;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: $bg-transp-glass-hover !important;
+        border-radius: 10px !important;
+        transition: background 0.2s ease;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.25) !important;
+        }
+      }
+    }
+
+    :global(.epr-emoji-category-content) {
+      scroll-behavior: smooth !important;
+    }
+  }
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}

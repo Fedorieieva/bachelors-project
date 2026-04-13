@@ -1,0 +1,42 @@
+@use "../../../../styles/abstracts/variables" as *;
+
+.confirmModal {
+  max-width: 560px !important;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 8px;
+}
+
+.descriptionWrapper {
+  text-align: center;
+}
+
+
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+
+  @media (min-width: $sm) {
+    flex-direction: row;
+  }
+}
+
+.dangerBtn {
+  background: $error !important;
+
+  &::before {
+    background: linear-gradient(90deg, $error 0%, #ff7675 100%) !important;
+  }
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 4px 15px rgba($error, 0.4) !important;
+  }
+}

@@ -1,0 +1,43 @@
+@use "../../../styles/abstracts/variables" as *;
+@use "../../../styles/abstracts/mixins" as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding-bottom: 60px;
+  padding-top: 20px;
+  transition: padding-top 0.3s ease;
+
+  &.myProfile {
+    padding-top: 50px;
+  }
+}
+
+.tabs {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 60px;
+  margin-bottom: 40px;
+  width: 100%;
+
+  @include respond-to('md') {
+    gap: 40px;
+    margin-top: 80px;
+  }
+}
+
+.feedWrapper {
+  width: max-content;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.tabs button {
+  transition: all 0.3s ease;
+  min-width: 120px;
+}

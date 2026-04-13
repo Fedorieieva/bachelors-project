@@ -1,0 +1,77 @@
+@use "../../../styles/abstracts/variables" as *;
+
+.avatarWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: $violet;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+}
+
+.sm { width: 30px; height: 30px; border-radius: 50px; }
+.md { width: 60px; height: 60px; border-radius: 50px; }
+.lg { width: 140px; height: 140px; border-radius: 80px; }
+
+.initials {
+  color: $white;
+  font-family: $font-second;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  .sm & { font-size: 14px; }
+  .md & { font-size: 24px; }
+  .lg & { font-size: 56px; }
+}
+
+.badge {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 25px;
+  padding: 10px;
+  z-index: 1;
+  white-space: nowrap;
+
+  &.left {
+    left: 0;
+    transform: translate(-75%, 0%);
+  }
+
+  &.right {
+    right: 0;
+    transform: translate(60%, 0%);
+  }
+}
+
+.xp {
+  background: $gradient-primary;
+}
+
+.level {
+  background: $pink;
+}
+
+.badgeSm {
+  width: 50px;
+  height: 20px;
+}
+
+.badgeMd {
+  width: 77px;
+  height: 28px;
+}
+
+.badgeLg {
+  width: 107px;
+  height: 28px;
+}

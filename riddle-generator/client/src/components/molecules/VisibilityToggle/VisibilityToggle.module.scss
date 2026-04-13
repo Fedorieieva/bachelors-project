@@ -1,0 +1,29 @@
+@use "../../../styles/abstracts/variables" as *;
+
+.toggle {
+  overflow: visible !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  stroke: $white-2;
+  stroke-width: 2px;
+  transition: all 0.3s ease;
+  display: block;
+}
+
+.public {
+  .icon {
+    stroke: $success;
+    filter: drop-shadow(0 0 4px rgba($success, 0.6));
+  }
+}
+
+.toggle:hover .icon {
+  stroke: $white;
+}

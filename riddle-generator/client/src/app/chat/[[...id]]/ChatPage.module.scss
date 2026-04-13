@@ -1,0 +1,69 @@
+@use "../../../styles/abstracts/variables" as *;
+
+.chatPage {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: calc(100vh - 160px);
+  position: relative;
+  overflow: hidden;
+}
+
+.messagesContainer {
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 120px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .messagesList,
+  .welcomeWrapper {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 20px 40px 20px;
+  }
+}
+
+.loadingBubble {
+  padding: 20px;
+  min-width: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+.dotTyping {
+  position: relative;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 5px;
+  background-color: $violet;
+  box-shadow: 9984px 0 0 0 $violet, 9999px 0 0 0 $violet, 10014px 0 0 0 $violet;
+  animation: dotTyping 1.5s infinite linear;
+}
+
+@keyframes dotTyping {
+  0% {
+    box-shadow: 9984px 0 0 0 $violet, 9999px 0 0 0 $violet, 10014px 0 0 0 $violet;
+  }
+  33% {
+    box-shadow: 9984px -4px 0 0 $violet, 9999px 0 0 0 $violet, 10014px 0 0 0 $violet;
+  }
+  66% {
+    box-shadow: 9984px 0 0 0 $violet, 9999px -4px 0 0 $violet, 10014px 0 0 0 $violet;
+  }
+  100% {
+    box-shadow: 9984px 0 0 0 $violet, 9999px 0 0 0 $violet, 10014px -4px 0 0 $violet;
+  }
+}
+
+body {
+  overflow: hidden;
+}

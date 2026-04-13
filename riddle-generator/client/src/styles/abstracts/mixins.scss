@@ -1,0 +1,105 @@
+@use "variables";
+
+@mixin mobile { @media (min-width: #{variables.$xs}) { @content; } }
+@mixin tablet { @media (min-width: #{variables.$md}) { @content; } }
+@mixin desktop { @media (min-width: #{variables.$lg}) { @content; } }
+@mixin large-desktop { @media (min-width: #{variables.$xl}) { @content; } }
+
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == "xs" { @media (min-width: variables.$xs) { @content; } }
+  @else if $breakpoint == "sm" { @media (min-width: variables.$sm) { @content; } }
+  @else if $breakpoint == "md" { @media (min-width: variables.$md) { @content; } }
+  @else if $breakpoint == "lg" { @media (min-width: variables.$lg) { @content; } }
+  @else if $breakpoint == "xl" { @media (min-width: variables.$xl) { @content; } }
+}
+
+@mixin glass-panel($blur: 10px, $bg: rgba(255, 255, 255, 0.05), $border: rgba(255, 255, 255, 0.1)) {
+  background: $bg;
+  backdrop-filter: blur($blur);
+  -webkit-backdrop-filter: blur($blur);
+  border: 1px solid $border;
+}
+
+@mixin shadow-violet-glow-soft {
+  & {
+    box-shadow: 0 8px 20px rgba(variables.$violet, 0.2);
+  }
+}
+
+@mixin drop-shadow-violet-glow {
+  filter: drop-shadow(0 0 10px rgba(variables.$violet, 0.5)) drop-shadow(0 0 20px rgba(variables.$violet, 0.3));
+}
+
+@mixin drop-shadow-pink-glow {
+  filter: drop-shadow(0 0 10px rgba(variables.$pink, 0.5)) drop-shadow(0 0 20px rgba(variables.$pink, 0.3));
+}
+
+@mixin glow($color: variables.$pink, $opacity: 0.5) {
+  box-shadow: 0 0 10px 1px rgba($color, $opacity);
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@mixin glass-border-spin(
+  $border-width: 1px,
+  $opacity: 0.6,
+  $angle: -45deg,
+  $duration: 2.8s,
+  $infinite: false
+) {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: $border-width;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    background: conic-gradient(
+                    from var(--glass-angle, #{$angle}) at 50% 50%,
+                    rgba(variables.$white, $opacity) 0%,
+                    rgba(variables.$white, $opacity) 20%,
+                    rgba(variables.$white, $opacity * 0.2) 35%,
+                    transparent 45%,
+                    transparent 55%,
+                    rgba(variables.$white, $opacity) 65%,
+                    rgba(variables.$white, $opacity) 80%,
+                    rgba(variables.$white, $opacity * 0.2) 90%,
+                    transparent 95%,
+                    rgba(variables.$white, $opacity) 100%
+    );
+
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: source-out;
+    mask-composite: exclude;
+
+    @if $infinite {
+      animation: glass-spin $duration linear infinite;
+    }
+  }
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    &::after {
+      opacity: 1;
+      @if not $infinite {
+        animation: glass-spin $duration cubic-bezier(0.4, 0, 0.2, 1) 1 forwards;
+      }
+    }
+  }
+}
