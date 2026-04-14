@@ -4,33 +4,30 @@ import React from 'react';
 import { CommentItem } from '@/components/molecules/CommentItem/CommentItem';
 import { Button } from '@/components/atoms/Button/Button';
 import { Typography } from '@/components/atoms/Typography/Typography';
+import { Preloader } from '@/components/atoms/Preloader/Preloader';
+import { Comment } from '@/types/social';
 import styles from './CommentSection.module.scss';
-
-// Використовуємо інтерфейс, що відповідає даним з бекенду та social.ts
-interface Comment {
-  id: string;
-  user: {
-    id: string;
-    name: string | null;
-    avatar_url: string | null;
-  };
-  user_id: string; // Потрібно для перевірки власності коментаря
-  content: string;
-  created_at: string;
-}
+import { InfiniteScrollList } from '@/components/organisms/InfiniteScrollList/InfiniteScrollList';
 
 interface CommentSectionProps {
+  riddleId: string;
   comments: Comment[];
-  isLoading?: boolean;
+  isLoading: boolean;
+  isFetchingMore: boolean;
+  hasMore: boolean;
+  onLoadMore: () => void;
   onAddClick: () => void;
-  onEditClick: (comment: Comment) => void; // Додано
-  onDeleteClick: (id: string) => void;      // Додано
+  onEditClick: (comment: Comment) => void;
+  onDeleteClick: (id: string) => void;
   currentUserId?: string;
 }
 
 export const CommentSection: React.FC<CommentSectionProps> = ({
   comments,
   isLoading,
+  isFetchingMore,
+  hasMore,
+  onLoadMore,
   currentUserId,
   onAddClick,
   onEditClick,
@@ -45,30 +42,38 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         </Button>
       </div>
 
-      <div className={styles.list}>
-        {isLoading ? (
-          <div className={styles.loading}>Loading comments...</div>
-        ) : comments.length > 0 ? (
-          comments.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              id={comment.id}
-              userId={comment.user_id}
-              currentUserId={currentUserId}
-              userName={comment.user.name || 'Anonymous'}
-              avatarUrl={comment.user.avatar_url}
-              content={comment.content}
-              createdAt={comment.created_at}
-              onEdit={() => onEditClick(comment)}
-              onDelete={() => onDeleteClick(comment.id)}
-            />
-          ))
-        ) : (
+      <InfiniteScrollList<Comment>
+        items={comments}
+        isLoading={isLoading}
+        isFetchingMore={isFetchingMore}
+        hasMore={hasMore}
+        onLoadMore={onLoadMore}
+        direction="down"
+        className={styles.list}
+        renderItem={(comment) => (
+          <CommentItem
+            id={comment.id}
+            userId={comment.user_id}
+            currentUserId={currentUserId}
+            userName={comment.user.name || 'Anonymous'}
+            avatarUrl={comment.user.avatar_url}
+            content={comment.content}
+            createdAt={comment.created_at}
+            onEdit={() => onEditClick(comment)}
+            onDelete={() => onDeleteClick(comment.id)}
+          />
+        )}
+        renderEmpty={() => (
           <Typography variant="body" className={styles.empty}>
             No comments yet. Be the first to comment!
           </Typography>
         )}
-      </div>
+        renderLoader={() => (
+          <div className={styles.loading}>
+            <Preloader />
+          </div>
+        )}
+      />
     </div>
   );
 };

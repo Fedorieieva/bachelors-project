@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, use } from 'react'; // Додано use для розгортання params
+import React, { useState, use } from 'react';
 import { useParams } from 'next/navigation';
-import { useUserStats, useSocialActions } from '@/hooks/users/useUser'; // Додано хук дій
+import { useUserStats, useSocialActions } from '@/hooks/users/useUser';
 import { useAppSelector } from '@/store/hooks';
 import { ProfileStats } from '@/components/organisms/ProfileStats/ProfileStats';
 import { FeedList } from '@/components/organisms/FeedList/FeedList';
@@ -17,7 +17,6 @@ export default function ProfilePage() {
   const { data: stats, isLoading } = useUserStats(id);
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
-  // Логіка підписки
   const { follow, unfollow, isFollowing, isUnfollowing } = useSocialActions(id);
 
   const [activeTab, setActiveTab] = useState<FeedType>('my-public');

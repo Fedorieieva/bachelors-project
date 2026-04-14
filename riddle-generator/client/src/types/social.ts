@@ -14,7 +14,7 @@ export interface Comment {
 }
 
 export interface PaginationMeta {
-  totalItems?: number;
+  totalItems: number;
   total?: number;
   itemCount?: number;
   itemsPerPage: number;
@@ -24,7 +24,7 @@ export interface PaginationMeta {
 }
 
 export interface PaginatedResponse<T> {
-  items: T[];
+  data: T[];
   meta: PaginationMeta;
 }
 

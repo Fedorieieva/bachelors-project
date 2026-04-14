@@ -1,32 +1,37 @@
-import { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { PaginatedPage, useInfiniteScroll } from '@/hooks/infinite-scroll/useInfiniteScroll';
 
-interface ChatHistoryItem {
+export interface ChatHistoryItem {
   id: string;
   title: string;
   createdAt: string;
 }
 
-export const useChats = () => {
-  const [chats, setChats] = useState<ChatHistoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
+async function fetchChatsPage(page: number): Promise<PaginatedPage<ChatHistoryItem>> {
+  const { data } = await apiClient.get<ChatHistoryItem[]>('/riddles/chats');
 
-  const fetchChats = async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await apiClient.get<ChatHistoryItem[]>('/riddles/chats');
-      setChats(data);
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch chats'));
-    } finally {
-      setIsLoading(false);
-    }
+  return {
+    items: data,
+    total: data.length,
+    page: 1,
+    totalPages: 1,
   };
+}
 
-  useEffect(() => {
-    fetchChats();
-  }, []);
+export function useChats() {
+  const result = useInfiniteScroll<ChatHistoryItem>({
+    queryKey: ['chats-history'],
+    fetchPage: fetchChatsPage,
+    direction: 'down',
+    staleTime: 1000 * 60,
+  });
 
-  return { chats, isLoading, error, refetch: fetchChats };
-};
+  return {
+    chats: result.items,
+    isLoading: result.isLoading,
+    isFetchingMore: result.isFetchingNextPage,
+    hasMore: result.hasNextPage,
+    loadMore: result.fetchNextPage,
+    error: result.error,
+  };
+}

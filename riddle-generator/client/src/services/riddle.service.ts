@@ -8,6 +8,7 @@ import {
   SavedRiddle,
   ToggleResponse
 } from '@/types/riddle';
+import { PaginatedPage } from '@/hooks/infinite-scroll/useInfiniteScroll';
 
 export const RiddleService = {
   async initializeChat(settings: RiddleSettings): Promise<{ chatId: string }> {
@@ -25,8 +26,15 @@ export const RiddleService = {
     return data;
   },
 
-  async getChatHistory(chatId: string): Promise<Message[]> {
-    const { data } = await apiClient.get<Message[]>(`/riddles/chat/${chatId}/history`);
+  async getChatHistory(
+    chatId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<PaginatedPage<Message>> {
+    const { data } = await apiClient.get<PaginatedPage<Message>>(
+      `/riddles/chat/${chatId}/history`,
+      { params: { page, limit } }
+    );
     return data;
   },
 

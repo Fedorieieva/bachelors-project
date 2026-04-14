@@ -8,7 +8,8 @@ import { Share2, Plus } from 'lucide-react';
 import { Logo } from '@/components/atoms/Logo/Logo';
 import styles from './Sidebar.module.scss';
 import { usePathname } from 'next/navigation';
-import { useChats } from '@/hooks/riddles/useChatsHistory';
+import { useChats, ChatHistoryItem } from '@/hooks/riddles/useChatsHistory';
+import { InfiniteScrollList } from '@/components/organisms/InfiniteScrollList/InfiniteScrollList';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -17,16 +18,16 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) => {
-  const { chats, isLoading } = useChats();
+  const { chats, isLoading, isFetchingMore, hasMore, loadMore } = useChats();
   const pathname = usePathname();
-  const activeChatId = pathname?.startsWith('/chat/') ? pathname.split('/chat/')[1] : null;
+  const activeChatId: string | null = pathname?.startsWith('/chat/') ? pathname.split('/chat/')[1] : null;
 
   const sidebarVariants: Variants = {
     closed: { x: '-100%' },
     open: {
       x: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 }
-    }
+      transition: { type: 'spring', stiffness: 300, damping: 30 },
+    },
   };
 
   const SidebarContent = () => (
@@ -37,19 +38,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
 
       <nav className={styles.nav}>
         <div className={styles.actionButtons}>
-          <Button
-            variant="primary"
-            href="/chat"
-            leftIcon={<Plus size={20} />}
-          >
+          <Button variant="primary" href="/chat" leftIcon={<Plus size={20} />}>
             Новий чат
           </Button>
-
-          <Button
-            variant="primary"
-            href="/social-media"
-            leftIcon={<Share2 size={20} />}
-          >
+          <Button variant="primary" href="/social-media" leftIcon={<Share2 size={20} />}>
             Соціальна мережа
           </Button>
         </div>
@@ -59,31 +51,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
             Історія чатів
           </Typography>
 
-          <div className={styles.historyList}>
-            {isLoading ? (
-              <div className="px-4 py-2 opacity-50">
-                <Typography variant="body">Завантаження...</Typography>
-              </div>
-            ) : chats.length > 0 ? (
-              chats.map((chat) => (
+          <InfiniteScrollList<ChatHistoryItem>
+            items={chats}
+            isLoading={isLoading}
+            isFetchingMore={isFetchingMore}
+            hasMore={hasMore}
+            onLoadMore={loadMore}
+            direction="down"
+            className={styles.historyList}
+            renderItem={(chat: ChatHistoryItem) => {
+              const isActive = chat.id === activeChatId;
+
+              return (
                 <Button
                   key={chat.id}
-                  variant={chat.id === activeChatId ? 'grey-glass-tab' : 'grey-glass-link'}
+                  variant={isActive ? 'grey-glass-tab' : 'grey-glass-link'}
                   href={`/chat/${chat.id}`}
                   fullWidth
                 >
-                  <span className={styles.chatTitle}>{chat.title}</span>
+        <span className={styles.chatTitle}>
+          {chat.title || 'Без назви'}
+        </span>
                 </Button>
-              ))
-            ) : (
+              );
+            }}
+            renderEmpty={() => (
               <Typography variant="body">Історія порожня</Typography>
             )}
-          </div>
+          />
         </div>
       </nav>
 
       <div className={styles.footer}>
-        <Button variant="grey-glass-link" href='/settings' fullWidth>
+        <Button variant="grey-glass-link" href="/settings" fullWidth>
           Налаштування
         </Button>
       </div>
@@ -95,8 +95,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
       <AnimatePresence>
         {isOpen && (
           <>
-            <motion.div className={styles.overlay} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
-            <motion.aside className={styles.mobileSidebar} initial="closed" animate="open" exit="closed" variants={sidebarVariants}>
+            <motion.div
+              className={styles.overlay}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+            />
+            <motion.aside
+              className={styles.mobileSidebar}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              variants={sidebarVariants}
+            >
               <SidebarContent />
             </motion.aside>
           </>
@@ -104,6 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
       </AnimatePresence>
     );
   }
+
   return (
     <aside className={styles.sidebarContainer}>
       <SidebarContent />

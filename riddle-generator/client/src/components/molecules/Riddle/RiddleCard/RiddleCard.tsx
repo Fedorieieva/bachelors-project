@@ -82,8 +82,12 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   const { toggleLike } = useLikes();
   const { toggleSave } = useSave();
   const {
-    data: commentsData,
-    isLoading: isCommentsLoading,
+    comments,
+    isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    totalComments,
     addComment,
     isSubmitting,
     updateComment,
@@ -135,6 +139,8 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   const canInteract = isAuthenticated && user?.onboarding_completed;
   const isOwnPost = user?.id === userId;
   const complexityConfig = getComplexityConfig(complexity);
+
+  const displayCommentsCount = totalComments > 0 ? totalComments : initialCommentsCount;
 
   const showToast = (message: string, type: ToastType = 'success') => {
     setToast({ isVisible: true, message, type });
@@ -312,7 +318,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
                 <Button variant="icon-only" onClick={handleToggleComments}>
                   <CommentIcon className={cn(styles.icon, { [styles.active]: showComments })} />
                 </Button>
-                <Typography variant="details">{initialCommentsCount}</Typography>
+                <Typography variant="details">{displayCommentsCount}</Typography>
               </div>
 
               {!isOwnPost && (
@@ -334,7 +340,12 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
         {showComments && (
           <CommentSection
-            comments={commentsData?.data || []}
+            riddleId={id}
+            comments={comments}
+            isLoading={isLoading}
+            isFetchingMore={isFetchingMore}
+            hasMore={hasMore}
+            onLoadMore={loadMore}
             currentUserId={user?.id}
             onEditClick={(comment) => {
               setEditingComment({ id: comment.id, content: comment.content });
@@ -345,7 +356,6 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
               setEditingComment(null);
               setIsCommentModalOpen(true);
             }}
-            isLoading={isCommentsLoading}
           />
         )}
       </div>
