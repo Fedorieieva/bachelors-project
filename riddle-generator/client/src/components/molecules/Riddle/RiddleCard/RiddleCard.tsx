@@ -136,7 +136,8 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     setCanAttemptLocal(initialCanAttempt);
   }, [initialIsLiked, initialIsSaved, initialLikesCount, initialIsSolved, initialIsPublic, initialCanAttempt]);
 
-  const canInteract = isAuthenticated && user?.onboarding_completed;
+  const hasCompletedOnboarding = !!(isAuthenticated && user?.onboarding_completed);
+  const canInteract = hasCompletedOnboarding;
   const isOwnPost = user?.id === userId;
   const complexityConfig = getComplexityConfig(complexity);
 
@@ -304,39 +305,39 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
         <RiddleBody content={content} className={styles.riddleBody} />
 
-        {canInteract && (
-          <div className={styles.footer}>
-            <div className={styles.actions}>
+        <div className={styles.footer}>
+          <div className={styles.actions}>
+            {canInteract && (
               <div className={styles.actionsContainer}>
                 <Button variant="icon-only" onClick={handleLike}>
                   <HeartIcon className={cn(styles.icon, styles.heart, { [styles.active]: liked })} />
                 </Button>
                 <Typography variant="details">{localLikesCount}</Typography>
               </div>
+            )}
 
-              <div className={styles.actionsContainer}>
-                <Button variant="icon-only" onClick={handleToggleComments}>
-                  <CommentIcon className={cn(styles.icon, { [styles.active]: showComments })} />
-                </Button>
-                <Typography variant="details">{displayCommentsCount}</Typography>
-              </div>
-
-              {!isOwnPost && (
-                <div className={styles.actionsContainer}>
-                  <Button variant="icon-only" onClick={handleSave}>
-                    <SaveIcon className={cn(styles.icon, styles.save, { [styles.active]: saved })} />
-                  </Button>
-                </div>
-              )}
+            <div className={styles.actionsContainer}>
+              <Button variant="icon-only" onClick={handleToggleComments}>
+                <CommentIcon className={cn(styles.icon, { [styles.active]: showComments })} />
+              </Button>
+              <Typography variant="details">{displayCommentsCount}</Typography>
             </div>
 
-            {!isOwnPost && !solved && canAttemptLocal && (
-              <Button variant="icon-only" onClick={() => setIsGuessModalOpen(true)}>
-                <PuzzleIcon className={cn(styles.icon, styles.puzzle)} />
-              </Button>
+            {canInteract && !isOwnPost && (
+              <div className={styles.actionsContainer}>
+                <Button variant="icon-only" onClick={handleSave}>
+                  <SaveIcon className={cn(styles.icon, styles.save, { [styles.active]: saved })} />
+                </Button>
+              </div>
             )}
           </div>
-        )}
+
+          {canInteract && !isOwnPost && !solved && canAttemptLocal && (
+            <Button variant="icon-only" onClick={() => setIsGuessModalOpen(true)}>
+              <PuzzleIcon className={cn(styles.icon, styles.puzzle)} />
+            </Button>
+          )}
+        </div>
 
         {showComments && (
           <CommentSection
@@ -347,6 +348,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
             hasMore={hasMore}
             onLoadMore={loadMore}
             currentUserId={user?.id}
+            canAddComment={hasCompletedOnboarding}
             onEditClick={(comment) => {
               setEditingComment({ id: comment.id, content: comment.content });
               setIsCommentModalOpen(true);
@@ -383,7 +385,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
         status={statusModal.status}
         correctAnswer={statusModal.correctAnswer}
         attemptsRemaining={statusModal.attemptsRemaining}
-        xpEarned={statusModal.xpEarned} 
+        xpEarned={statusModal.xpEarned}
         hasBoughtRetry={hasBoughtRetry}
         onRetry={handleModalRetryAction}
         onClose={() => setStatusModal(prev => ({ ...prev, isOpen: false }))}

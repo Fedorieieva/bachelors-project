@@ -179,7 +179,6 @@ export default function ChatPage() {
 
               <LayoutGroup>
                 {displayMessages.map((msg, index) => {
-                  // 3. Додаткова перевірка безпосередньо в map
                   if (!msg) return null;
 
                   return (

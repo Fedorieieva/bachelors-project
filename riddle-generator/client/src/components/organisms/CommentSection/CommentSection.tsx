@@ -20,6 +20,7 @@ interface CommentSectionProps {
   onEditClick: (comment: Comment) => void;
   onDeleteClick: (id: string) => void;
   currentUserId?: string;
+  canAddComment: boolean;
 }
 
 export const CommentSection: React.FC<CommentSectionProps> = ({
@@ -32,14 +33,17 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   onAddClick,
   onEditClick,
   onDeleteClick,
+  canAddComment,
 }) => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <Typography variant="h3">Comments</Typography>
-        <Button variant="grey-glass-link" onClick={onAddClick}>
-          + Add comment
-        </Button>
+        {canAddComment && (
+          <Button variant="grey-glass-link" onClick={onAddClick}>
+            + Add comment
+          </Button>
+        )}
       </div>
 
       <InfiniteScrollList<Comment>
