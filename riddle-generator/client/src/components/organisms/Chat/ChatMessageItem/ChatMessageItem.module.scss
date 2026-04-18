@@ -8,13 +8,11 @@
   justify-content: flex-start;
   will-change: transform, opacity;
 
-  // Глобальне перевизначення стилів RiddleBody всередині чату
   :global(.riddleBody) {
     width: fit-content;
     max-width: 80%;
     min-width: 60px;
     transition: all 0.3s ease;
-    // Звичайний стиль для підказок та розгадувань
     background: rgba($white, 0.015);
     border: 1px solid rgba($white, 0.05);
   }
@@ -26,7 +24,6 @@
       align-items: flex-end;
     }
 
-    // Стиль для повідомлень користувача
     :global(.riddleBody) {
       background: rgba($white, 0.03);
       border-color: rgba($white, 0.08);
@@ -41,12 +38,11 @@
   width: 100%;
 }
 
-// СПЕЦІАЛЬНИЙ СТИЛЬ ДЛЯ ЗАГАДКИ (початкового повідомлення)
 .riddleStyle {
-  background: rgba($violet, 0.1) !important; // Перекриваємо дефолтний фон чату
+  background: rgba($violet, 0.1) !important;
   border-color: rgba($violet, 0.2) !important;
   box-shadow: 0 0 20px rgba($violet, 0.2);
-  position: relative; // Для псевдоелемента
+  position: relative;
 
   &::after {
     content: '';
@@ -65,7 +61,6 @@
     animation: glass-spin 3s linear infinite;
   }
 
-  // Робимо текст загадки трохи виразнішим
   span, p {
     color: $white;
     font-weight: 500;
@@ -104,4 +99,46 @@
 @keyframes glass-spin {
   from { --glass-angle: 0deg; }
   to { --glass-angle: 360deg; }
+}
+
+.actionsRow {
+  display: flex;
+  padding-left: 12px;
+  gap: 4px;
+  animation: fadeIn 0.3s ease;
+}
+
+.regenerateButton,
+.revealButton {
+  background: transparent;
+  border: none;
+  color: rgba($white, 0.4);
+  padding: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.regenerateButton {
+  &:hover {
+    color: $violet;
+    transform: rotate(15deg);
+    background: rgba($white, 0.05);
+    border-radius: 50%;
+  }
+}
+
+.revealButton {
+  &:hover {
+    color: $yellow;
+    background: rgba($white, 0.05);
+    border-radius: 50%;
+
+    @include glow($yellow, 0.6);
+
+    svg {
+      filter: drop-shadow(0 0 5px rgba($yellow, 0.8));
+    }
+  }
 }

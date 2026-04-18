@@ -21,11 +21,29 @@ export const useRiddleActions = (chatId: string) => {
     }
   });
 
+  const saveToCollection = useMutation({
+    mutationFn: (messageId: string) => RiddleService.saveToCollection(messageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
+    }
+  });
+
+  const togglePublic = useMutation({
+    mutationFn: (riddleId: string) => RiddleService.togglePublic(riddleId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
+    }
+  });
+
   return {
     regenerate: regenerate.mutate,
     isRegenerating: regenerate.isPending,
     reveal: reveal.mutate,
     isRevealing: reveal.isPending,
+    saveToCollection: saveToCollection.mutate,
+    isSaving: saveToCollection.isPending,
+    togglePublic: togglePublic.mutate,
+    isTogglingPublic: togglePublic.isPending,
   };
 };
 

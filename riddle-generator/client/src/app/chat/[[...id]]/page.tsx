@@ -8,7 +8,10 @@ import { WelcomeSettings } from '@/components/organisms/Chat/WelcomeSettings/Wel
 import { RiddleType, RiddleSettings, Message } from '@/types/riddle';
 import { ChatMessageItem } from '@/components/organisms/Chat/ChatMessageItem/ChatMessageItem';
 import { ChatInput } from '@/components/organisms/Chat/ChatInput/ChatInput';
+import { Button } from '@/components/atoms/Button/Button';
+import { useRiddleActions } from '@/hooks/riddles/useRiddleActions';
 import styles from './ChatPage.module.scss';
+import { RiddleCollectionModal } from '@/components/organisms/Modals/RiddlesCollectionModal/RiddlesCollectionModal';
 
 const DEFAULT_SETTINGS: RiddleSettings = {
   type: RiddleType.LOGIC,
@@ -39,10 +42,13 @@ export default function ChatPage() {
   const [inputValue, setInputValue] = useState('');
   const [currentSettings, setCurrentSettings] = useState<RiddleSettings>(DEFAULT_SETTINGS);
   const [optimisticMessage, setOptimisticMessage] = useState<string | null>(null);
+  const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevScrollHeightRef = useRef<number>(0);
+
+  const { reveal, isRevealing, saveToCollection, togglePublic } = useRiddleActions(chatId as string);
 
   const saveScrollPosition = useCallback(() => {
     if (messagesContainerRef.current) {
@@ -58,33 +64,6 @@ export default function ChatPage() {
     }
   }, [isFetchingOlder, messages.length]);
 
-  useEffect(() => {
-    const sentinel = topSentinelRef.current;
-    if (!sentinel || !chatId) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasOlderMessages && !isFetchingOlder) {
-          saveScrollPosition();
-          loadOlderMessages();
-        }
-      },
-      { rootMargin: '200px 0px 0px 0px', threshold: 0 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasOlderMessages, isFetchingOlder, loadOlderMessages, chatId, saveScrollPosition]);
-
-  useEffect(() => {
-    if (!isSending && messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg?.role === 'model') {
-        setOptimisticMessage(null);
-      }
-    }
-  }, [isSending, messages]);
-
   const scrollToBottom = useCallback((smooth = true) => {
     const container = messagesContainerRef.current;
     if (!container) return;
@@ -92,6 +71,7 @@ export default function ChatPage() {
       container.scrollTo({
         top: container.scrollHeight,
         behavior: smooth ? 'smooth' : 'instant',
+        block: 'end',
       });
     });
   }, []);
@@ -108,93 +88,86 @@ export default function ChatPage() {
   }, [inputValue, currentSettings, sendGuess, isSending]);
 
   const displayMessages = useMemo<Message[]>(() => {
-    if (!optimisticMessage) return messages;
+    const base = messages || [];
+    if (!optimisticMessage) return base;
     const optMsg: Message = {
       id: 'optimistic',
       role: 'user',
+      chat_id: chatId || '',
       content: optimisticMessage,
       is_initial: false,
+      createdAt: new Date().toISOString(),
     };
-    return [...messages, optMsg];
-  }, [messages, optimisticMessage]);
+    return [...base, optMsg];
+  }, [messages, optimisticMessage, chatId]);
 
   const getDisplayContent = (msg: Message): string => {
-    if (!msg || !msg.role) return '';
-
-    if (msg.role === 'user') return msg.content || '';
-
     try {
-      const content = msg.content;
-      if (typeof content === 'string' && content.trim().startsWith('{')) {
-        const parsed: unknown = JSON.parse(content);
-        if (
-          parsed !== null &&
-          typeof parsed === 'object' &&
-          !Array.isArray(parsed)
-        ) {
-          const record = parsed as Record<string, unknown>;
-          const value = record['content'] ?? record['message'] ?? record['reasoning'];
-          if (typeof value === 'string') return value;
-        }
+      if (msg.role === 'model') {
+        const parsed = JSON.parse(msg.content);
+        return parsed.content || parsed.message || msg.content;
       }
-    } catch (e) {
-      return msg.content || '';
+    } catch {
+      return msg.content;
     }
-
-    return msg.content || '';
+    return msg.content;
   };
 
   return (
     <div className={styles.chatPage}>
-      <div ref={messagesContainerRef} className={styles.messagesContainer}>
-        <AnimatePresence mode="popLayout" initial={false}>
-          {displayMessages.length === 0 && !chatId ? (
+      {chatId && (
+        <div className={styles.topActions}>
+          <Button variant="grey-glass-tab" size="sm" onClick={() => setIsCollectionModalOpen(true)}>
+            Колекція загадок
+          </Button>
+        </div>
+      )}
+
+      <div className={styles.messagesContainer} ref={messagesContainerRef}>
+        <AnimatePresence mode="wait">
+          {!chatId && messages.length === 0 ? (
             <motion.div
               key="welcome"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, y: -20 }}
               className={styles.welcomeWrapper}
             >
               <WelcomeSettings
-                initialSettings={currentSettings}
-                onSync={setCurrentSettings}
+                settings={currentSettings}
+                onSettingsChange={setCurrentSettings}
               />
             </motion.div>
           ) : (
-            <div key="chat-flow" className={styles.messagesList}>
-              <div ref={topSentinelRef} aria-hidden="true" style={{ height: 1 }}>
-                {isFetchingOlder && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className={styles.messageRow}
+            <div className={styles.messagesList}>
+              {hasOlderMessages && (
+                <div>
+                  <Button
+                    variant="grey-glass-link"
+                    onClick={loadOlderMessages}
+                    isLoading={isFetchingOlder}
                   >
-                    <div className={styles.loadingBubble}>
-                      <div className={styles.dotTyping} />
-                    </div>
-                  </motion.div>
-                )}
-              </div>
+                    Завантажити попередні
+                  </Button>
+                </div>
+              )}
 
               <LayoutGroup>
-                {displayMessages.map((msg, index) => {
-                  if (!msg) return null;
-
-                  return (
-                    <ChatMessageItem
-                      key={msg.id || `msg-${index}`}
-                      msg={msg}
-                      index={index}
-                      isLast={index === displayMessages.length - 1}
-                      isSending={isSending}
-                      onRegenerate={regenerate}
-                      isRegenerating={isRegenerating}
-                      currentSettings={currentSettings}
-                      displayContent={getDisplayContent(msg)}
-                    />
-                  );
-                })}
+                {displayMessages.map((msg, index) => (
+                  <ChatMessageItem
+                    key={msg.id || `msg-${index}`}
+                    msg={msg}
+                    index={index}
+                    isLast={index === displayMessages.length - 1}
+                    isSending={isSending}
+                    onRegenerate={regenerate}
+                    isRegenerating={isRegenerating}
+                    onReveal={() => reveal()}
+                    isRevealing={isRevealing}
+                    currentSettings={currentSettings}
+                    displayContent={getDisplayContent(msg)}
+                  />
+                ))}
               </LayoutGroup>
 
               {isSending && (
@@ -202,23 +175,33 @@ export default function ChatPage() {
                   layout
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className={styles.messageRow}
+                  className={styles.loadingBubble}
                 >
-                  <div className={styles.loadingBubble}>
-                    <div className={styles.dotTyping} />
-                  </div>
+                  <div className={styles.dotTyping} />
                 </motion.div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </AnimatePresence>
       </div>
 
-      <ChatInput
-        value={inputValue}
-        onChange={setInputValue}
-        onSend={handleSend}
-        isSending={isSending}
+      <div className={styles.inputSticky}>
+        <ChatInput
+          value={inputValue}
+          onChange={setInputValue}
+          onSend={handleSend}
+          isSending={isSending}
+        />
+      </div>
+
+      <RiddleCollectionModal
+        isOpen={isCollectionModalOpen}
+        onClose={() => setIsCollectionModalOpen(false)}
+        messages={messages}
+        onSave={(id) => saveToCollection(id)}
+        onTogglePublic={(riddleId) => togglePublic(riddleId)}
+        savedRiddlesMap={{}}
       />
     </div>
   );

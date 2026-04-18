@@ -6,6 +6,7 @@ import { RiddleBody } from '@/components/molecules/Riddle/RiddleBody/RiddleBody'
 import { Button } from '@/components/atoms/Button/Button';
 import RotateIcon from '@/assets/rotate-icon.svg';
 import styles from './ChatMessageItem.module.scss';
+import LightbulbIcon from '@/assets/lightbulb-icon.svg';
 
 interface ChatMessageItemProps {
   msg: Message;
@@ -16,6 +17,8 @@ interface ChatMessageItemProps {
   isRegenerating: boolean;
   currentSettings: RiddleSettings;
   displayContent: string;
+  onReveal?: () => void;
+  isRevealing?: boolean;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -24,16 +27,23 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   isSending,
   onRegenerate,
   isRegenerating,
+  onReveal,
+  isRevealing,
   currentSettings,
   displayContent,
 }) => {
-  const isMainRiddle = msg.role === 'model' && msg.is_initial;
+  const isModel = msg.role === 'model';
+  const isMainRiddle = isModel && msg.is_initial;
 
-  let xpEarned: number | undefined;
-  try {
-    const parsed = JSON.parse(msg.content) as ChatResponse['data'];
-    xpEarned = parsed.xp_earned;
-  } catch (e) {}
+  const parsedData = React.useMemo(() => {
+    try {
+      return JSON.parse(msg.content);
+    } catch (e) {
+      return null;
+    }
+  }, [msg.content]);
+
+  const isSolved = !!(parsedData?.xp_earned || parsedData?.is_solved);
 
   return (
     <motion.div
@@ -48,12 +58,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           content={displayContent}
           className={cn({ [styles.riddleStyle]: isMainRiddle })}
         />
-        {isLast && msg.role === 'model' && !isSending && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className={styles.actionsRow}
-          >
+
+        {isLast && isModel && !isSending && (
+          <motion.div className={styles.actionsRow}>
             <Button
               variant="icon-only"
               onClick={() => onRegenerate(currentSettings)}
@@ -62,6 +69,18 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
             >
               <RotateIcon />
             </Button>
+
+            {!isSolved && (
+              <Button
+                variant="icon-only"
+                onClick={onReveal}
+                isLoading={isRevealing}
+                title="Reveal Answer"
+                className={styles.revealButton}
+              >
+                <LightbulbIcon />
+              </Button>
+            )}
           </motion.div>
         )}
       </div>
