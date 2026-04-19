@@ -1,9 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RiddleService } from '@/services/riddle.service';
 import { RiddleSettings, SolveResult } from '@/types/riddle';
+import { useGlobalToast } from '@/providers/ToastProvider';
 
 export const useRiddleActions = (chatId: string) => {
   const queryClient = useQueryClient();
+  const { showGlobalToast } = useGlobalToast();
 
   const regenerate = useMutation({
     mutationFn: (settings: RiddleSettings) => RiddleService.regenerateRiddle(chatId, settings),
@@ -24,7 +26,10 @@ export const useRiddleActions = (chatId: string) => {
   const saveToCollection = useMutation({
     mutationFn: (messageId: string) => RiddleService.saveToCollection(messageId),
     onSuccess: () => {
+      showGlobalToast('Загадку успішно збережено в колекцію!', 'success');
+
       queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
+      queryClient.invalidateQueries({ queryKey: ['saved-riddles'] });
     }
   });
 

@@ -8,6 +8,7 @@
   justify-content: flex-start;
   will-change: transform, opacity;
 
+  // Дефолтна поведінка в чаті — bubble-ширина
   :global(.riddleBody) {
     width: fit-content;
     max-width: 80%;
@@ -27,6 +28,14 @@
     :global(.riddleBody) {
       background: rgba($white, 0.03);
       border-color: rgba($white, 0.08);
+    }
+  }
+
+  // Модифікатор fullWidth — перевизначає bubble на 100%
+  &.fullWidth {
+    :global(.riddleBody) {
+      width: 100%;
+      max-width: 100%;
     }
   }
 }
@@ -70,41 +79,7 @@
 .actionsRow {
   display: flex;
   padding-left: 12px;
-  animation: fadeIn 0.3s ease;
-}
-
-.regenerateButton {
-  background: transparent;
-  border: none;
-  color: rgba($white, 0.4);
-  padding: 8px;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    color: $violet;
-    transform: rotate(15deg);
-    background: rgba($white, 0.05);
-    border-radius: 50%;
-  }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes glass-spin {
-  from { --glass-angle: 0deg; }
-  to { --glass-angle: 360deg; }
-}
-
-.actionsRow {
-  display: flex;
-  padding-left: 12px;
-  gap: 4px;
+  gap: 10px;
   animation: fadeIn 0.3s ease;
 }
 
@@ -141,4 +116,14 @@
       filter: drop-shadow(0 0 5px rgba($yellow, 0.8));
     }
   }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glass-spin {
+  from { --glass-angle: 0deg; }
+  to { --glass-angle: 360deg; }
 }

@@ -12,6 +12,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { useRiddleActions } from '@/hooks/riddles/useRiddleActions';
 import styles from './ChatPage.module.scss';
 import { RiddleCollectionModal } from '@/components/organisms/Modals/RiddlesCollectionModal/RiddlesCollectionModal';
+import { useRiddleMessages } from '@/hooks/riddles/useRiddleMessages';
 
 const DEFAULT_SETTINGS: RiddleSettings = {
   type: RiddleType.LOGIC,
@@ -39,6 +40,18 @@ export default function ChatPage() {
     hasOlderMessages,
   } = useRiddleChat(chatId);
 
+  // useRiddleMessages handles save/togglePublic for the collection modal
+  const {
+    riddleMessages,
+    saveToCollection,
+    isSaving,
+    togglePublic: togglePublicModal,
+    isTogglingPublic,
+  } = useRiddleMessages(chatId);
+
+  // useRiddleActions handles reveal (and regenerate if needed) in the chat itself
+  const { reveal, isRevealing } = useRiddleActions(chatId as string);
+
   const [inputValue, setInputValue] = useState('');
   const [currentSettings, setCurrentSettings] = useState<RiddleSettings>(DEFAULT_SETTINGS);
   const [optimisticMessage, setOptimisticMessage] = useState<string | null>(null);
@@ -47,8 +60,6 @@ export default function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevScrollHeightRef = useRef<number>(0);
-
-  const { reveal, isRevealing, saveToCollection, togglePublic } = useRiddleActions(chatId as string);
 
   const saveScrollPosition = useCallback(() => {
     if (messagesContainerRef.current) {
@@ -198,10 +209,11 @@ export default function ChatPage() {
       <RiddleCollectionModal
         isOpen={isCollectionModalOpen}
         onClose={() => setIsCollectionModalOpen(false)}
-        messages={messages}
-        onSave={(id) => saveToCollection(id)}
-        onTogglePublic={(riddleId) => togglePublic(riddleId)}
-        savedRiddlesMap={{}}
+        riddleMessages={riddleMessages}
+        onSave={saveToCollection}
+        onTogglePublic={togglePublicModal}
+        isSaving={isSaving}
+        isTogglingPublic={isTogglingPublic}
       />
     </div>
   );

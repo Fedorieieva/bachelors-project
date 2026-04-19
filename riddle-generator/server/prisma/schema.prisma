@@ -106,9 +106,10 @@ model Riddles {
 
   saved_by SavedRiddles[]
 
-  comments      Comment[]
-  likes         Like[]
-  RiddleAttempt RiddleAttempt[]
+  comments       Comment[]
+  likes          Like[]
+  RiddleAttempt  RiddleAttempt[]
+  source_message Message[]
 
   @@map("riddles")
 }
@@ -179,6 +180,9 @@ model Message {
   content    String
   is_initial Boolean  @default(false)
   createdAt  DateTime @default(now())
+
+  saved_riddle    Riddles? @relation(fields: [saved_riddle_id], references: [id])
+  saved_riddle_id String?  @map("saved_riddle_id")
 }
 
 model Comment {

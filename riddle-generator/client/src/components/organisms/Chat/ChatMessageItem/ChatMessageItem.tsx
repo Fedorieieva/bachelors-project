@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { ChatResponse, Message, RiddleSettings } from '@/types/riddle';
+import { Message, RiddleSettings } from '@/types/riddle';
 import { RiddleBody } from '@/components/molecules/Riddle/RiddleBody/RiddleBody';
 import { Button } from '@/components/atoms/Button/Button';
 import RotateIcon from '@/assets/rotate-icon.svg';
@@ -19,26 +19,29 @@ interface ChatMessageItemProps {
   displayContent: string;
   onReveal?: () => void;
   isRevealing?: boolean;
+  /** Якщо true — RiddleBody розтягується на 100% ширини (для модалок, карток тощо) */
+  fullWidth?: boolean;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
-  msg,
-  isLast,
-  isSending,
-  onRegenerate,
-  isRegenerating,
-  onReveal,
-  isRevealing,
-  currentSettings,
-  displayContent,
-}) => {
+                                                                  msg,
+                                                                  isLast,
+                                                                  isSending,
+                                                                  onRegenerate,
+                                                                  isRegenerating,
+                                                                  onReveal,
+                                                                  isRevealing,
+                                                                  currentSettings,
+                                                                  displayContent,
+                                                                  fullWidth = false,
+                                                                }) => {
   const isModel = msg.role === 'model';
   const isMainRiddle = isModel && msg.is_initial;
 
   const parsedData = React.useMemo(() => {
     try {
       return JSON.parse(msg.content);
-    } catch (e) {
+    } catch {
       return null;
     }
   }, [msg.content]);
@@ -51,7 +54,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.3 }}
-      className={cn(styles.messageRow, { [styles.userRow]: msg.role === 'user' })}
+      className={cn(styles.messageRow, {
+        [styles.userRow]: msg.role === 'user',
+        [styles.fullWidth]: fullWidth,
+      })}
     >
       <div className={styles.messageContentWrapper}>
         <RiddleBody

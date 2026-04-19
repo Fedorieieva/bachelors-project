@@ -506,7 +506,7 @@ export class RiddlesService {
   async getHintForXp(userId: string, riddleId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.is_guest) {
-      throw new ForbiddenException('Тільки зареєстровані користувачі можуть зберігати загадки');
+      throw new ForbiddenException('Тільки зареєстровані користувачі можуть отримуваи підказки');
     } else if (user.xp < 10) {
       throw new BadRequestException('Недостатньо XP для підказки');
     }
@@ -621,15 +621,38 @@ export class RiddlesService {
     });
   }
 
-  async getOnlyRiddlesFromChat(chatId: string, userId: string) {
-    return this.prisma.message.findMany({
+  async getOnlyRiddlesFromChat(chatId: string, userId?: string) {
+    const messages = await this.prisma.message.findMany({
       where: {
         chat_id: chatId,
-        chat: { user_id: userId },
+        role: 'model',
         is_initial: true,
       },
-      orderBy: { createdAt: 'desc' },
+      include: {
+        saved_riddle: userId
+          ? {
+            include: {
+              saved_by: {
+                where: { user_id: userId },
+              },
+            },
+          }
+          : true,
+      },
+      orderBy: { createdAt: 'asc' },
     });
+
+    return messages.map((msg) => ({
+      id: msg.id,
+      content: msg.content,
+      createdAt: msg.createdAt,
+      savedRiddle: msg.saved_riddle
+        ? {
+          id: msg.saved_riddle.id,
+          is_public: msg.saved_riddle.is_public,
+        }
+        : null,
+    }));
   }
 
   private async saveMessage(chatId: string, role: string, content: string, isInitial = false) {
@@ -651,42 +674,36 @@ export class RiddlesService {
   }
 
   async saveToUserCollection(userId: string, messageId: string) {
-    const message = await this.prisma.message.findFirst({
-      where: {
-        id: messageId,
-        chat: { user_id: userId },
-        role: 'model',
-        is_initial: true,
-      },
+    const message = await this.prisma.message.findUnique({
+      where: { id: messageId },
+      include: { chat: true },
     });
 
-    if (!message) {
-      throw new NotFoundException('Загадку не знайдено у цьому повідомленні або доступ заборонено');
-    }
+    if (!message) throw new NotFoundException('Message not found');
 
-    let riddleData;
+    let content = message.content;
+    let answer = '';
     try {
-      riddleData = JSON.parse(message.content);
-    } catch (e) {
-      throw new BadRequestException('Повідомлення не містить валідної структури загадки');
-    }
+      const parsed = JSON.parse(message.content);
+      content = parsed.content || message.content;
+      answer = parsed.answer || '';
+    } catch {}
 
-    const typeFromContext = riddleData.prompt_context?.type?.toUpperCase();
-    const finalType = Object.values(RiddleType).includes(typeFromContext as RiddleType)
-      ? (typeFromContext as RiddleType)
-      : RiddleType.CLASSIC;
-
-    return this.prisma.riddles.create({
+    const riddle = await this.prisma.riddles.create({
       data: {
-        content: riddleData.content,
-        answer: riddleData.answer,
-        prompt_context: riddleData.prompt_context,
-        complexity: Number(riddleData.prompt_context.complexity) || 1,
-        type: finalType,
+        content,
+        answer,
         author_id: userId,
+        complexity: message.chat.complexity,
+        type: message.chat.type,
         is_public: false,
+        source_message: {
+          connect: { id: messageId },
+        },
       },
     });
+
+    return riddle;
   }
 
   async makeRiddlePublic(userId: string, riddleId: string) {
