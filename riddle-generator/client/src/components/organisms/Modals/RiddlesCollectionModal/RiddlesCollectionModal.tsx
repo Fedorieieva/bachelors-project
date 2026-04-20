@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { Modal } from '@/components/atoms/Modal/Modal';
 import { VisibilityToggle } from '@/components/molecules/VisibilityToggle/VisibilityToggle';
 import SaveIcon from '@/assets/save-icon.svg';
@@ -6,6 +8,10 @@ import styles from './RiddlesCollectionModal.module.scss';
 import { RiddleMessageItem } from '@/hooks/riddles/useRiddleMessages';
 import { ChatMessageItem } from '@/components/organisms/Chat/ChatMessageItem/ChatMessageItem';
 import { Message, RiddleSettings } from '@/types/riddle';
+import TrashIcon from '@/assets/trash-icon.svg';
+import { Button } from '@/components/atoms/Button/Button';
+import { Typography } from '@/components/atoms/Typography/Typography';
+import { cn } from '@/lib/utils';
 
 interface RiddleCollectionModalProps {
   isOpen: boolean;
@@ -13,8 +19,10 @@ interface RiddleCollectionModalProps {
   riddleMessages: RiddleMessageItem[];
   onSave: (messageId: string) => void;
   onTogglePublic: (riddleId: string) => void;
+  onDelete: (riddleId: string) => void;
   isSaving?: boolean;
   isTogglingPublic?: boolean;
+  isDeleting?: boolean;
 }
 
 const EMPTY_SETTINGS = {} as RiddleSettings;
@@ -25,9 +33,13 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
   riddleMessages,
   onSave,
   onTogglePublic,
+  onDelete,
   isSaving,
   isTogglingPublic,
+  isDeleting,
 }) => {
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Generated Riddles">
       <div className={styles.scrollContainer}>
@@ -53,6 +65,7 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
             } catch {}
 
             const isSaved = !!item.savedRiddle;
+            const isConfirming = confirmDeleteId === item.savedRiddle?.id;
 
             return (
               <div key={item.id} className={styles.riddleWrapper}>
@@ -68,7 +81,7 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
                   fullWidth
                 />
 
-                <div className={styles.riddleFooter}>
+                <div className={cn(styles.riddleFooter)}>
                   {!isSaved ? (
                     <button
                       className={styles.saveButton}
@@ -79,12 +92,51 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
                       <SaveIcon className={styles.saveIcon} />
                     </button>
                   ) : (
-                    <VisibilityToggle
-                      isPublic={item.savedRiddle!.is_public}
-                      onClick={() =>
-                        !isTogglingPublic && onTogglePublic(item.savedRiddle!.id)
-                      }
-                    />
+                    <div className={styles.footerActions}>
+                      {isConfirming ? (
+                        <div className={styles.confirmInline}>
+                          <Typography variant="details" className={styles.confirmText}>
+                            Точно бажаєте видалити загадку з колекції?
+                          </Typography>
+                          <Button
+                            variant="simple"
+                            size="auto"
+                            onClick={() => setConfirmDeleteId(null)}
+                            className={styles.cancelBtn}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="auto"
+                            onClick={() => {
+                              onDelete(item.savedRiddle!.id);
+                              setConfirmDeleteId(null);
+                            }}
+                            isLoading={isDeleting}
+                            className={styles.deleteBtn}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <VisibilityToggle
+                            isPublic={item.savedRiddle!.is_public}
+                            onClick={() =>
+                              !isTogglingPublic && onTogglePublic(item.savedRiddle!.id)
+                            }
+                          />
+                          <Button
+                            variant="icon-only"
+                            onClick={() => setConfirmDeleteId(item.savedRiddle!.id)}
+                            className={styles.trashBtn}
+                          >
+                            <TrashIcon className={styles.deleteIcon} />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

@@ -21,9 +21,10 @@ import LockIcon from '@/assets/lock-icon.svg';
 import FlameIcon from '@/assets/flame-icon.svg';
 import ZapIcon from '@/assets/zap-icon.svg';
 import SproutIcon from '@/assets/sprout-icon.svg';
+import TrashIcon from '@/assets/trash-icon.svg';
 
 import { RiddleStatus, RiddleStatusModal } from '@/components/organisms/Modals/RiddleStatusModal/RiddleStatusModal';
-import { useSolveRiddle, useRiddleEconomy } from '@/hooks/riddles/useRiddleActions';
+import { useSolveRiddle, useRiddleEconomy, useDeleteRiddle } from '@/hooks/riddles/useRiddleActions';
 import { UserHeader } from '@/components/molecules/UserHeader/UserHeader';
 import { Badge, BadgeVariant } from '@/components/atoms/Badge/Badge';
 import { RiddleBody } from '@/components/molecules/Riddle/RiddleBody/RiddleBody';
@@ -96,6 +97,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   const { solveRiddle, isSolving } = useSolveRiddle(id);
   const { buyAttempt } = useRiddleEconomy(id);
   const { showGlobalToast } = useGlobalToast();
+  const { deleteRiddle, isDeleting } = useDeleteRiddle();
 
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: ToastType }>({
     isVisible: false, message: '', type: 'success'
@@ -113,6 +115,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   const [canAttemptLocal, setCanAttemptLocal] = useState(initialCanAttempt);
   const [hasBoughtRetry, setHasBoughtRetry] = useState(false);
 
+  const [isDeleteRiddleModalOpen, setIsDeleteRiddleModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isGuessModalOpen, setIsGuessModalOpen] = useState(false);
@@ -195,6 +198,11 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   const handleDeleteClick = (id: string) => {
     setCommentToDelete(id);
     setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    deleteRiddle(id);
+    setIsDeleteRiddleModalOpen(false);
   };
 
   const handleConfirmDelete = async () => {
@@ -294,11 +302,20 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
               </Badge>
             )}
             {isOwnPost && (
-              <VisibilityToggle
-                isPublic={isPublicLocal}
-                onClick={handleToggleVisibility}
-                isLoading={isChangingVisibility}
-              />
+              <div className={styles.badgeContainer}>
+                <VisibilityToggle
+                  isPublic={isPublicLocal}
+                  onClick={handleToggleVisibility}
+                  isLoading={isChangingVisibility}
+                />
+                <Button
+                  variant="icon-only"
+                  onClick={() => setIsDeleteRiddleModalOpen(true)}
+                  title="Delete riddle"
+                >
+                  <TrashIcon className={styles.deleteIcon} />
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -400,6 +417,17 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
         isLoading={isSubmitting}
+      />
+
+      <ConfirmModal
+        isOpen={isDeleteRiddleModalOpen}
+        title="Delete Riddle?"
+        description="Are you sure you want to delete this riddle? This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+        isLoading={isDeleting}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
       />
     </>
   );

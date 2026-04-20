@@ -70,6 +70,15 @@
   }
 }
 
+.deleteIcon {
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    color: $error;
+  }
+}
+
 .actions {
   display: flex;
   align-items: center;

@@ -9,7 +9,7 @@ import { RiddleType, RiddleSettings, Message } from '@/types/riddle';
 import { ChatMessageItem } from '@/components/organisms/Chat/ChatMessageItem/ChatMessageItem';
 import { ChatInput } from '@/components/organisms/Chat/ChatInput/ChatInput';
 import { Button } from '@/components/atoms/Button/Button';
-import { useRiddleActions } from '@/hooks/riddles/useRiddleActions';
+import { useDeleteRiddle, useRiddleActions } from '@/hooks/riddles/useRiddleActions';
 import styles from './ChatPage.module.scss';
 import { RiddleCollectionModal } from '@/components/organisms/Modals/RiddlesCollectionModal/RiddlesCollectionModal';
 import { useRiddleMessages } from '@/hooks/riddles/useRiddleMessages';
@@ -40,7 +40,6 @@ export default function ChatPage() {
     hasOlderMessages,
   } = useRiddleChat(chatId);
 
-  // useRiddleMessages handles save/togglePublic for the collection modal
   const {
     riddleMessages,
     saveToCollection,
@@ -49,7 +48,8 @@ export default function ChatPage() {
     isTogglingPublic,
   } = useRiddleMessages(chatId);
 
-  // useRiddleActions handles reveal (and regenerate if needed) in the chat itself
+  const deleteMutation = useDeleteRiddle(chatId);
+
   const { reveal, isRevealing } = useRiddleActions(chatId as string);
 
   const [inputValue, setInputValue] = useState('');
@@ -212,8 +212,10 @@ export default function ChatPage() {
         riddleMessages={riddleMessages}
         onSave={saveToCollection}
         onTogglePublic={togglePublicModal}
+        onDelete={(id) => deleteMutation.mutate(id)}
         isSaving={isSaving}
         isTogglingPublic={isTogglingPublic}
+        isDeleting={deleteMutation.isPending}
       />
     </div>
   );

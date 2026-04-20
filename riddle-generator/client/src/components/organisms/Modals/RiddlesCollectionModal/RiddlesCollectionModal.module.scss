@@ -49,6 +49,30 @@
   animation: fadeIn 0.3s ease;
 }
 
+.footerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.confirmInline {
+  display: flex;
+  align-items: center;
+  margin: auto;
+  gap: 8px;
+  background: rgba($error, 0.05);
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba($error, 0.1);
+  animation: slideIn 0.2s ease-out;
+}
+
+.confirmText {
+  color: $error;
+  font-weight: 500;
+}
+
 .saveButton {
   background: transparent;
   border: none;
@@ -86,6 +110,27 @@
   color: inherit;
 }
 
+.deleteBtn {
+  background: $error !important;
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  min-height: unset !important;
+}
+
+.cancelBtn {
+  font-size: 12px !important;
+  padding: 4px 10px !important;
+  min-height: unset !important;
+  color: $white-2 !important;
+}
+
+.trashBtn:hover {
+  .deleteIcon {
+    color: $error;
+    filter: drop-shadow(0 0 5px rgba($error, 0.5));
+  }
+}
+
 .emptyState {
   text-align: center;
   color: rgba($white, 0.3);
@@ -96,6 +141,11 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 :global(.toggle) {

@@ -10,8 +10,8 @@ import styles from './CommentItem.module.scss';
 interface CommentItemProps {
   id: string;
   userName: string;
-  userId: string;       // ID автора коментаря
-  currentUserId?: string; // ID авторизованого користувача
+  userId: string;
+  currentUserId?: string;
   avatarUrl?: string | null;
   content: string;
   createdAt: string;

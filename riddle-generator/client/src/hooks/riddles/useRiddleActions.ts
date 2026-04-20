@@ -102,3 +102,27 @@ export const useRiddleEconomy = (riddleId: string) => {
     isProcessing: buyAttempt.isPending || getHint.isPending
   };
 };
+
+export const useDeleteRiddle = (chatId?: string) => {
+  const queryClient = useQueryClient();
+  const { showGlobalToast } = useGlobalToast();
+
+  return useMutation({
+    mutationFn: (riddleId: string) => RiddleService.deleteRiddle(riddleId),
+    onSuccess: () => {
+      showGlobalToast('Загадку успішно видалено', 'success');
+
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+      queryClient.invalidateQueries({ queryKey: ['user-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['saved-riddles'] });
+
+      if (chatId) {
+        queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
+        queryClient.invalidateQueries({ queryKey: ['riddle-messages', chatId] });
+      }
+    },
+    onError: (error) => {
+      showGlobalToast(error.message || 'Не вдалося видалити загадку', 'error');
+    },
+  });
+};

@@ -35,16 +35,21 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, className, hideAvat
         {!hideAvatar && (
           <>
             {isAuthenticated && authUser ? (
-              <Avatar
-                userName={displayUser?.name || 'User'}
-                avatarUrl={displayUser?.avatar_url}
-                size="md"
-                badge={{
-                  type: 'xp',
-                  value: displayUser?.xp || 0,
-                  position: 'left'
-                }}
-              />
+              <Button
+                variant="icon-only"
+                href={`/profile/${authUser.id}`}
+              >
+                <Avatar
+                  userName={displayUser?.name || 'User'}
+                  avatarUrl={displayUser?.avatar_url}
+                  size="md"
+                  badge={{
+                    type: 'xp',
+                    value: displayUser?.xp || 0,
+                    position: 'left'
+                  }}
+                />
+              </Button>
             ) : (
               <Button
                 href="/login"
