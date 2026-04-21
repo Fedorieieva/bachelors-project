@@ -7,7 +7,6 @@ import { AuthService } from '@/services/users/auth.service';
 import { setCredentials } from '@/store/slices/authSlice';
 import { useAppDispatch } from '@/store/hooks';
 import { UserProfile } from '@/types/user';
-import { store } from '@/store';
 
 interface ApiError {
   message: string;
@@ -21,7 +20,7 @@ export const useRegister = () => {
     mutationFn: (data: RegisterDto) => AuthService.register(data),
     onSuccess: (response) => {
       dispatch(setCredentials(response.user as UserProfile));
-      router.push('/dashboard');
+      router.push('/social-media');
     },
     onError: (error) => {
       const message = error.response?.data?.message || 'Registration failed';
