@@ -6,17 +6,7 @@ import { Pool } from 'pg';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
-    const pgPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      max: 3,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
-    });
-
-    const adapter = new PrismaPg(pgPool);
-
     super({
-      adapter: adapter,
       log: ['error', 'warn'],
     });
   }
