@@ -2,3 +2,8 @@
 @use "../styles/abstracts/mixins" as *;
 @use "../styles/base/reset";
 @use "../styles/base/typography";
+
+body {
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+}
