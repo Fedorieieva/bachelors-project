@@ -65,7 +65,6 @@ async function bootstrap() {
     .addTag('Interactions', 'Лайки та коментарі користувачів')
     .addTag('Prompts', 'Адміністрування AI шаблонів')
     .addTag('Users', 'Профілі та налаштування користувачів')
-    .addServer(`http://localhost:${process.env.PORT ?? 8000}`, 'Local Development')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, documentFactory, {
