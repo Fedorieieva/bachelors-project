@@ -31,7 +31,7 @@ function getFetchFn(type: FeedType) {
     }
 
     return {
-      items: response.data ?? [],
+      items: response.items ?? [],
       total: response.meta?.total ?? 0,
       page: response.meta?.page ?? page,
       totalPages: response.meta?.totalPages ?? 1,
