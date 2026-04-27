@@ -12,8 +12,8 @@ interface RiddleBodyProps {
 
 export const RiddleBody: React.FC<RiddleBodyProps> = ({ content, className }) => {
   return (
-    <div className={cn(styles.riddleBody, 'riddleBody',className)}>
-      <Typography variant="caption--placeholder" className={styles.content}>
+    <div className={cn(styles.riddleBody, 'riddleBody', className)}>
+      <Typography variant="caption-placeholder" className={styles.content}>
         {content}
       </Typography>
     </div>

@@ -107,7 +107,7 @@ export const useDeleteRiddle = (chatId?: string) => {
   const queryClient = useQueryClient();
   const { showGlobalToast } = useGlobalToast();
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (riddleId: string) => RiddleService.deleteRiddle(riddleId),
     onSuccess: () => {
       showGlobalToast('Загадку успішно видалено', 'success');
@@ -125,4 +125,9 @@ export const useDeleteRiddle = (chatId?: string) => {
       showGlobalToast(error.message || 'Не вдалося видалити загадку', 'error');
     },
   });
-};
+
+  return {
+    deleteRiddle: mutation.mutate,
+    isDeleting: mutation.isPending
+  };
+};;

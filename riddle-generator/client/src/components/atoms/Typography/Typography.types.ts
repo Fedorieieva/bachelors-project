@@ -12,7 +12,7 @@ export type TypographyVariant =
   | 'details'
   | 'details-error';
 
-export interface TypographyProps {
+export interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
   variant?: TypographyVariant;
   children: React.ReactNode;
   className?: string;

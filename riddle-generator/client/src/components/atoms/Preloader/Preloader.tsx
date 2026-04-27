@@ -1,14 +1,14 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import styles from './Preloader.module.scss';
 
-const puzzleVariants = {
+const puzzleVariants: Variants = {
   hidden: (i: number) => {
     const offsets = [
-      { x: -50, y: -50 }, // Top-Left -> Upper-Left
-      { x: 50, y: -50 },  // Top-Right -> Upper-Right
-      { x: -60, y: 60 },  // Bottom-Left -> Lower-Left
-      { x: 50, y: 50 },   // Bottom-Right -> Lower-Right
+      { x: -50, y: -50 },
+      { x: 50, y: -50 },
+      { x: -60, y: 60 },
+      { x: 50, y: 50 },
     ];
     return {
       opacity: 0,

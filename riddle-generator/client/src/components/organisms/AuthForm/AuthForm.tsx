@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import styles from './AuthForm.module.scss';
 import { Input } from '@/components/atoms/Input/Input';
 import { Button } from '@/components/atoms/Button/Button';
@@ -46,14 +46,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
     stiffness: 150,
     damping: 25,
     mass: 1.2
-  };
+  } as const;
 
   const collapseToCenterTransition = {
     duration: 0.3,
-    ease: [0.4, 0, 0.2, 1],
+    ease: [0.4, 0, 0.2, 1] as const,
   };
 
-  const collapsableContainerVariants = {
+  const collapsableContainerVariants: Variants = {
     hidden: {
       height: 0,
       opacity: 0,
@@ -81,7 +81,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
     }
   };
 
-  const inputScaleVariants = {
+  const inputScaleVariants: Variants = {
     hidden: {
       scaleY: 0,
       opacity: 0,
@@ -126,7 +126,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
       </div>
 
       <Formik
-        initialValues={{ email: 'user@example.com', password: 'securePassword123', name: '' }}
+        initialValues={{ email: '', password: '', name: '' }}
         validationSchema={isLogin ? loginSchema : registerSchema}
         onSubmit={(values) => {
           if (isLogin) {

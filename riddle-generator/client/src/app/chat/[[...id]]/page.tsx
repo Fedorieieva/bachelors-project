@@ -48,7 +48,7 @@ export default function ChatPage() {
     isTogglingPublic,
   } = useRiddleMessages(chatId);
 
-  const deleteMutation = useDeleteRiddle(chatId);
+  const { deleteRiddle, isDeleting } = useDeleteRiddle(chatId);
 
   const { reveal, isRevealing } = useRiddleActions(chatId as string);
 
@@ -82,7 +82,6 @@ export default function ChatPage() {
       container.scrollTo({
         top: container.scrollHeight,
         behavior: smooth ? 'smooth' : 'instant',
-        block: 'end',
       });
     });
   }, []);
@@ -128,7 +127,7 @@ export default function ChatPage() {
     <div className={styles.chatPage}>
       {chatId && (
         <div className={styles.topActions}>
-          <Button variant="grey-glass-tab" size="sm" onClick={() => setIsCollectionModalOpen(true)}>
+          <Button variant="grey-glass-tab" size="auto" onClick={() => setIsCollectionModalOpen(true)}>
             Колекція загадок
           </Button>
         </div>
@@ -145,8 +144,8 @@ export default function ChatPage() {
               className={styles.welcomeWrapper}
             >
               <WelcomeSettings
-                settings={currentSettings}
-                onSettingsChange={setCurrentSettings}
+                initialSettings={currentSettings}
+                onSync={setCurrentSettings}
               />
             </motion.div>
           ) : (
@@ -155,7 +154,10 @@ export default function ChatPage() {
                 <div>
                   <Button
                     variant="grey-glass-link"
-                    onClick={loadOlderMessages}
+                    onClick={() => {
+                      saveScrollPosition();
+                      loadOlderMessages();
+                    }}
                     isLoading={isFetchingOlder}
                   >
                     Завантажити попередні
@@ -212,10 +214,10 @@ export default function ChatPage() {
         riddleMessages={riddleMessages}
         onSave={saveToCollection}
         onTogglePublic={togglePublicModal}
-        onDelete={(id) => deleteMutation.mutate(id)}
+        onDelete={(id) => deleteRiddle(id)}
         isSaving={isSaving}
         isTogglingPublic={isTogglingPublic}
-        isDeleting={deleteMutation.isPending}
+        isDeleting={isDeleting}
       />
     </div>
   );

@@ -33,9 +33,9 @@ const WelcomeSettingsSchema = Yup.object().shape({
 });
 
 export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
-                                                                  initialSettings,
-                                                                  onSync
-                                                                }) => {
+  initialSettings,
+  onSync
+}) => {
   const formik = useFormik<RiddleSettings>({
     initialValues: initialSettings,
     validationSchema: WelcomeSettingsSchema,
@@ -57,7 +57,7 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
             {Object.values(RiddleType).map((t) => (
               <Button
                 key={t}
-                variant={formik.values.type === t ? 'colored-glass' : 'glass-inactive'}
+                variant={formik.values.type === t ? 'colored-glass' : 'colored-glass-inactive'}
                 onClick={() => formik.setFieldValue('type', t)}
                 fullWidth
               >

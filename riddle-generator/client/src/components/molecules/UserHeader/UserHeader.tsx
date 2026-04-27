@@ -28,7 +28,7 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
       case 'xs': return 'details';
       case 'sm': return 'caption';
       case 'md': return 'input-secondary';
-      case 'lg': return 'h4';
+      case 'lg': return 'h3';
       default: return 'input-secondary';
     }
   };

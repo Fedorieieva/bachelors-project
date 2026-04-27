@@ -1,6 +1,7 @@
 "use client";
 
-import React from 'react';
+import React, { forwardRef } from 'react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Typography } from '@/components/atoms/Typography';
 import styles from './Button.module.scss';
@@ -19,27 +20,33 @@ export type ButtonVariant =
 
 export type ButtonSize = 'default' | 'full' | 'auto';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface BaseButtonProps {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   fullWidth?: boolean;
-  href?: string;
+  disabled?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({
-  className,
-  variant = 'primary',
-  size,
-  isLoading = false,
-  leftIcon,
-  children,
-  disabled,
-  fullWidth = false,
-  href,
-  ...props
-}) => {
+type HTMLButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & BaseButtonProps & { href?: never };
+type HTMLLinkProps = React.AnchorHTMLAttributes<HTMLAnchorElement> & BaseButtonProps & { href: string };
+
+type ButtonProps = HTMLButtonProps | HTMLLinkProps;
+
+export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonProps>((props, ref) => {
+  const {
+    className,
+    variant = 'primary',
+    size,
+    isLoading = false,
+    leftIcon,
+    children,
+    disabled,
+    fullWidth = false,
+    ...rest
+  } = props;
+
   const finalSize: ButtonSize = size ?? (fullWidth ? 'full' : 'default');
 
   const variantClasses: Record<ButtonVariant, string> = {
@@ -90,20 +97,38 @@ export const Button: React.FC<ButtonProps> = ({
     variantClasses[variant],
     variant !== 'icon-only' && sizeClasses[finalSize],
     className,
-    { [styles.disabled]: disabled || isLoading }
+    {
+      [styles.disabled]: disabled || isLoading,
+      [styles.sizeFull]: fullWidth
+    }
   );
 
-  if (href) {
+  if ('href' in rest && rest.href !== undefined) {
+    const { href, ...linkProps } = rest as HTMLLinkProps;
     return (
-      <a href={href} className={commonClasses}>
+      <Link
+        href={href}
+        className={commonClasses}
+        ref={ref as React.Ref<HTMLAnchorElement>}
+        aria-disabled={disabled || isLoading}
+        {...linkProps}
+      >
         {content}
-      </a>
+      </Link>
     );
   }
 
+  const buttonProps = rest as HTMLButtonProps;
   return (
-    <button className={commonClasses} disabled={disabled || isLoading} {...props}>
+    <button
+      ref={ref as React.Ref<HTMLButtonElement>}
+      className={commonClasses}
+      disabled={disabled || isLoading}
+      {...buttonProps}
+    >
       {content}
     </button>
   );
-};
+});
+
+Button.displayName = 'Button';

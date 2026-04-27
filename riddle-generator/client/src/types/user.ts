@@ -28,6 +28,7 @@ export interface UserStats {
   social: {
     followersCount: number;
     followingCount: number;
+    isFollowing?: boolean;
   };
   reputation: number;
 }

@@ -36,7 +36,7 @@ export default function ProfilePage() {
         followers={stats.social.followersCount}
         following={stats.social.followingCount}
         isOwnProfile={!shouldShowFollowButton}
-        isFollowing={stats.social.isFollowing}
+        isFollowing={!!stats.social.isFollowing}
         onFollowToggle={() => stats.social.isFollowing ? unfollow() : follow()}
         isLoading={isFollowing || isUnfollowing}
       />

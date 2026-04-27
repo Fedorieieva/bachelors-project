@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion'; 
 import { AuthForm } from '@/components/organisms/AuthForm/AuthForm';
 import { Logo } from '@/components/atoms/Logo/Logo';
 import styles from './AuthPage.module.scss';
@@ -33,9 +33,9 @@ export default function LoginPage() {
     stiffness: 100,
     damping: 20,
     mass: 1,
-  };
+  } as const;
 
-  const formVariants = {
+  const formVariants: Variants = {
     login: {
       x: distance,
       zIndex: 2,
@@ -48,7 +48,7 @@ export default function LoginPage() {
     },
   };
 
-  const visualVariants = {
+  const visualVariants: Variants = {
     login: {
       x: -distance,
       zIndex: 1,

@@ -4,11 +4,13 @@ import styles from './Typography.module.scss';
 import { TypographyProps, TypographyVariant } from './Typography.types';
 
 export const Typography: React.FC<TypographyProps> = ({
-                                                        variant = 'body',
-                                                        children,
-                                                        className,
-                                                        as,
-                                                      }) => {
+  variant = 'body',
+  children,
+  className,
+  as,
+  style,
+  ...props
+}) => {
   const variantClasses: Record<TypographyVariant, string | undefined> = {
     'h1': styles.h1,
     'h2': styles.h2,
@@ -23,7 +25,7 @@ export const Typography: React.FC<TypographyProps> = ({
   };
 
   const getDefaultTag = (): React.ElementType => {
-    if (variant === 'h1' || variant === 'h2') return variant;
+    if (variant === 'h1' || variant === 'h2' || variant === 'h3') return variant;
     if (variant === 'body') return 'p';
     return 'span';
   };
@@ -33,6 +35,8 @@ export const Typography: React.FC<TypographyProps> = ({
   return (
     <Component
       className={cn(variantClasses[variant], className)}
+      style={style}
+      {...props}
     >
       {children}
     </Component>

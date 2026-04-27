@@ -28,7 +28,7 @@ export const GuessModal: React.FC<GuessModalProps> = ({
   const isButtonDisabled = !answer.trim() || isLoading;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg" title="Guess this riddle">
+    <Modal isOpen={isOpen} onClose={onClose} title="Guess this riddle">
       <div className={styles.container}>
         <Input
           placeholder="Enter your answer"

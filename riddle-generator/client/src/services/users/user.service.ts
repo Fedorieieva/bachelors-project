@@ -1,6 +1,6 @@
 import { apiClient } from '@/lib/api-client';
-import { UpdateUserDto, UserStats } from '@/types/auth';
-import { FollowRecord, UserProfile } from '@/types/user';
+import { UpdateUserDto } from '@/types/auth';
+import { FollowRecord, UserProfile, UserStats } from '@/types/user';
 
 export const UserService = {
   async getUserById(id: string): Promise<UserProfile> {
