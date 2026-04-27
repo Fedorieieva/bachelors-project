@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query'; // Додано useQueryClient
 import { useRouter } from 'next/navigation';
 import { AxiosError } from 'axios';
 
@@ -15,10 +15,13 @@ interface ApiError {
 export const useRegister = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
 
   return useMutation<AuthResponse, AxiosError<ApiError>, RegisterDto>({
     mutationFn: (data: RegisterDto) => AuthService.register(data),
     onSuccess: (response) => {
+      queryClient.clear();
+
       dispatch(setCredentials(response.user as UserProfile));
       router.push('/social-media');
     },
@@ -32,10 +35,13 @@ export const useRegister = () => {
 export const useLogin = () => {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
 
   return useMutation<AuthResponse, AxiosError<ApiError>, LoginDto>({
     mutationFn: (data: LoginDto) => AuthService.login(data),
     onSuccess: (response) => {
+      queryClient.clear();
+
       dispatch(setCredentials(response.user as UserProfile));
       router.push('/social-media');
     },
