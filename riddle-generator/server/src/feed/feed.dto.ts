@@ -24,7 +24,7 @@ export interface FeedMetaDto {
 }
 
 export class FeedResponseDto<T> {
-  items: T[];
+  data: T[];
   meta: FeedMetaDto;
 }
 

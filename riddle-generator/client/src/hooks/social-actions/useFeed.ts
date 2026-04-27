@@ -1,5 +1,5 @@
 import { SocialService } from '@/services/social-actions/social.service';
-import { FeedRiddle } from '@/types/social';
+import { FeedResponse, FeedRiddle } from '@/types/social';
 import { useInfiniteScroll, PaginatedPage } from '@/hooks/infinite-scroll/useInfiniteScroll';
 
 export type FeedType = 'public' | 'saved' | 'my-public' | 'my-private' | 'following';
@@ -8,7 +8,7 @@ const FEED_LIMIT = 10;
 
 function getFetchFn(type: FeedType) {
   return async (page: number): Promise<PaginatedPage<FeedRiddle>> => {
-    let response;
+    let response: FeedResponse;
 
     switch (type) {
       case 'public':
@@ -31,7 +31,7 @@ function getFetchFn(type: FeedType) {
     }
 
     return {
-      items: response.items ?? [],
+      items: response.data ?? [],
       total: response.meta?.total ?? 0,
       page: response.meta?.page ?? page,
       totalPages: response.meta?.totalPages ?? 1,

@@ -78,7 +78,7 @@ export class FeedService {
     ]);
 
     return {
-      items: items.map((item) => this.formatRiddleItem(item, userId)),
+      data: items.map((item) => this.formatRiddleItem(item, userId)),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -97,7 +97,7 @@ export class FeedService {
     ]);
 
     return {
-      items: items.map((item) => this.formatRiddleItem(item, userId)),
+      data: items.map((item) => this.formatRiddleItem(item, userId)),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -116,7 +116,7 @@ export class FeedService {
     ]);
 
     return {
-      items: items.map((item) => this.formatRiddleItem(item, userId)),
+      data: items.map((item) => this.formatRiddleItem(item, userId)),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -142,7 +142,7 @@ export class FeedService {
     ]);
 
     return {
-      items: savedRecords.map((record) => this.formatRiddleItem(record.riddle, userId)),
+      data: savedRecords.map((record) => this.formatRiddleItem(record.riddle, userId)),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -162,7 +162,15 @@ export class FeedService {
     const followingIds = following.map((f) => f.following_id);
 
     if (followingIds.length === 0) {
-      return { items: [], meta: { total: 0, page, limit, totalPages: 0 } };
+      return {
+        data: [],
+        meta: {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0
+        }
+      };
     }
 
     const [items, total] = await Promise.all([
@@ -179,7 +187,7 @@ export class FeedService {
     ]);
 
     return {
-      items: items.map((item) =>
+      data: items.map((item) =>
         this.formatRiddleItem(item as RiddleWithFullRelations, userId),
       ),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
