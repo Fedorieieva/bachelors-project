@@ -10,7 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       connectionString: process.env.DATABASE_URL,
       max: 3,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 5000,
     });
 
     const adapter = new PrismaPg(pgPool);
