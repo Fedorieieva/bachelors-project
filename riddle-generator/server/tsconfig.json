@@ -3,7 +3,7 @@
     //"ignoreDeprecations": "6.0",
     "module": "CommonJS",
     "moduleResolution": "node",
-    "resolvePackageJsonExports": true,
+//    "resolvePackageJsonExports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
     "declaration": true,
