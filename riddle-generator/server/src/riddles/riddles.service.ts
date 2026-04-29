@@ -284,6 +284,11 @@ export class RiddlesService {
 
     const analysis: RiddleIntentAnalysis = await this.aiService.classifyIntent(userMessage);
 
+    if (analysis.intent === 'GIVE_UP') {
+      await this.saveMessage(chatId, 'user', userMessage);
+      return this.revealAnswer(chatId, authorId);
+    }
+
     if (analysis.intent === 'INAPPROPRIATE') {
       await this.handleUserViolation(authorId);
 

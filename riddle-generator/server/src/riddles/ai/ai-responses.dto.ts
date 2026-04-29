@@ -8,7 +8,7 @@ export interface AiRiddleResponse {
 }
 
 export interface RiddleIntentAnalysis {
-  intent: 'NEW' | 'REFINE' | 'OFF_TOPIC' | 'INAPPROPRIATE';
+  intent: 'NEW' | 'REFINE' | 'OFF_TOPIC' | 'INAPPROPRIATE'| 'GIVE_UP';
   type?: RiddleType;
   style?: string;
   topic?: string;

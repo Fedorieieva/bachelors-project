@@ -28,6 +28,8 @@ export class AuthService {
       email,
       password: hashedPassword,
       name,
+      onboarding_completed: true,
+      is_guest: false,
     };
 
     const user = await this.userService.createUserOnly(createUserDto);

@@ -116,6 +116,7 @@ export class AiService {
     1. Detect "INAPPROPRIATE" content: Sexual acts, pornography, graphic gore, detailed physical torture, or extreme violence.
     2. Determine intent:
        - "NEW": User explicitly asks for a new riddle (e.g., "give me another one", "new topic", "start again").
+       - "GIVE_UP": User explicitly wants to stop trying and see the answer (e.g., "i give up", "tell me the answer", "я здаюся", "я здаюсь", "відповідь" or any other request that indicates that the user wants to see the answer).
        - "REFINE": User is making a guess (usually 1-3 words in some cases may be more), asking for a hint, or discussing the current riddle.
        - "OFF_TOPIC": user is asking for something unrelated (recipes, code, general facts).
     3. Extract Type (only for NEW): "classic", "math", "logic", or "danetki".
@@ -128,7 +129,7 @@ export class AiService {
 
     Return JSON only:
     {
-      "intent": "NEW" | "REFINE" | "OFF_TOPIC" | "INAPPROPRIATE",
+      "intent": "NEW" | "REFINE" | "OFF_TOPIC" | "INAPPROPRIATE" | "GIVE_UP",
       "reason": "short explanation if inappropriate",
       "type": "string | null",
       "style": "string | null",
