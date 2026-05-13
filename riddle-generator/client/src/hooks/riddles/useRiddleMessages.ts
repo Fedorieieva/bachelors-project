@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useGlobalToast } from '@/providers/ToastProvider';
+import { useTranslations } from 'next-intl';
 
 export interface RiddleMessageItem {
   id: string;
@@ -22,6 +23,7 @@ async function fetchRiddleMessages(chatId: string): Promise<RiddleMessageItem[]>
 export function useRiddleMessages(chatId?: string) {
   const queryClient = useQueryClient();
   const { showGlobalToast } = useGlobalToast();
+  const t = useTranslations('toasts');
 
   const query = useQuery<RiddleMessageItem[], Error, RiddleMessageItem[]>({
     queryKey: ['riddle-messages', chatId],
@@ -33,11 +35,11 @@ export function useRiddleMessages(chatId?: string) {
     mutationFn: (messageId: string) =>
       apiClient.post(`/riddles/save/${messageId}`).then((r) => r.data),
     onSuccess: () => {
-      showGlobalToast('Загадку збережено в колекцію!', 'success');
+      showGlobalToast(t('riddleSaved'), 'success');
       queryClient.invalidateQueries({ queryKey: ['riddle-messages', chatId] });
     },
     onError: () => {
-      showGlobalToast('Помилка збереження', 'error');
+      showGlobalToast(t('riddleSaveError'), 'error');
     },
   });
 
@@ -48,7 +50,7 @@ export function useRiddleMessages(chatId?: string) {
       queryClient.invalidateQueries({ queryKey: ['riddle-messages', chatId] });
     },
     onError: () => {
-      showGlobalToast('Помилка зміни видимості', 'error');
+      showGlobalToast(t('visibilityError'), 'error');
     },
   });
 

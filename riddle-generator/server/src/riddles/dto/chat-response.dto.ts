@@ -13,5 +13,7 @@ export interface ChatResponseDto {
     answer?: string;
     prompt_context?: RiddleMetadata;
     xp_earned?: number;
+    model_used?: string;
+    fallback_occurred?: boolean;
   };
 }

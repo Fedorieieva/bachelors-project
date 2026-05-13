@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Message, RiddleSettings } from '@/types/riddle';
 import { RiddleBody } from '@/components/molecules/Riddle/RiddleBody/RiddleBody';
 import { Button } from '@/components/atoms/Button/Button';
+import { useTranslations } from 'next-intl';
 import RotateIcon from '@/assets/rotate-icon.svg';
 import styles from './ChatMessageItem.module.scss';
 import LightbulbIcon from '@/assets/lightbulb-icon.svg';
@@ -19,22 +20,22 @@ interface ChatMessageItemProps {
   displayContent: string;
   onReveal?: () => void;
   isRevealing?: boolean;
-  /** Якщо true — RiddleBody розтягується на 100% ширини (для модалок, карток тощо) */
   fullWidth?: boolean;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
-                                                                  msg,
-                                                                  isLast,
-                                                                  isSending,
-                                                                  onRegenerate,
-                                                                  isRegenerating,
-                                                                  onReveal,
-                                                                  isRevealing,
-                                                                  currentSettings,
-                                                                  displayContent,
-                                                                  fullWidth = false,
-                                                                }) => {
+  msg,
+  isLast,
+  isSending,
+  onRegenerate,
+  isRegenerating,
+  onReveal,
+  isRevealing,
+  currentSettings,
+  displayContent,
+  fullWidth = false,
+}) => {
+  const t = useTranslations('chatMessageItem');
   const isModel = msg.role === 'model';
   const isMainRiddle = isModel && msg.is_initial;
 
@@ -47,6 +48,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   }, [msg.content]);
 
   const isSolved = !!(parsedData?.xp_earned || parsedData?.is_solved);
+  const isRevealed = isModel && parsedData === null;
+  const isFinished = isSolved || isRevealed;
+  const modelUsed: string | undefined = parsedData?.model_used;
 
   return (
     <motion.div
@@ -65,7 +69,13 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
           className={cn({ [styles.riddleStyle]: isMainRiddle })}
         />
 
-        {isLast && isModel && !isSending && (
+        {isModel && modelUsed && (
+          <div className={styles.modelBadge} title={t('generatedBy', { model: modelUsed })}>
+            {modelUsed}
+          </div>
+        )}
+
+        {isLast && isModel && !isSending && !isFinished && (
           <motion.div className={styles.actionsRow}>
             <Button
               variant="icon-only"
@@ -76,12 +86,12 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
               <RotateIcon />
             </Button>
 
-            {!isSolved && (
+            {isMainRiddle && (
               <Button
                 variant="icon-only"
                 onClick={onReveal}
                 isLoading={isRevealing}
-                title="Reveal Answer"
+                title={t('revealAnswer')}
                 className={styles.revealButton}
               >
                 <LightbulbIcon />

@@ -6,7 +6,7 @@
   left: 0;
   width: 100%;
   background: $dark-blue;
-  padding: 20px 0 25px 0;
+  padding: 16px 0 25px 0;
   z-index: 1;
 
   @media (min-width: 768px) {
@@ -31,6 +31,108 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modelBar {
+  display: flex;
+  align-items: center;
+}
+
+.modelSelectorRoot {
+  position: relative;
+}
+
+.modelChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba($violet, 0.25);
+  background: rgba($violet, 0.07);
+  color: rgba($violet, 0.8);
+  font-family: $font-main;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba($violet, 0.14);
+    border-color: rgba($violet, 0.45);
+    color: $violet;
+  }
+}
+
+.modelIcon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.modelLabel {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (min-width: 480px) {
+    max-width: none;
+  }
+}
+
+.modelChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.modelDropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  background: $dark-violet;
+  border: 1px solid rgba($violet, 0.2);
+  border-radius: 14px;
+  padding: 4px;
+  z-index: 10;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.modelOption {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: $white-2;
+  font-family: $font-main;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    background: rgba($white, 0.06);
+    color: $white;
+  }
+}
+
+.modelOptionActive {
+  color: $violet;
+  font-weight: 500;
+
+  &::before {
+    content: '✓ ';
+  }
 }
 
 :global(.input--multiline) {

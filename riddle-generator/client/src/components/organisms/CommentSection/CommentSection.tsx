@@ -8,6 +8,7 @@ import { Preloader } from '@/components/atoms/Preloader/Preloader';
 import { Comment } from '@/types/social';
 import styles from './CommentSection.module.scss';
 import { InfiniteScrollList } from '@/components/organisms/InfiniteScrollList/InfiniteScrollList';
+import { useTranslations } from 'next-intl';
 
 interface CommentSectionProps {
   riddleId: string;
@@ -35,13 +36,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   onDeleteClick,
   canAddComment,
 }) => {
+  const t = useTranslations('commentSection');
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <Typography variant="h3">Comments</Typography>
+        <Typography variant="h3">{t('title')}</Typography>
         {canAddComment && (
           <Button variant="grey-glass-link" onClick={onAddClick}>
-            + Add comment
+            {t('addComment')}
           </Button>
         )}
       </div>
@@ -69,7 +72,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         )}
         renderEmpty={() => (
           <Typography variant="body" className={styles.empty}>
-            No comments yet. Be the first to comment!
+            {t('noComments')}
           </Typography>
         )}
         renderLoader={() => (

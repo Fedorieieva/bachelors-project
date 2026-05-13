@@ -7,6 +7,7 @@ import { Modal } from '@/components/atoms/Modal/Modal';
 import { Input } from '@/components/atoms/Input/Input';
 import { Button } from '@/components/atoms/Button/Button';
 import EmojiIcon from '@/assets/emoji.svg';
+import { useTranslations } from 'next-intl';
 import styles from './CommentModal.module.scss';
 
 interface CommentModalProps {
@@ -24,6 +25,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
   onSubmit,
   isLoading
 }) => {
+  const t = useTranslations('commentModal');
   const [text, setText] = useState(initialText);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -73,7 +75,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
       <div className={styles.container}>
         <Input
           variant="multiline"
-          placeholder="Enter your comment here"
+          placeholder={t('placeholder')}
           value={text}
           onChange={(e) => setText(e.target.value)}
           fullWidth
@@ -126,7 +128,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
             isLoading={isLoading}
             disabled={!text.trim()}
           >
-            Comment
+            {t('submit')}
           </Button>
         </div>
       </div>

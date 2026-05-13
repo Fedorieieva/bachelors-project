@@ -6,6 +6,7 @@ import { Typography } from '@/components/atoms/Typography';
 import { Button } from '@/components/atoms/Button/Button';
 import styles from './RiddleStatusModal.module.scss';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 export type RiddleStatus = 'correct' | 'wrong' | 'failed';
 
@@ -29,29 +30,29 @@ export const RiddleStatusModal: React.FC<RiddleStatusModalProps> = ({
   hasBoughtRetry = false,
   xpEarned = 0
 }) => {
+  const t = useTranslations('riddleStatusModal');
+
   const config = {
     correct: {
-      title: "Well done!",
-      desc: "Your answer is correct",
-      extra: `+${xpEarned} XP додано до вашого рівня`,
-      primaryBtn: "Continue",
+      title: t('correct.title'),
+      desc: t('correct.desc'),
+      extra: t('correct.extra', { xp: xpEarned }),
+      primaryBtn: t('correct.primaryBtn'),
       secondaryBtn: "",
     },
     wrong: {
-      title: "Hmm... close!",
-      desc: "Not quite right. Try to look at it from another perspective.",
-      extra: `You have ${attemptsRemaining} attempts left`,
-      primaryBtn: "Close",
-      secondaryBtn: "Try Again",
+      title: t('wrong.title'),
+      desc: t('wrong.desc'),
+      extra: t('wrong.extra', { attempts: attemptsRemaining }),
+      primaryBtn: t('wrong.primaryBtn'),
+      secondaryBtn: t('wrong.secondaryBtn'),
     },
     failed: {
-      title: hasBoughtRetry ? "Still no luck?" : "Out of attempts!",
-      desc: hasBoughtRetry
-        ? "You've used your extra chance. This riddle is now locked for 1 hour."
-        : "You've reached the limit for this riddle. Take a break and let your mind rest.",
-      extra: "Come back in 1 hour to try again",
-      primaryBtn: "Got it, see you later",
-      secondaryBtn: "Spend 10 XP to retry",
+      title: hasBoughtRetry ? t('failed.titleBought') : t('failed.title'),
+      desc: hasBoughtRetry ? t('failed.descBought') : t('failed.desc'),
+      extra: t('failed.extra'),
+      primaryBtn: t('failed.primaryBtn'),
+      secondaryBtn: t('failed.secondaryBtn'),
     }
   };
 

@@ -31,6 +31,7 @@ import { RiddleBody } from '@/components/molecules/Riddle/RiddleBody/RiddleBody'
 import { CommentSection } from '@/components/organisms/CommentSection/CommentSection';
 import { ToastType } from '@/components/atoms/Toast/Toast';
 import { useGlobalToast } from '@/providers/ToastProvider';
+import { useTranslations } from 'next-intl';
 import { ConfirmModal } from '@/components/organisms/Modals/ConfirmModal/ConfirmModal';
 import { useRiddleVisibility } from '@/hooks/social-actions/useRiddleVisibility';
 import { VisibilityToggle } from '../../VisibilityToggle/VisibilityToggle';
@@ -77,6 +78,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   canAttempt: initialCanAttempt = true,
   className,
 }) => {
+  const t = useTranslations('riddleCard');
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const { mutate: toggleVisibility, isPending: isChangingVisibility } = useRiddleVisibility(id);
@@ -171,11 +173,9 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     toggleVisibility(undefined, {
       onSuccess: (data) => {
         setIsPublicLocal(data.is_public);
-        showGlobalToast(
-          data.is_public ? 'Riddle is now public' : 'Riddle is now private'
-        );
+        showGlobalToast(data.is_public ? t('madePublic') : t('madePrivate'));
       },
-      onError: () => showGlobalToast('Failed to change visibility', 'error')
+      onError: () => showGlobalToast(t('visibilityError'), 'error')
     });
   };
 
@@ -183,15 +183,15 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     try {
       if (editingComment) {
         await updateComment({ id: editingComment.id, content: text });
-        showToast('Comment updated');
+        showToast(t('commentUpdated'));
       } else {
         await addComment(text);
-        showToast('Comment added');
+        showToast(t('commentAdded'));
       }
       setIsCommentModalOpen(false);
       setEditingComment(null);
     } catch {
-      showToast('Action failed', 'error');
+      showToast(t('actionFailed'), 'error');
     }
   };
 
@@ -209,9 +209,9 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     if (commentToDelete) {
       try {
         await deleteComment(commentToDelete);
-        showToast('Comment deleted');
+        showToast(t('commentDeleted'));
       } catch {
-        showToast('Could not delete', 'error');
+        showToast(t('couldNotDelete'), 'error');
       } finally {
         setIsDeleteModalOpen(false);
         setCommentToDelete(null);
@@ -293,12 +293,12 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
             {solved && (
               <Badge variant="success" glow icon={<SolvedIcon />}>
-                Solved
+                {t('solved')}
               </Badge>
             )}
             {!solved && !canAttemptLocal && (
               <Badge variant="error" glow icon={<LockIcon />}>
-                Blocked
+                {t('blocked')}
               </Badge>
             )}
             {isOwnPost && (
@@ -311,7 +311,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
                 <Button
                   variant="icon-only"
                   onClick={() => setIsDeleteRiddleModalOpen(true)}
-                  title="Delete riddle"
+                  title={t('deleteRiddleTitle')}
                 >
                   <TrashIcon className={styles.deleteIcon} />
                 </Button>
@@ -410,9 +410,9 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
       <ConfirmModal
         isOpen={isDeleteModalOpen}
-        title="Delete Comment"
-        description="This action cannot be undone. Are you sure you want to delete this comment?"
-        confirmText="Delete"
+        title={t('deleteCommentTitle')}
+        description={t('deleteCommentDesc')}
+        confirmText={t('deleteBtn')}
         variant="danger"
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleConfirmDelete}
@@ -421,9 +421,9 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
       <ConfirmModal
         isOpen={isDeleteRiddleModalOpen}
-        title="Delete Riddle?"
-        description="Are you sure you want to delete this riddle? This action cannot be undone."
-        confirmText="Delete"
+        title={t('deleteRiddleTitle')}
+        description={t('deleteRiddleDesc')}
+        confirmText={t('deleteBtn')}
         variant="danger"
         isLoading={isDeleting}
         onClose={() => setIsDeleteModalOpen(false)}

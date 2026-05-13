@@ -8,18 +8,20 @@ import { FeedRiddle } from '@/types/social';
 import { Preloader } from '@/components/atoms/Preloader/Preloader';
 import { Typography } from '@/components/atoms/Typography';
 import { InfiniteScrollList } from '@/components/organisms/InfiniteScrollList/InfiniteScrollList';
+import { useTranslations } from 'next-intl';
 
 interface FeedListProps {
   type: FeedType;
 }
 
 export const FeedList: React.FC<FeedListProps> = ({ type }) => {
+  const t = useTranslations('feedList');
   const { items, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useFeed(type);
 
   if (error) {
     return (
       <div className="py-10 text-center">
-        <Typography variant="details-error">Помилка завантаження стрічки</Typography>
+        <Typography variant="details-error">{t('loadError')}</Typography>
       </div>
     );
   }
@@ -53,7 +55,7 @@ export const FeedList: React.FC<FeedListProps> = ({ type }) => {
       )}
       renderEmpty={() => (
         <div className="py-20 text-center w-full">
-          <Typography variant="details">Загадок поки немає у цій категорії</Typography>
+          <Typography variant="details">{t('empty')}</Typography>
         </div>
       )}
       renderLoader={() => (

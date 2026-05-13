@@ -1,0 +1,78 @@
+@use "../../../../styles/abstracts/variables" as *;
+
+.modal {
+  min-width: 340px;
+  width: 100%;
+  max-width: 460px;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 80px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 55vh;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-right: 2px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba($white, 0.04);
+  }
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.userName {
+  color: $white-2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+
+  .userInfo:hover & {
+    color: $white;
+  }
+}
+
+.followBtn {
+  flex-shrink: 0;
+  min-width: 90px;
+  font-size: 13px !important;
+  padding: 6px 14px !important;
+  min-height: unset !important;
+}
+
+.empty {
+  text-align: center;
+  color: rgba($white, 0.3);
+  padding: 24px 0;
+}

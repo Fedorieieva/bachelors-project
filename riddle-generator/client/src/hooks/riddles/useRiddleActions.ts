@@ -2,10 +2,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { RiddleService } from '@/services/riddle.service';
 import { RiddleSettings, SolveResult } from '@/types/riddle';
 import { useGlobalToast } from '@/providers/ToastProvider';
+import { useTranslations } from 'next-intl';
 
 export const useRiddleActions = (chatId: string) => {
   const queryClient = useQueryClient();
   const { showGlobalToast } = useGlobalToast();
+  const t = useTranslations('toasts');
 
   const regenerate = useMutation({
     mutationFn: (settings: RiddleSettings) => RiddleService.regenerateRiddle(chatId, settings),
@@ -26,7 +28,7 @@ export const useRiddleActions = (chatId: string) => {
   const saveToCollection = useMutation({
     mutationFn: (messageId: string) => RiddleService.saveToCollection(messageId),
     onSuccess: () => {
-      showGlobalToast('Загадку успішно збережено в колекцію!', 'success');
+      showGlobalToast(t('riddleSaved'), 'success');
 
       queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
       queryClient.invalidateQueries({ queryKey: ['saved-riddles'] });
@@ -106,11 +108,12 @@ export const useRiddleEconomy = (riddleId: string) => {
 export const useDeleteRiddle = (chatId?: string) => {
   const queryClient = useQueryClient();
   const { showGlobalToast } = useGlobalToast();
+  const t = useTranslations('toasts');
 
   const mutation = useMutation({
     mutationFn: (riddleId: string) => RiddleService.deleteRiddle(riddleId),
     onSuccess: () => {
-      showGlobalToast('Загадку успішно видалено', 'success');
+      showGlobalToast(t('riddleDeleted'), 'success');
 
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['user-stats'] });
@@ -122,7 +125,7 @@ export const useDeleteRiddle = (chatId?: string) => {
       }
     },
     onError: (error) => {
-      showGlobalToast(error.message || 'Не вдалося видалити загадку', 'error');
+      showGlobalToast(error.message || t('riddleDeleteError'), 'error');
     },
   });
 

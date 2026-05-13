@@ -4,9 +4,11 @@ import React, { useState } from 'react';
 import { FeedList } from '@/components/organisms/FeedList/FeedList';
 import { Button } from '@/components/atoms/Button/Button';
 import { FeedType } from '@/hooks/social-actions/useFeed';
+import { useTranslations } from 'next-intl';
 import styles from './SocialPage.module.scss';
 
 export default function SocialPage() {
+  const t = useTranslations('socialMedia');
   const [activeTab, setActiveTab] = useState<FeedType>('public');
 
   return (
@@ -17,13 +19,13 @@ export default function SocialPage() {
             variant={activeTab === 'public' ? 'simple-tab' : 'simple'}
             onClick={() => setActiveTab('public')}
           >
-            All Riddles
+            {t('allRiddles')}
           </Button>
           <Button
             variant={activeTab === 'following' ? 'simple-tab' : 'simple'}
             onClick={() => setActiveTab('following')}
           >
-            Following
+            {t('following')}
           </Button>
         </div>
       </header>

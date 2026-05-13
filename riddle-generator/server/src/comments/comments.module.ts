@@ -3,9 +3,10 @@ import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ExperienceModule } from '../experience/experience.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, ExperienceModule],
+  imports: [PrismaModule, ExperienceModule, NotificationsModule],
   controllers: [CommentsController],
   providers: [CommentsService],
   exports: [CommentsService],

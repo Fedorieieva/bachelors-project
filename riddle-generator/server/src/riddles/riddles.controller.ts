@@ -52,10 +52,10 @@ export class RiddlesController {
   @Post('chat/:chatId')
   async handleChat(
     @Param('chatId') chatId: string,
-    @Body('topic') topic: string,
+    @Body() body: { topic: string; model?: string },
     @CurrentUser() user: PrismaModels.User,
   ) {
-    return this.riddlesService.processChatMessage(chatId, topic, user.id);
+    return this.riddlesService.processChatMessage(chatId, body.topic, user.id, body.model);
   }
 
   @ApiOperation({
@@ -117,6 +117,14 @@ export class RiddlesController {
     @CurrentUser() user: PrismaModels.User,
   ) {
     return this.riddlesService.toggleSaveRiddle(user.id, riddleId);
+  }
+
+  @Delete('chat/:chatId')
+  async deleteChat(
+    @Param('chatId', ParseUUIDPipe) chatId: string,
+    @CurrentUser() user: PrismaModels.User,
+  ) {
+    return this.riddlesService.deleteChat(chatId, user.id);
   }
 
   @Delete(':id')

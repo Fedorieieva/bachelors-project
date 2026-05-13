@@ -4,6 +4,7 @@ import React from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Typography } from '@/components/atoms/Typography';
 import { Button } from '@/components/atoms/Button/Button';
+import { useTranslations } from 'next-intl';
 import styles from './ProfileStats.module.scss';
 
 interface ProfileStatsProps {
@@ -13,24 +14,29 @@ interface ProfileStatsProps {
   xp: number;
   followers: number;
   following: number;
-  isOwnProfile?: boolean; // Додано
-  isFollowing?: boolean;  // Додано
-  onFollowToggle?: () => void; // Додано
-  isLoading?: boolean; // Додано
+  isOwnProfile?: boolean;
+  isFollowing?: boolean;
+  onFollowToggle?: () => void;
+  isLoading?: boolean;
+  onFollowersClick?: () => void;
+  onFollowingClick?: () => void;
 }
 
 export const ProfileStats: React.FC<ProfileStatsProps> = ({
-                                                            userName,
-                                                            avatarUrl,
-                                                            level,
-                                                            xp,
-                                                            followers,
-                                                            following,
-                                                            isOwnProfile = false,
-                                                            isFollowing = false,
-                                                            onFollowToggle,
-                                                            isLoading = false
-                                                          }) => {
+  userName,
+  avatarUrl,
+  level,
+  xp,
+  followers,
+  following,
+  isOwnProfile = false,
+  isFollowing = false,
+  onFollowToggle,
+  isLoading = false,
+  onFollowersClick,
+  onFollowingClick,
+}) => {
+  const t = useTranslations('profileStats');
   const XP_PER_LEVEL = 500;
   const currentLevelXp = xp % XP_PER_LEVEL;
   const xpPercentage = Math.min((currentLevelXp / XP_PER_LEVEL) * 100, 100);
@@ -47,14 +53,22 @@ export const ProfileStats: React.FC<ProfileStatsProps> = ({
       </div>
 
       <div className={styles.socialStats}>
-        <div className={styles.statItem}>
+        <button
+          className={styles.statItem}
+          onClick={onFollowersClick}
+          disabled={!onFollowersClick}
+        >
           <Typography variant="body" className="font-semibold text-white">{followers}</Typography>
-          <Typography variant="details" className="text-white/60">Followers</Typography>
-        </div>
-        <div className={styles.statItem}>
+          <Typography variant="details" className="text-white/60">{t('followers')}</Typography>
+        </button>
+        <button
+          className={styles.statItem}
+          onClick={onFollowingClick}
+          disabled={!onFollowingClick}
+        >
           <Typography variant="body" className="font-semibold text-white">{following}</Typography>
-          <Typography variant="details" className="text-white/60">Following</Typography>
-        </div>
+          <Typography variant="details" className="text-white/60">{t('following')}</Typography>
+        </button>
       </div>
 
       <div className={styles.progressSection}>
@@ -79,7 +93,7 @@ export const ProfileStats: React.FC<ProfileStatsProps> = ({
               isLoading={isLoading}
               className={styles.followBtn}
             >
-              {isFollowing ? 'Unfollow' : 'Follow'}
+              {isFollowing ? t('unfollow') : t('follow')}
             </Button>
           </div>
         )}

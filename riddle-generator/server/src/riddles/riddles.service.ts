@@ -36,14 +36,15 @@ export class RiddlesService {
   async generateRiddle(
     dto: RiddleDto,
     aiAnalysis?: RiddleIntentAnalysis,
-  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; }> {
+  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; model_used: string }> {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
 
     const riddleType = aiAnalysis?.type || dto.settings.type || RiddleType.DANETKI;
     const style = aiAnalysis?.style || 'neutral';
     const topic = aiAnalysis?.topic || dto.topic;
-    const { language, complexity } = dto.settings;
+    const { language, complexity, model: preferredModel } = dto.settings;
+    const modelUsed = this.aiService.getModelName(preferredModel);
 
     const promptName = `${riddleType.toLowerCase()}_generator`;
 
@@ -76,7 +77,7 @@ export class RiddlesService {
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
       attempts++;
 
-      const aiResult = await this.aiService.askGemini<AiRiddleResponse>(mainPrompt);
+      const aiResult = await this.aiService.askGemini<AiRiddleResponse>(mainPrompt, 3, preferredModel);
       lastResult = aiResult;
 
       if (aiResult.content === 'ERROR_OFF_TOPIC') {
@@ -95,7 +96,7 @@ export class RiddlesService {
       }
 
       if (evaluation.is_good) {
-        return this.formatResponse(aiResult, dto, promptName, attempts, riddleType, style);
+        return this.formatResponse(aiResult, dto, promptName, attempts, riddleType, style, modelUsed);
       }
 
       this.logger.warn(`Спроба #${attempts} відхилена критиком: ${evaluation.reason}`);
@@ -105,7 +106,7 @@ export class RiddlesService {
       throw new InternalServerErrorException('Не вдалося згенерувати контент. Спробуйте пізніше.');
     }
 
-    return this.formatResponse(lastResult, dto, promptName, attempts, riddleType, style);
+    return this.formatResponse(lastResult, dto, promptName, attempts, riddleType, style, modelUsed);
   }
 
   private formatResponse(
@@ -115,10 +116,12 @@ export class RiddlesService {
     attempts: number,
     type: RiddleType,
     style: string,
-  ): { content: string; answer: string; prompt_context: RiddleMetadata } {
+    modelUsed: string,
+  ): { content: string; answer: string; prompt_context: RiddleMetadata; model_used: string } {
     return {
       content: result.content,
       answer: result.answer,
+      model_used: modelUsed,
       prompt_context: {
         message: dto.topic,
         complexity: dto.settings.complexity,
@@ -273,6 +276,7 @@ export class RiddlesService {
     chatId: string,
     userMessage: string,
     authorId: string,
+    model?: string,
   ): Promise<ChatResponseDto> {
     const user = await this.prisma.user.findUnique({ where: { id: authorId } });
     if (user?.banned_until && user.banned_until > new Date()) {
@@ -339,6 +343,7 @@ export class RiddlesService {
         type: chat.type,
         language: chat.language,
         is_interactive: chat.is_interactive,
+        model,
       };
 
       const newRiddle = await this.generateRiddle(
@@ -356,17 +361,23 @@ export class RiddlesService {
         },
       });
 
+      const newRiddleFallback = !model && this.aiService.consumeFallbackFlag();
       return {
         type: ChatResponseType.NEW_RIDDLE,
         data: {
           content: newRiddle.content,
           answer: effectiveSettings.is_interactive ? undefined : newRiddle.answer,
           prompt_context: newRiddle.prompt_context,
+          model_used: newRiddle.model_used,
+          fallback_occurred: newRiddleFallback || undefined,
         },
       };
     }
 
     const chatLanguage = chat.language || 'ukrainian';
+    const modelUsed = this.aiService.getModelName(model);
+    this.aiService.consumeFallbackFlag(); // reset flag before AI calls
+
     if (chat.is_interactive) {
       if (!chat.current_riddle_answer) {
         throw new BadRequestException(
@@ -381,10 +392,12 @@ export class RiddlesService {
         userMessage,
         chat.current_riddle_answer,
         chatLanguage,
+        3,
+        model,
       );
 
       await this.saveMessage(chatId, 'user', userMessage);
-      await this.saveMessage(chatId, 'model', JSON.stringify(hintObj));
+      await this.saveMessage(chatId, 'model', JSON.stringify({ ...hintObj, model_used: modelUsed }));
 
       let xpEarned = 0;
       if (hintObj.is_solved) {
@@ -401,11 +414,14 @@ export class RiddlesService {
         });
       }
 
+      const hintFallback = !model && this.aiService.consumeFallbackFlag();
       return {
         type: ChatResponseType.REFINE_RIDDLE,
         data: {
           content: hintObj.content ?? '',
-          xp_earned: xpEarned > 0 ? xpEarned : undefined
+          xp_earned: xpEarned > 0 ? xpEarned : undefined,
+          model_used: modelUsed,
+          fallback_occurred: hintFallback || undefined,
         },
       };
     }
@@ -414,16 +430,20 @@ export class RiddlesService {
     const aiUpdate = await this.aiService.askGeminiChat(
       rawHistory,
       userMessage,
-      chatLanguage
+      chatLanguage,
+      model,
     );
 
+    const chatFallback = !model && this.aiService.consumeFallbackFlag();
     await this.saveMessage(chatId, 'user', userMessage);
-    await this.saveMessage(chatId, 'model', JSON.stringify(aiUpdate));
+    await this.saveMessage(chatId, 'model', JSON.stringify({ ...aiUpdate, model_used: modelUsed }));
 
     return {
       type: ChatResponseType.REFINE_RIDDLE,
       data: {
-        content: aiUpdate.content,
+        content: (aiUpdate as any).content,
+        model_used: modelUsed,
+        fallback_occurred: chatFallback || undefined,
       },
     };
   }
@@ -749,6 +769,22 @@ export class RiddlesService {
       data: { user_id: userId, riddle_id: riddleId },
     });
     return { saved: true };
+  }
+
+  async deleteChat(chatId: string, userId: string): Promise<{ message: string }> {
+    const chat = await this.prisma.chat.findUnique({ where: { id: chatId } });
+
+    if (!chat) {
+      throw new NotFoundException('Chat not found');
+    }
+
+    if (chat.user_id !== userId) {
+      throw new ForbiddenException('You can only delete your own chats');
+    }
+
+    await this.prisma.chat.delete({ where: { id: chatId } });
+
+    return { message: 'Chat deleted successfully' };
   }
 
   async remove(id: string, userId: string) {

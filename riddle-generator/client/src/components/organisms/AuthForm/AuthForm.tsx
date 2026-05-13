@@ -1,9 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import styles from './AuthForm.module.scss';
 import { Input } from '@/components/atoms/Input/Input';
 import { Button } from '@/components/atoms/Button/Button';
@@ -11,25 +12,7 @@ import { useLogin, useRegister } from '@/hooks/users/useAuth';
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
-
-const loginSchema = Yup.object().shape({
-  email: Yup.string()
-    .matches(emailRegex, 'Введіть коректний email (наприклад, example@mail.com)')
-    .required('Електронна пошта обов’язкова'),
-  password: Yup.string()
-    .min(8, 'Пароль має містити мінімум 8 символів')
-    .matches(
-      passwordRegex,
-      'Пароль має містити хоча б одну велику літеру, одну малу літеру та одну цифру'
-    )
-    .required('Пароль обов’язковий'),
-});
-
-const registerSchema = loginSchema.shape({
-  name: Yup.string()
-    .min(2, 'Ім’я занадто коротке')
-    .required('Ім’я обов’язкове'),
-});
+const nameRegex = /^[\p{L}\p{N} _-]+$/u;
 
 interface AuthFormProps {
   mode: 'login' | 'register';
@@ -37,9 +20,27 @@ interface AuthFormProps {
 }
 
 export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
+  const ta = useTranslations('auth');
+  const tv = useTranslations('validation');
   const loginMutation = useLogin();
   const registerMutation = useRegister();
   const isLogin = mode === 'login';
+
+  const loginSchema = useMemo(() => Yup.object().shape({
+    email: Yup.string()
+      .matches(emailRegex, tv('emailInvalid'))
+      .required(tv('emailRequired')),
+    password: Yup.string()
+      .required(tv('passwordRequired')),
+  }), [tv]);
+
+  const registerSchema = useMemo(() => loginSchema.shape({
+    name: Yup.string()
+      .min(2, tv('nameTooShort'))
+      .max(50, tv('nameTooLong'))
+      .matches(nameRegex, tv('nameInvalidChars'))
+      .required(tv('nameRequired')),
+  }), [loginSchema, tv]);
 
   const springTransition = {
     type: 'spring',
@@ -113,7 +114,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
           className={styles.tabBtn}
           size="auto"
         >
-          Sign Up
+          {ta('signUp')}
         </Button>
         <Button
           variant={mode === 'login' ? 'colored-glass-active' : 'colored-glass-inactive'}
@@ -121,7 +122,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
           className={styles.tabBtn}
           size="auto"
         >
-          Sign In
+          {ta('signIn')}
         </Button>
       </div>
 
@@ -136,7 +137,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
           }
         }}
       >
-        {({ errors, touched, handleChange, handleBlur, values }) => (
+        {({ errors, touched, handleChange, handleBlur, values, isValid }) => (
           <Form className={styles.form}>
             <AnimatePresence initial={false} mode="sync">
               {!isLogin && (
@@ -154,12 +155,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
                   >
                     <Input
                       name="name"
-                      label="Enter your name"
-                      placeholder="Name"
+                      label={ta('nameLabel')}
+                      placeholder={ta('namePlaceholder')}
                       value={values.name}
                       onChange={handleChange}
                       onBlur={handleBlur}
                       error={touched.name && errors.name ? errors.name : undefined}
+                      maxLength={50}
                       fullWidth
                     />
                   </motion.div>
@@ -170,8 +172,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
             <div className={styles.stableField}>
               <Input
                 name="email"
-                label="Enter your email"
-                placeholder="Email"
+                label={ta('emailLabel')}
+                placeholder={ta('emailPlaceholder')}
                 type="email"
                 value={values.email}
                 onChange={handleChange}
@@ -184,8 +186,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
             <div className={styles.stableField}>
               <Input
                 name="password"
-                label="Enter your password"
-                placeholder="Password"
+                label={ta('passwordLabel')}
+                placeholder={ta('passwordPlaceholder')}
                 type="password"
                 value={values.password}
                 onChange={handleChange}
@@ -201,8 +203,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({ mode, onModeChange }) => {
               size='full'
               className={styles.submitBtn}
               isLoading={loginMutation.isPending || registerMutation.isPending}
+              disabled={!isValid || loginMutation.isPending || registerMutation.isPending}
             >
-              {isLogin ? 'Sign in' : 'Create account'}
+              {isLogin ? ta('signInBtn') : ta('createAccount')}
             </Button>
           </Form>
         )}

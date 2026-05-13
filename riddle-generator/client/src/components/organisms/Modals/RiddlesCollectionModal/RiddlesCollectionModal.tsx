@@ -12,6 +12,7 @@ import TrashIcon from '@/assets/trash-icon.svg';
 import { Button } from '@/components/atoms/Button/Button';
 import { Typography } from '@/components/atoms/Typography/Typography';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 interface RiddleCollectionModalProps {
   isOpen: boolean;
@@ -38,14 +39,15 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
   isTogglingPublic,
   isDeleting,
 }) => {
+  const t = useTranslations('riddlesCollectionModal');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Generated Riddles">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('title')}>
       <div className={styles.scrollContainer}>
         <div className={styles.modalContent}>
           {riddleMessages.length === 0 && (
-            <p className={styles.emptyState}>Загадок ще немає</p>
+            <p className={styles.emptyState}>{t('empty')}</p>
           )}
 
           {riddleMessages.map((item, index) => {
@@ -96,7 +98,7 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
                       {isConfirming ? (
                         <div className={styles.confirmInline}>
                           <Typography variant="details" className={styles.confirmText}>
-                            Точно бажаєте видалити загадку з колекції?
+                            {t('deleteConfirmText')}
                           </Typography>
                           <Button
                             variant="simple"
@@ -104,7 +106,7 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
                             onClick={() => setConfirmDeleteId(null)}
                             className={styles.cancelBtn}
                           >
-                            Cancel
+                            {t('cancel')}
                           </Button>
                           <Button
                             variant="primary"
@@ -116,7 +118,7 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
                             isLoading={isDeleting}
                             className={styles.deleteBtn}
                           >
-                            Delete
+                            {t('delete')}
                           </Button>
                         </div>
                       ) : (

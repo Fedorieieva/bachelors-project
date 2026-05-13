@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils';
 import { Typography } from '@/components/atoms/Typography/Typography';
 import CheckIcon from '@/assets/check-icon.svg';
 import ErrorIcon from '@/assets/circle-x-icon.svg';
+import { AlertTriangle } from 'lucide-react';
 import styles from './Toast.module.scss';
 
-export type ToastType = 'success' | 'error';
+export type ToastType = 'success' | 'error' | 'warning';
 
 interface ToastProps {
   message: string;
@@ -35,7 +36,13 @@ export const Toast: React.FC<ToastProps> = ({ message, type, isVisible, onClose 
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           className={cn(styles.toast, styles[type])}
         >
-          {type === 'success' ? <CheckIcon className={styles.icon} /> : <ErrorIcon className={styles.icon} />}
+          {type === 'success' ? (
+            <CheckIcon className={styles.icon} />
+          ) : type === 'warning' ? (
+            <AlertTriangle size={20} className={styles.icon} />
+          ) : (
+            <ErrorIcon className={styles.icon} />
+          )}
           <Typography variant="details">
             {message}
           </Typography>

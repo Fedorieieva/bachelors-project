@@ -23,3 +23,8 @@ export interface UpdateUserDto {
   name?: string;
   onboarding_completed?: boolean;
 }
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}

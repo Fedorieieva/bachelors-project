@@ -3,6 +3,7 @@ import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { SessionService } from './session.service';
+import { SessionCleanupService } from './session-cleanup.service';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { SessionService } from './session.service';
       },
     }),
   ],
-  providers: [SessionService],
+  providers: [SessionService, SessionCleanupService],
   exports: [SessionService, JwtModule, PrismaModule],
 })
 export class SessionModule {}

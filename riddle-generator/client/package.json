@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
+    "dev:fresh": "node -e \"const{execSync}=require('child_process');try{const r=execSync('netstat -ano | findstr :3000',{encoding:'utf8'});const m=r.match(/LISTENING\\s+(\\d+)/);if(m)execSync('taskkill /PID '+m[1]+' /F',{stdio:'inherit'})}catch(e){}\" && next dev --turbopack",
+    "kill-port": "node -e \"const{execSync}=require('child_process');try{const r=execSync('netstat -ano | findstr :3000',{encoding:'utf8'});const m=r.match(/LISTENING\\s+(\\d+)/);if(m){execSync('taskkill /PID '+m[1]+' /F',{stdio:'inherit'});console.log('Killed PID '+m[1])}else{console.log('Port 3000 is free')}}catch(e){console.log('Port 3000 is free')}\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -23,6 +25,7 @@
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
+    "next-intl": "^4.12.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-redux": "^9.2.0",

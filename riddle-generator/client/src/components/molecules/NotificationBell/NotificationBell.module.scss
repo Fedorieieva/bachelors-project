@@ -1,0 +1,226 @@
+@use "../../../styles/abstracts/variables" as *;
+@use "../../../styles/abstracts/mixins" as *;
+
+.wrapper {
+  position: relative;
+}
+
+.bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: $white-2;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+
+  &:hover {
+    background: rgba($white, 0.08);
+    color: $white;
+  }
+}
+
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: $error;
+  color: $white;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+// ─── Dropdown ───────────────────────────────────────────────────────────────
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 340px;
+  z-index: 100;
+
+  @media (max-width: 768px) {
+    right: -8px;
+    left: auto;
+    width: 320px;
+    max-width: calc(100vw - 20px);
+  }
+}
+
+.dropdownPanel {
+  @include glass-panel(12px, rgba($dark-violet, 0.96), rgba($white, 0.1));
+  border-radius: $border-radius-primary;
+  @include shadow-violet-glow-soft;
+  overflow: hidden;
+}
+
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba($white, 0.06);
+}
+
+.dropdownTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: $white;
+  font-family: $font-main;
+}
+
+.dropdownActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionBtn {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 10px;
+  background: rgba($white, 0.06);
+  color: $white-2;
+  font-size: 11px;
+  font-family: $font-main;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: rgba($white, 0.12);
+    color: $white;
+  }
+}
+
+.list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 6px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba($white, 0.15);
+    border-radius: 2px;
+  }
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: $white-2;
+  font-size: 13px;
+  font-family: $font-main;
+}
+
+// ─── Individual notification item ────────────────────────────────────────────
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba($white, 0.05);
+  }
+
+  &.unread {
+    background: rgba($violet, 0.08);
+
+    &:hover {
+      background: rgba($violet, 0.13);
+    }
+  }
+}
+
+// ─── Avatar with type-badge overlay ─────────────────────────────────────────
+
+.avatarWrap {
+  flex-shrink: 0;
+  position: relative;
+  width: 30px;
+  height: 30px;
+}
+
+.typeBadge {
+  position: absolute;
+  bottom: -4px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: $violet;
+  border: 2px solid $dark-violet;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $white;
+  z-index: 1;
+
+  svg {
+    width: 9px;
+    height: 9px;
+  }
+}
+
+// ─── Fallback icon for system notifications (no actor) ───────────────────────
+
+.iconWrap {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba($violet, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $violet;
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemContent {
+  font-size: 12px;
+  color: $white-2;
+  font-family: $font-main;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.itemTime {
+  margin-top: 3px;
+  font-size: 10px;
+  color: rgba($white-2, 0.5);
+  font-family: $font-main;
+}
+
+.unreadDot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: $violet;
+}

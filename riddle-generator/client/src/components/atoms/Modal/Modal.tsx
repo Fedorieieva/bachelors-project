@@ -9,6 +9,7 @@ import { Typography } from '@/components/atoms/Typography/Typography';
 import { Button } from '@/components/atoms/Button/Button';
 import { X } from 'lucide-react';
 import styles from './Modal.module.scss';
+import { useTranslations } from 'next-intl';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -20,13 +21,14 @@ export interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({
-                                              isOpen,
-                                              onClose,
-                                              title,
-                                              children,
-                                              className,
-                                              hideCloseButton = false,
-                                            }) => {
+  isOpen,
+  onClose,
+  title,
+  children,
+  className,
+  hideCloseButton = false,
+}) => {
+  const tm = useTranslations('modal');
   const overlayVariants = {
     closed: { opacity: 0 },
     open: { opacity: 1 }
@@ -65,7 +67,7 @@ export const Modal: React.FC<ModalProps> = ({
                   >
                     {!title && (
                       <VisuallyHidden.Root>
-                        <Dialog.Title>Modal Dialog</Dialog.Title>
+                        <Dialog.Title>{tm('dialogTitle')}</Dialog.Title>
                       </VisuallyHidden.Root>
                     )}
 

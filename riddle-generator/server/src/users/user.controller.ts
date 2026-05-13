@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Put,
   ParseUUIDPipe,
   NotFoundException,
@@ -12,6 +13,7 @@ import {
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/UpdateUserDto';
+import { ChangePasswordDto } from './dto/ChangePassword.dto';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
 import { Follow, User } from '@prisma/client';
@@ -54,6 +56,18 @@ export class UserController {
     return { message: `User ${id} deleted successfully` };
   }
 
+  @Patch('password')
+  @ApiOperation({ summary: 'Change current user password' })
+  @ApiResponse({ status: 200, description: 'Password changed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid current password or guest user' })
+  async changePassword(
+    @CurrentUser() user: PrismaModels.User,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    await this.userService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+    return { message: 'Password changed successfully' };
+  }
+
   @Post(':id/follow')
   @ApiOperation({ summary: 'Follow user' })
   async follow(
@@ -87,6 +101,15 @@ export class UserController {
   @Get('profile/stats')
   async getMyStats(@CurrentUser() user: PrismaModels.User) {
     return this.userService.getUserStats(user.id);
+  }
+
+  @Get('profile/is-following/:targetId')
+  async checkIsFollowing(
+    @Param('targetId', ParseUUIDPipe) targetId: string,
+    @CurrentUser() user: PrismaModels.User,
+  ): Promise<{ isFollowing: boolean }> {
+    const isFollowing = await this.userService.isFollowing(user.id, targetId);
+    return { isFollowing };
   }
 
   @Public()

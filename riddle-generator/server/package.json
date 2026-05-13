@@ -13,6 +13,7 @@
     "backup": "ts-node -r tsconfig-paths/register ./src/utils/backup.cron.ts",
     "backup:once": "ts-node -r tsconfig-paths/register ./src/utils/backup.once.ts",
     "restore": "ts-node -r tsconfig-paths/register ./src/utils/restore.ts",
+    "kill-port": "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :8000') do taskkill /PID %a /F",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

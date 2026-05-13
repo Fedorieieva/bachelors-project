@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -7,9 +7,8 @@ import { SessionModule } from './sessions/session.module';
 import { AuthModule } from './users/auth/auth.module';
 import { AuthGuard } from './users/auth/guards/auth.guard';
 import { UserModule } from './users/user.module';
-import { Cron, ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
+import { ScheduleModule as NestScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
-import { SessionService } from './sessions/session.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { RiddlesModule } from './riddles/riddles.module';
 import { PromptsModule } from './riddles/prompts/prompts.module';
@@ -50,13 +49,4 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
   // controllers: [AppController],
   // providers: [AppService],
 })
-export class AppModule {
-  private readonly logger = new Logger(AppModule.name);
-  constructor(private readonly sessionService: SessionService) {}
-
-  @Cron('0 0 * * *')
-  async cleanOldSessions() {
-    await this.sessionService.cleanupExpiredSessions();
-    this.logger.log('🧹 Old sessions cleaned');
-  }
-}
+export class AppModule {}

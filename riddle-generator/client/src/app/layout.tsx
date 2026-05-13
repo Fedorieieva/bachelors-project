@@ -5,6 +5,8 @@ import MainLayout from './MainLayout';
 import QueryProvider from '../providers/QueryProvider';
 import StoreProvider from '@/providers/StoreProvider';
 import { ToastProvider } from '@/providers/ToastProvider';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -25,19 +27,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="uk" className={`${inter.variable} ${poppins.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${poppins.variable}`}>
       <body className="antialiased">
-        <StoreProvider>
-          <QueryProvider>
-            <ToastProvider>
-              <MainLayout>
-                {children}
-              </MainLayout>
-            </ToastProvider>
-          </QueryProvider>
-        </StoreProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <StoreProvider>
+            <QueryProvider>
+              <ToastProvider>
+                <MainLayout>
+                  {children}
+                </MainLayout>
+              </ToastProvider>
+            </QueryProvider>
+          </StoreProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

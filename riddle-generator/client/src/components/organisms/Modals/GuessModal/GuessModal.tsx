@@ -4,6 +4,7 @@ import React from 'react';
 import { Modal } from '@/components/atoms/Modal/Modal';
 import { Input } from '@/components/atoms/Input/Input';
 import { Button } from '@/components/atoms/Button/Button';
+import { useTranslations } from 'next-intl';
 import styles from './GuessModal.module.scss';
 
 interface GuessModalProps {
@@ -19,6 +20,7 @@ export const GuessModal: React.FC<GuessModalProps> = ({
   onGuess,
   isLoading
 }) => {
+  const t = useTranslations('guessModal');
   const [answer, setAnswer] = React.useState('');
 
   React.useEffect(() => {
@@ -28,10 +30,10 @@ export const GuessModal: React.FC<GuessModalProps> = ({
   const isButtonDisabled = !answer.trim() || isLoading;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Guess this riddle">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('title')}>
       <div className={styles.container}>
         <Input
-          placeholder="Enter your answer"
+          placeholder={t('placeholder')}
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           fullWidth
@@ -44,7 +46,7 @@ export const GuessModal: React.FC<GuessModalProps> = ({
             disabled={isButtonDisabled}
             isLoading={isLoading}
           >
-            Submit
+            {t('submit')}
           </Button>
         </div>
       </div>

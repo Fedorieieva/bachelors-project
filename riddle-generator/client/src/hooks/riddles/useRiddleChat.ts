@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient, useInfiniteQuery, InfiniteData } from '@tanstack/react-query';
+import { AxiosError } from 'axios';
 import { RiddleService } from '@/services/riddle.service';
 import { RiddleSettings, ChatResponse, Message } from '@/types/riddle';
 import { useRouter } from 'next/navigation';
 import { useGlobalToast } from '@/providers/ToastProvider';
 import { useMemo, useCallback } from 'react';
 import { PaginatedPage } from '@/hooks/infinite-scroll/useInfiniteScroll';
+import { useTranslations } from 'next-intl';
 
 const MESSAGES_LIMIT = 20;
 
@@ -25,10 +27,23 @@ async function fetchMessagesPage(chatId: string, page: number): Promise<Paginate
   };
 }
 
-export function useRiddleChat(chatId?: string) {
+export function useRiddleChat(chatId?: string, onModelFallback?: (model: string) => void) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { showGlobalToast } = useGlobalToast();
+  const t = useTranslations('toasts');
+
+  const extractErrorToast = (error: Error): { message: string; type: 'error' | 'warning' } => {
+    const axiosErr = error as AxiosError<{ message?: string }>;
+    const status = axiosErr.response?.status;
+    const backendMsg = axiosErr.response?.data?.message;
+
+    if (status === 429) return { message: t('quotaExhausted'), type: 'error' };
+    if (status === 503) return { message: t('serviceOverloaded'), type: 'error' };
+    if (status === 500) return { message: backendMsg || t('aiError'), type: 'error' };
+    if (!axiosErr.response) return { message: t('connectionFailed'), type: 'error' };
+    return { message: backendMsg || error.message || t('sendFailed'), type: 'error' };
+  };
 
   const historyQuery = useInfiniteQuery<
     PaginatedPage<Message>,
@@ -68,17 +83,26 @@ export function useRiddleChat(chatId?: string) {
         window.history.replaceState(null, '', `/chat/${activeId}`);
       }
 
-      const response = await RiddleService.sendChatMessage(activeId, topic);
+      const response = await RiddleService.sendChatMessage(activeId, topic, settings.model);
       return { response, activeId };
     },
-    onSuccess: ({ activeId }) => {
+    onSuccess: ({ response, activeId }, { settings }) => {
       queryClient.invalidateQueries({ queryKey: ['chat-history', activeId] });
       queryClient.invalidateQueries({ queryKey: ['user-stats', 'me'] });
       queryClient.invalidateQueries({ queryKey: ['user-stats'] });
       if (!chatId) router.replace(`/chat/${activeId}`, { scroll: false });
+
+      if (response.data.fallback_occurred && !settings.model) {
+        const usedModel = response.data.model_used ?? 'a backup model';
+        showGlobalToast(t('modelFallback', { model: usedModel }), 'warning');
+        if (response.data.model_used) {
+          onModelFallback?.(response.data.model_used);
+        }
+      }
     },
     onError: (error: Error) => {
-      showGlobalToast(error.message || 'Помилка відправки', 'error');
+      const { message, type } = extractErrorToast(error);
+      showGlobalToast(message, type);
     },
   });
 
@@ -88,12 +112,13 @@ export function useRiddleChat(chatId?: string) {
       return RiddleService.regenerateRiddle(chatId, settings);
     },
     onSuccess: () => {
-      showGlobalToast('Загадку успішно оновлено', 'success');
+      showGlobalToast(t('riddleRegenerated'), 'success');
       queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
       queryClient.invalidateQueries({ queryKey: ['user-stats', 'me'] });
     },
     onError: (error: Error) => {
-      showGlobalToast(error.message || 'Не вдалося перегенерувати загадку', 'error');
+      const { message, type } = extractErrorToast(error);
+      showGlobalToast(message, type);
     },
   });
 

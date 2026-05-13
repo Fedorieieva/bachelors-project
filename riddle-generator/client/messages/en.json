@@ -1,0 +1,218 @@
+{
+  "sidebar": {
+    "newChat": "New Chat",
+    "socialNetwork": "Social Network",
+    "chatHistory": "Chat History",
+    "historyEmpty": "History is empty",
+    "settings": "Settings",
+    "untitled": "Untitled",
+    "deleteChat": "Delete chat"
+  },
+  "header": {
+    "myProfile": "My Profile",
+    "logout": "Logout",
+    "signingOut": "Signing out…",
+    "signIn": "Sign In"
+  },
+  "welcomeSettings": {
+    "title": "Settings",
+    "category": "Category",
+    "generationLanguage": "Generation Language",
+    "difficulty": "Difficulty",
+    "gameMode": "Game Mode"
+  },
+  "chatPage": {
+    "riddleCollection": "Riddle Collection",
+    "loadOlder": "Load older"
+  },
+  "chatInput": {
+    "placeholder": "Enter your answer...",
+    "selectModel": "Select AI model"
+  },
+  "languageSwitcher": {
+    "switchToUk": "Switch to Ukrainian",
+    "switchToEn": "Switch to English"
+  },
+  "toasts": {
+    "chatDeleted": "Chat successfully deleted.",
+    "chatDeleteFailed": "Failed to delete the chat.",
+    "riddleRegenerated": "Riddle regenerated successfully",
+    "quotaExhausted": "All models reached their quota. Please try again in a few minutes.",
+    "serviceOverloaded": "AI service is currently overloaded. Please try again later.",
+    "aiError": "AI service encountered an error. Please try again.",
+    "connectionFailed": "Failed to connect to the AI service.",
+    "sendFailed": "Failed to send message.",
+    "modelFallback": "Switching to {model} due to quota limits.",
+    "riddleSaved": "Riddle saved to collection!",
+    "riddleSaveError": "Save failed",
+    "visibilityError": "Failed to change visibility",
+    "riddleDeleted": "Riddle successfully deleted",
+    "riddleDeleteError": "Failed to delete riddle",
+    "profileUpdated": "Profile updated successfully!",
+    "profileUpdateError": "Error updating profile",
+    "passwordChanged": "Password changed successfully!",
+    "passwordChangeFailed": "Failed to change password",
+    "avatarRemoveError": "Failed to remove image from storage",
+    "accountDeleted": "Account queued for deletion.",
+    "accountDeleteError": "Failed to delete account."
+  },
+  "auth": {
+    "signUp": "Sign Up",
+    "signIn": "Sign In",
+    "signInBtn": "Sign in",
+    "createAccount": "Create account",
+    "nameLabel": "Enter your name",
+    "namePlaceholder": "Name",
+    "emailLabel": "Enter your email",
+    "emailPlaceholder": "Email",
+    "passwordLabel": "Enter your password",
+    "passwordPlaceholder": "Password"
+  },
+  "validation": {
+    "emailInvalid": "Enter a valid email (e.g. example@mail.com)",
+    "emailRequired": "Email is required",
+    "passwordMin": "Password must be at least 8 characters",
+    "passwordComplexity": "Password must contain at least one uppercase letter, one lowercase letter, and one digit",
+    "passwordRequired": "Password is required",
+    "nameTooShort": "Name is too short (minimum 2 characters)",
+    "nameTooLong": "Name is too long (maximum 50 characters)",
+    "nameInvalidChars": "Name can only contain letters, numbers, spaces and underscores",
+    "nameRequired": "Name is required",
+    "currentPasswordRequired": "Current password is required",
+    "newPasswordMin": "Password must be at least 8 characters",
+    "newPasswordComplexity": "Password must contain at least one uppercase letter, one lowercase letter, and one digit",
+    "newPasswordRequired": "New password is required",
+    "confirmPasswordMatch": "Passwords do not match",
+    "confirmPasswordRequired": "Please confirm your new password",
+    "nameMin": "Name must be at least 2 characters",
+    "nameMax": "Name must be at most 50 characters",
+    "namePattern": "Name can only contain letters, numbers, spaces, underscores, and hyphens",
+    "nameDisplayRequired": "Display name is required"
+  },
+  "settings": {
+    "title": "Settings",
+    "displayName": "Display Name",
+    "email": "Email",
+    "emailCannotChange": "Email cannot be changed",
+    "saveChanges": "Save Changes",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "dangerZone": "Danger Zone",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Delete Your Account?",
+    "deleteAccountDesc": "Are you absolutely sure? This action is permanent and will delete all your generators, results, and settings.",
+    "deleteAccountConfirm": "Delete My Account",
+    "deleteAccountCancel": "No, Keep It"
+  },
+  "profile": {
+    "posted": "Posted",
+    "private": "Private",
+    "saved": "Saved"
+  },
+  "socialMedia": {
+    "allRiddles": "All Riddles",
+    "following": "Following"
+  },
+  "avatarUpload": {
+    "changeAvatar": "Change Avatar",
+    "removePhoto": "Remove Photo",
+    "uploadError": "Failed to upload image to Cloudinary"
+  },
+  "profileStats": {
+    "followers": "Followers",
+    "following": "Following",
+    "follow": "Follow",
+    "unfollow": "Unfollow"
+  },
+  "followListModal": {
+    "followers": "Followers",
+    "following": "Following",
+    "noFollowers": "No followers yet",
+    "notFollowing": "Not following anyone yet",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "anonymous": "Anonymous"
+  },
+  "riddleCard": {
+    "solved": "Solved",
+    "blocked": "Blocked",
+    "madePublic": "Riddle is now public",
+    "madePrivate": "Riddle is now private",
+    "visibilityError": "Failed to change visibility",
+    "commentUpdated": "Comment updated",
+    "commentAdded": "Comment added",
+    "actionFailed": "Action failed",
+    "commentDeleted": "Comment deleted",
+    "couldNotDelete": "Could not delete",
+    "deleteCommentTitle": "Delete Comment",
+    "deleteCommentDesc": "This action cannot be undone. Are you sure you want to delete this comment?",
+    "deleteRiddleTitle": "Delete Riddle?",
+    "deleteRiddleDesc": "Are you sure you want to delete this riddle? This action cannot be undone.",
+    "deleteBtn": "Delete"
+  },
+  "riddleStatusModal": {
+    "correct": {
+      "title": "Well done!",
+      "desc": "Your answer is correct",
+      "extra": "+{xp} XP added to your level",
+      "primaryBtn": "Continue"
+    },
+    "wrong": {
+      "title": "Hmm... close!",
+      "desc": "Not quite right. Try to look at it from another perspective.",
+      "extra": "You have {attempts} attempts left",
+      "primaryBtn": "Close",
+      "secondaryBtn": "Try Again"
+    },
+    "failed": {
+      "title": "Out of attempts!",
+      "titleBought": "Still no luck?",
+      "desc": "You've reached the limit for this riddle. Take a break and let your mind rest.",
+      "descBought": "You've used your extra chance. This riddle is now locked for 1 hour.",
+      "extra": "Come back in 1 hour to try again",
+      "primaryBtn": "Got it, see you later",
+      "secondaryBtn": "Spend 10 XP to retry"
+    }
+  },
+  "commentModal": {
+    "placeholder": "Enter your comment here",
+    "submit": "Comment"
+  },
+  "guessModal": {
+    "title": "Guess this riddle",
+    "placeholder": "Enter your answer",
+    "submit": "Submit"
+  },
+  "riddlesCollectionModal": {
+    "title": "Generated Riddles",
+    "empty": "No riddles yet",
+    "deleteConfirmText": "Are you sure you want to remove this riddle from your collection?",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "commentSection": {
+    "title": "Comments",
+    "addComment": "+ Add comment",
+    "noComments": "No comments yet. Be the first to comment!"
+  },
+  "feedList": {
+    "loadError": "Failed to load feed",
+    "empty": "No riddles in this category yet"
+  },
+  "chatMessageItem": {
+    "generatedBy": "Generated by {model}",
+    "revealAnswer": "Reveal Answer"
+  },
+  "modal": {
+    "dialogTitle": "Modal Dialog"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "bellLabel": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all read",
+    "clearAll": "Clear all"
+  }
+}

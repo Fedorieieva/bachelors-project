@@ -26,6 +26,11 @@
     border-color: rgba($error, 0.6);
     .icon { color: $error; }
   }
+
+  &.warning {
+    border-color: rgba($warning, 0.6);
+    .icon { color: $warning; }
+  }
 }
 
 .icon {

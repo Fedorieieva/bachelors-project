@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   ValidateNested,
   IsBoolean,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -50,6 +51,15 @@ export class RiddleSettingsDto {
   @IsOptional()
   @IsBoolean()
   is_interactive?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'gemini-2.0-flash',
+    description: 'Gemini model to use for generation',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^gemini-[\w.-]+$/, { message: 'Invalid model name format' })
+  model?: string;
 }
 
 export class RiddleDto {

@@ -19,9 +19,11 @@ export const RiddleService = {
   async sendChatMessage(
     chatId: string,
     topic: string,
+    model?: string,
   ): Promise<ChatResponse> {
     const { data } = await apiClient.post<ChatResponse>(`/riddles/chat/${chatId}`, {
-      topic
+      topic,
+      ...(model && { model }),
     });
     return data;
   },
@@ -65,6 +67,11 @@ export const RiddleService = {
 
   async saveToCollection(messageId: string): Promise<SavedRiddle> {
     const { data } = await apiClient.post<SavedRiddle>(`/riddles/save/${messageId}`);
+    return data;
+  },
+
+  async deleteChat(chatId: string): Promise<{ message: string }> {
+    const { data } = await apiClient.delete<{ message: string }>(`/riddles/chat/${chatId}`);
     return data;
   },
 

@@ -5,13 +5,14 @@ import 'dotenv/config';
 import * as express from 'express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
-//import './utils/backup.cron';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     bodyParser: false,
   });
   const logger = new Logger('Bootstrap');
+  const port = parseInt(process.env.PORT ?? '8000', 10);
+
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.use(express.json());
@@ -20,6 +21,7 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN?.split(',') ?? [
       'http://localhost:5173',
       'http://localhost:3000',
+      'http://localhost:3001',
     ],
     credentials: true,
   });
@@ -84,11 +86,17 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 8000);
-  logger.log(`🚀 Server is running on http://localhost:${process.env.PORT ?? 8000}`);
-  logger.log(
-    `📚 Swagger documentation available at http://localhost:${process.env.PORT ?? 8000}/api-docs`,
-  );
+  const shutdown = async (signal: string) => {
+    logger.log(`Received ${signal}, shutting down gracefully…`);
+    await app.close();
+    process.exit(0);
+  };
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+
+  await app.listen(port);
+  logger.log(`🚀 Server is running on http://localhost:${port}`);
+  logger.log(`📚 Swagger documentation available at http://localhost:${port}/api-docs`);
 }
 
 void bootstrap();

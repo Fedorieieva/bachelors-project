@@ -1,0 +1,218 @@
+{
+  "sidebar": {
+    "newChat": "Новий чат",
+    "socialNetwork": "Соціальна мережа",
+    "chatHistory": "Історія чатів",
+    "historyEmpty": "Історія порожня",
+    "settings": "Налаштування",
+    "untitled": "Без назви",
+    "deleteChat": "Видалити чат"
+  },
+  "header": {
+    "myProfile": "Мій профіль",
+    "logout": "Вийти",
+    "signingOut": "Виходимо…",
+    "signIn": "Увійти"
+  },
+  "welcomeSettings": {
+    "title": "Налаштування",
+    "category": "Категорія",
+    "generationLanguage": "Мова генерації",
+    "difficulty": "Складність",
+    "gameMode": "Ігровий режим"
+  },
+  "chatPage": {
+    "riddleCollection": "Колекція загадок",
+    "loadOlder": "Завантажити попередні"
+  },
+  "chatInput": {
+    "placeholder": "Введіть відповідь...",
+    "selectModel": "Вибрати модель ШІ"
+  },
+  "languageSwitcher": {
+    "switchToUk": "Перемкнути на українську",
+    "switchToEn": "Switch to English"
+  },
+  "toasts": {
+    "chatDeleted": "Чат успішно видалено.",
+    "chatDeleteFailed": "Не вдалося видалити чат.",
+    "riddleRegenerated": "Загадку перегенеровано",
+    "quotaExhausted": "Всі моделі вичерпали квоту. Спробуйте ще раз за кілька хвилин.",
+    "serviceOverloaded": "Сервіс ШІ перевантажений. Спробуйте ще раз пізніше.",
+    "aiError": "Помилка сервісу ШІ. Спробуйте ще раз.",
+    "connectionFailed": "Не вдалося підключитися до сервісу ШІ.",
+    "sendFailed": "Не вдалося надіслати повідомлення.",
+    "modelFallback": "Перемикаємося на {model} через вичерпання квоти.",
+    "riddleSaved": "Загадку збережено в колекцію!",
+    "riddleSaveError": "Помилка збереження",
+    "visibilityError": "Помилка зміни видимості",
+    "riddleDeleted": "Загадку успішно видалено",
+    "riddleDeleteError": "Не вдалося видалити загадку",
+    "profileUpdated": "Профіль оновлено успішно!",
+    "profileUpdateError": "Помилка оновлення профілю",
+    "passwordChanged": "Пароль успішно змінено!",
+    "passwordChangeFailed": "Не вдалося змінити пароль",
+    "avatarRemoveError": "Не вдалося видалити фото зі сховища",
+    "accountDeleted": "Акаунт поставлено у чергу на видалення.",
+    "accountDeleteError": "Не вдалося видалити акаунт."
+  },
+  "auth": {
+    "signUp": "Реєстрація",
+    "signIn": "Увійти",
+    "signInBtn": "Увійти",
+    "createAccount": "Створити акаунт",
+    "nameLabel": "Введіть ваше ім'я",
+    "namePlaceholder": "Ім'я",
+    "emailLabel": "Введіть вашу пошту",
+    "emailPlaceholder": "Пошта",
+    "passwordLabel": "Введіть пароль",
+    "passwordPlaceholder": "Пароль"
+  },
+  "validation": {
+    "emailInvalid": "Введіть коректний email (наприклад, example@mail.com)",
+    "emailRequired": "Електронна пошта обов'язкова",
+    "passwordMin": "Пароль має містити мінімум 8 символів",
+    "passwordComplexity": "Пароль має містити хоча б одну велику літеру, одну малу літеру та одну цифру",
+    "passwordRequired": "Пароль обов'язковий",
+    "nameTooShort": "Ім'я занадто коротке (мінімум 2 символи)",
+    "nameTooLong": "Ім'я занадто довге (максимум 50 символів)",
+    "nameInvalidChars": "Ім'я може містити лише літери, цифри, пробіли та підкреслення",
+    "nameRequired": "Ім'я обов'язкове",
+    "currentPasswordRequired": "Поточний пароль обов'язковий",
+    "newPasswordMin": "Пароль має містити мінімум 8 символів",
+    "newPasswordComplexity": "Пароль має містити хоча б одну велику літеру, одну малу літеру та одну цифру",
+    "newPasswordRequired": "Новий пароль обов'язковий",
+    "confirmPasswordMatch": "Паролі не збігаються",
+    "confirmPasswordRequired": "Будь ласка, підтвердіть новий пароль",
+    "nameMin": "Ім'я має містити мінімум 2 символи",
+    "nameMax": "Ім'я має містити максимум 50 символів",
+    "namePattern": "Ім'я може містити лише літери, цифри, пробіли, підкреслення та дефіси",
+    "nameDisplayRequired": "Відображуване ім'я обов'язкове"
+  },
+  "settings": {
+    "title": "Налаштування",
+    "displayName": "Відображуване ім'я",
+    "email": "Пошта",
+    "emailCannotChange": "Пошту змінити неможливо",
+    "saveChanges": "Зберегти зміни",
+    "changePassword": "Змінити пароль",
+    "currentPassword": "Поточний пароль",
+    "newPassword": "Новий пароль",
+    "confirmNewPassword": "Підтвердити новий пароль",
+    "dangerZone": "Небезпечна зона",
+    "deleteAccount": "Видалити акаунт",
+    "deleteAccountTitle": "Видалити акаунт?",
+    "deleteAccountDesc": "Ви впевнені? Ця дія незворотна та видалить усі ваші генератори, результати та налаштування.",
+    "deleteAccountConfirm": "Видалити мій акаунт",
+    "deleteAccountCancel": "Ні, залишити"
+  },
+  "profile": {
+    "posted": "Опубліковано",
+    "private": "Приватне",
+    "saved": "Збережено"
+  },
+  "socialMedia": {
+    "allRiddles": "Всі загадки",
+    "following": "Підписки"
+  },
+  "avatarUpload": {
+    "changeAvatar": "Змінити аватар",
+    "removePhoto": "Видалити фото",
+    "uploadError": "Не вдалося завантажити фото до Cloudinary"
+  },
+  "profileStats": {
+    "followers": "Підписники",
+    "following": "Підписки",
+    "follow": "Підписатися",
+    "unfollow": "Відписатися"
+  },
+  "followListModal": {
+    "followers": "Підписники",
+    "following": "Підписки",
+    "noFollowers": "Підписників ще немає",
+    "notFollowing": "Немає підписок",
+    "follow": "Підписатися",
+    "unfollow": "Відписатися",
+    "anonymous": "Анонім"
+  },
+  "riddleCard": {
+    "solved": "Розв'язано",
+    "blocked": "Заблоковано",
+    "madePublic": "Загадку опубліковано",
+    "madePrivate": "Загадку приховано",
+    "visibilityError": "Не вдалося змінити видимість",
+    "commentUpdated": "Коментар оновлено",
+    "commentAdded": "Коментар додано",
+    "actionFailed": "Дія не вдалася",
+    "commentDeleted": "Коментар видалено",
+    "couldNotDelete": "Не вдалося видалити",
+    "deleteCommentTitle": "Видалити коментар",
+    "deleteCommentDesc": "Цю дію не можна скасувати. Ви впевнені, що хочете видалити коментар?",
+    "deleteRiddleTitle": "Видалити загадку?",
+    "deleteRiddleDesc": "Ви впевнені, що хочете видалити цю загадку? Цю дію не можна скасувати.",
+    "deleteBtn": "Видалити"
+  },
+  "riddleStatusModal": {
+    "correct": {
+      "title": "Чудово!",
+      "desc": "Ваша відповідь правильна",
+      "extra": "+{xp} XP додано до вашого рівня",
+      "primaryBtn": "Продовжити"
+    },
+    "wrong": {
+      "title": "Хм... близько!",
+      "desc": "Не зовсім правильно. Спробуйте подивитися з іншого боку.",
+      "extra": "У вас залишилося {attempts} спроб(и)",
+      "primaryBtn": "Закрити",
+      "secondaryBtn": "Спробувати ще"
+    },
+    "failed": {
+      "title": "Спроби вичерпано!",
+      "titleBought": "Все одно не вийшло?",
+      "desc": "Ви досягли ліміту для цієї загадки. Відпочиньте та дайте мозку передихнути.",
+      "descBought": "Ви використали додаткову спробу. Ця загадка заблокована на 1 годину.",
+      "extra": "Повертайтесь через 1 годину, щоб спробувати знову",
+      "primaryBtn": "Зрозуміло, до побачення",
+      "secondaryBtn": "Витратити 10 XP для повторної спроби"
+    }
+  },
+  "commentModal": {
+    "placeholder": "Введіть коментар тут",
+    "submit": "Коментувати"
+  },
+  "guessModal": {
+    "title": "Відгадайте загадку",
+    "placeholder": "Введіть відповідь",
+    "submit": "Надіслати"
+  },
+  "riddlesCollectionModal": {
+    "title": "Згенеровані загадки",
+    "empty": "Загадок ще немає",
+    "deleteConfirmText": "Точно бажаєте видалити загадку з колекції?",
+    "cancel": "Скасувати",
+    "delete": "Видалити"
+  },
+  "commentSection": {
+    "title": "Коментарі",
+    "addComment": "+ Додати коментар",
+    "noComments": "Коментарів ще немає. Будьте першим!"
+  },
+  "feedList": {
+    "loadError": "Помилка завантаження стрічки",
+    "empty": "Загадок поки немає у цій категорії"
+  },
+  "chatMessageItem": {
+    "generatedBy": "Згенеровано за допомогою {model}",
+    "revealAnswer": "Показати відповідь"
+  },
+  "modal": {
+    "dialogTitle": "Модальне вікно"
+  },
+  "notifications": {
+    "title": "Сповіщення",
+    "bellLabel": "Сповіщення",
+    "empty": "Сповіщень ще немає",
+    "markAllRead": "Позначити всі як прочитані",
+    "clearAll": "Очистити все"
+  }
+}

@@ -1,4 +1,5 @@
 @use "../../../styles/abstracts/variables" as *;
+@use "../../../styles/abstracts/mixins" as *;
 
 .header {
   position: fixed;
@@ -36,4 +37,69 @@
 .userStatus {
   display: flex;
   align-items: center;
+  gap: 70px;
+}
+
+.avatarWrapper {
+  position: relative;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 168px;
+  padding-top: 8px;
+  z-index: 3;
+}
+
+.dropdownMenu {
+  @include glass-panel(12px, rgba($dark-violet, 0.92), rgba($white, 0.1));
+  border-radius: $border-radius-primary;
+  overflow: hidden;
+  padding: 6px;
+  @include shadow-violet-glow-soft;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: $white-2;
+  font-family: $font-main;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+
+  &:hover {
+    background: rgba($white, 0.08);
+    color: $white;
+  }
+}
+
+.dropdownItemDanger {
+  color: rgba($error, 0.8);
+
+  &:hover {
+    background: rgba($error, 0.1);
+    color: $error;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.dropdownDivider {
+  height: 1px;
+  margin: 4px 0;
+  background: rgba($white, 0.08);
 }

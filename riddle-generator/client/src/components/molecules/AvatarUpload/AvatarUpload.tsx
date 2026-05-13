@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button } from '@/components/atoms/Button/Button';
 import { useCloudinary } from '@/hooks/utils/useCloudinary';
+import { useTranslations } from 'next-intl';
 import styles from './AvatarUpload.module.scss';
 
 interface AvatarUploadProps {
@@ -23,6 +24,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
   onError,
   isLoading
 }) => {
+  const t = useTranslations('avatarUpload');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadImage, isUploading } = useCloudinary();
 
@@ -33,7 +35,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
         const url = await uploadImage(file);
         onUploadSuccess(url);
       } catch (err) {
-        onError("Failed to upload image to Cloudinary");
+        onError(t('uploadError'));
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
@@ -51,7 +53,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
           onClick={() => fileInputRef.current?.click()}
           isLoading={isUploading || isLoading}
         >
-          Change Avatar
+          {t('changeAvatar')}
         </Button>
 
         {currentUrl && (
@@ -61,7 +63,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
             onClick={onDelete}
             disabled={isUploading || isLoading}
           >
-            Remove Photo
+            {t('removePhoto')}
           </Button>
         )}
       </div>

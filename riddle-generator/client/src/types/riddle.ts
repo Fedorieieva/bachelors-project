@@ -10,7 +10,17 @@ export interface RiddleSettings {
   complexity: number;
   language: 'ukrainian' | 'english' | 'spanish' | 'french' | 'german';
   is_interactive?: boolean;
+  model?: string;
 }
+
+export const GEMINI_MODELS = [
+  { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash' },
+  { label: 'Gemini 2.0 Flash Lite', value: 'gemini-2.0-flash-lite' },
+  { label: 'Gemini 2.5 Flash Lite', value: 'gemini-2.5-flash-lite' },
+  { label: 'Gemini Flash (latest)', value: 'gemini-flash-latest' },
+  { label: 'Gemini 2.5 Pro', value: 'gemini-2.5-pro' },
+  { label: 'Gemini 2.0 Flash Exp', value: 'gemini-2.0-flash-exp' },
+] as const;
 
 export interface RiddleMetadata {
   message: string;
@@ -33,6 +43,8 @@ export interface ChatResponse {
     answer?: string;
     prompt_context?: RiddleMetadata;
     xp_earned?: number;
+    model_used?: string;
+    fallback_occurred?: boolean;
   };
 }
 

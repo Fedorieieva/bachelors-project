@@ -13,15 +13,41 @@ import { useDeleteRiddle, useRiddleActions } from '@/hooks/riddles/useRiddleActi
 import styles from './ChatPage.module.scss';
 import { RiddleCollectionModal } from '@/components/organisms/Modals/RiddlesCollectionModal/RiddlesCollectionModal';
 import { useRiddleMessages } from '@/hooks/riddles/useRiddleMessages';
+import { useTranslations, useLocale } from 'next-intl';
 
-const DEFAULT_SETTINGS: RiddleSettings = {
-  type: RiddleType.LOGIC,
-  complexity: 3,
-  language: 'ukrainian',
-  is_interactive: true,
-};
+const MODEL_STORAGE_KEY = 'genigma-model';
+const DEFAULT_MODEL = 'gemini-2.0-flash';
+
+function getInitialSettings(): RiddleSettings {
+  let savedModel = DEFAULT_MODEL;
+  let language: RiddleSettings['language'] = 'ukrainian';
+
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(MODEL_STORAGE_KEY);
+    if (stored && !stored.startsWith('gemini-1.')) {
+      savedModel = stored;
+    } else if (stored) {
+      localStorage.setItem(MODEL_STORAGE_KEY, DEFAULT_MODEL);
+    }
+
+    const localeCookie = document.cookie.split(';').find(c => c.trim().startsWith('NEXT_LOCALE='));
+    if (localeCookie?.split('=')[1]?.trim() === 'en') {
+      language = 'english';
+    }
+  }
+
+  return {
+    type: RiddleType.LOGIC,
+    complexity: 3,
+    language,
+    is_interactive: true,
+    model: savedModel,
+  };
+}
 
 export default function ChatPage() {
+  const t = useTranslations('chatPage');
+  const locale = useLocale();
   const params = useParams();
   const chatId = params.id
     ? Array.isArray(params.id)
@@ -38,7 +64,9 @@ export default function ChatPage() {
     loadOlderMessages,
     isFetchingOlder,
     hasOlderMessages,
-  } = useRiddleChat(chatId);
+  } = useRiddleChat(chatId, (fallbackModel) => {
+    setCurrentSettings(prev => ({ ...prev, model: fallbackModel }));
+  });
 
   const {
     riddleMessages,
@@ -53,9 +81,22 @@ export default function ChatPage() {
   const { reveal, isRevealing } = useRiddleActions(chatId as string);
 
   const [inputValue, setInputValue] = useState('');
-  const [currentSettings, setCurrentSettings] = useState<RiddleSettings>(DEFAULT_SETTINGS);
+  const [currentSettings, setCurrentSettings] = useState<RiddleSettings>(getInitialSettings);
   const [optimisticMessage, setOptimisticMessage] = useState<string | null>(null);
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (currentSettings.model) {
+      localStorage.setItem(MODEL_STORAGE_KEY, currentSettings.model);
+    }
+  }, [currentSettings.model]);
+
+  useEffect(() => {
+    const riddleLang: RiddleSettings['language'] = locale === 'en' ? 'english' : 'ukrainian';
+    setCurrentSettings(prev =>
+      prev.language === riddleLang ? prev : { ...prev, language: riddleLang },
+    );
+  }, [locale]);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -128,7 +169,7 @@ export default function ChatPage() {
       {chatId && (
         <div className={styles.topActions}>
           <Button variant="grey-glass-tab" size="auto" onClick={() => setIsCollectionModalOpen(true)}>
-            Колекція загадок
+            {t('riddleCollection')}
           </Button>
         </div>
       )}
@@ -160,7 +201,7 @@ export default function ChatPage() {
                     }}
                     isLoading={isFetchingOlder}
                   >
-                    Завантажити попередні
+                    {t('loadOlder')}
                   </Button>
                 </div>
               )}
@@ -205,6 +246,10 @@ export default function ChatPage() {
           onChange={setInputValue}
           onSend={handleSend}
           isSending={isSending}
+          selectedModel={currentSettings.model}
+          onModelChange={(model) =>
+            setCurrentSettings(prev => ({ ...prev, model }))
+          }
         />
       </div>
 

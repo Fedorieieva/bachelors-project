@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client';
-import { UpdateUserDto } from '@/types/auth';
+import { ChangePasswordDto, UpdateUserDto } from '@/types/auth';
 import { FollowRecord, UserProfile, UserStats } from '@/types/user';
 
 export const UserService = {
@@ -10,6 +10,11 @@ export const UserService = {
 
   async updateProfile(id: string, updateData: UpdateUserDto): Promise<UserProfile> {
     const { data } = await apiClient.put<UserProfile>(`/users/${id}`, updateData);
+    return data;
+  },
+
+  async changePassword(dto: ChangePasswordDto): Promise<{ message: string }> {
+    const { data } = await apiClient.patch<{ message: string }>('/users/password', dto);
     return data;
   },
 
@@ -35,6 +40,11 @@ export const UserService = {
 
   async unfollowUser(userId: string): Promise<void> {
     await apiClient.delete(`/users/${userId}/unfollow`);
+  },
+
+  async checkIsFollowing(targetUserId: string): Promise<{ isFollowing: boolean }> {
+    const { data } = await apiClient.get<{ isFollowing: boolean }>(`/users/profile/is-following/${targetUserId}`);
+    return data;
   },
 
   async getFollowers(userId: string): Promise<UserProfile[]> {

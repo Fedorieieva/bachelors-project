@@ -33,16 +33,18 @@ model User {
   riddles_solved Int   @default(0)
   rating         Float @default(0.0)
 
-  sessions      Session[]
-  riddles       Riddles[]
-  saved_riddles SavedRiddles[]
-  comments      Comment[]
-  likes         Like[]
-  Chat          Chat[]
-  followers     Follow[]        @relation("following")
-  following     Follow[]        @relation("follower")
-  SolvedRiddle  SolvedRiddle[]
-  RiddleAttempt RiddleAttempt[]
+  sessions              Session[]
+  riddles               Riddles[]
+  saved_riddles         SavedRiddles[]
+  comments              Comment[]
+  likes                 Like[]
+  Chat                  Chat[]
+  followers             Follow[]         @relation("following")
+  following             Follow[]         @relation("follower")
+  SolvedRiddle          SolvedRiddle[]
+  RiddleAttempt         RiddleAttempt[]
+  notifications         Notification[]   @relation("NotificationRecipient")
+  triggered_notifs      Notification[]   @relation("NotificationActor")
 
   @@map("users")
 }
@@ -73,6 +75,16 @@ model Session {
   userId String @map("user_id")
 
   @@map("sessions")
+}
+
+enum NotificationType {
+  COMMENT
+  LIKE
+  FOLLOW
+  LEVEL_UP
+  XP_EARNED
+  PROFILE_DELETED
+  NEW_RIDDLE
 }
 
 enum RiddleType {
@@ -210,6 +222,26 @@ model Like {
 
   @@unique([user_id, riddle_id])
   @@map("likes")
+}
+
+model Notification {
+  id      String           @id @default(uuid())
+  type    NotificationType
+  content String           @db.Text
+  isRead  Boolean          @default(false)
+  metadata Json?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+
+  user   User   @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actorId String? @map("actor_id")
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }
 
 model AIPrompt {

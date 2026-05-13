@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, Content } from '@google/generative-ai';
 import { AiHintResponse, AiRiddleResponse, RiddleIntentAnalysis } from './ai-responses.dto';
@@ -14,19 +14,17 @@ export class AiService {
     'gemini-2.0-flash-lite',
     'gemini-2.5-flash-lite',
     'gemini-2.0-flash',
-
     'gemini-flash-latest',
     'gemini-2.0-flash-001',
     'gemini-flash-lite-latest',
-
     'gemini-2.5-pro',
     'gemini-pro-latest',
-
     'gemini-3-flash-preview',
     'gemini-2.0-flash-exp',
   ];
 
   private currentModelIndex = 0;
+  private fallbackOccurred = false;
 
   constructor(private configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
@@ -38,7 +36,7 @@ export class AiService {
 
   private initModel(): void {
     const modelName = this.modelCandidates[this.currentModelIndex];
-    this.logger.log(`Ініціалізація моделі: ${modelName}`);
+    this.logger.log(`[AI] Active model: ${modelName}`);
 
     this.model = this.genAI.getGenerativeModel(
       {
@@ -53,19 +51,48 @@ export class AiService {
     if (this.currentModelIndex < this.modelCandidates.length - 1) {
       this.currentModelIndex++;
       this.initModel();
+      this.fallbackOccurred = true;
       return true;
     }
     return false;
   }
 
-  async askGemini<T>(history: Content[] | string, retries: number = 3): Promise<T> {
-    try {
-      const chatHistory = typeof history === 'string' ? [] : history;
+  consumeFallbackFlag(): boolean {
+    const flag = this.fallbackOccurred;
+    this.fallbackOccurred = false;
+    return flag;
+  }
 
+  private getModelForRequest(modelName?: string): GenerativeModel {
+    if (!modelName) return this.model;
+    return this.genAI.getGenerativeModel(
+      {
+        model: modelName,
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.7 },
+      },
+      { apiVersion: 'v1beta' },
+    );
+  }
+
+  getModelName(preferredModel?: string): string {
+    return preferredModel || this.modelCandidates[this.currentModelIndex];
+  }
+
+  private isSwitchableError(status: number | undefined): boolean {
+    return status === 429 || status === 404 || status === 403 || status === 500 || status === 503;
+  }
+
+  async askGemini<T>(history: Content[] | string, retries: number = 3, modelName?: string): Promise<T> {
+    const activeModelName = modelName || this.modelCandidates[this.currentModelIndex];
+    const modelInstance = this.getModelForRequest(modelName);
+
+    this.logger.log(`[AI] askGemini → ${activeModelName}`);
+
+    try {
       const messageContent =
         typeof history === 'string' ? history : history[history.length - 1]?.parts[0]?.text || '';
 
-      const chat = this.model.startChat({
+      const chat = modelInstance.startChat({
         history: typeof history === 'string' ? [] : history.slice(0, -1),
         generationConfig: { responseMimeType: 'application/json' },
       });
@@ -77,33 +104,30 @@ export class AiService {
     } catch (error: unknown) {
       const status = (error as { status?: number }).status;
 
-      if (status === 404 || status === 403 || status === 503 || status === 500) {
-        this.logger.warn(
-          `Модель ${this.modelCandidates[this.currentModelIndex]} недоступна (${status}). Перемикання...`,
-        );
+      this.logger.warn(`[AI] askGemini error — model: ${activeModelName}, status: ${status}`);
+
+      if (!modelName && this.isSwitchableError(status)) {
         if (this.switchToNextModel()) {
-          return this.askGemini(history, retries);
+          this.logger.log(`[AI] Switched to ${this.modelCandidates[this.currentModelIndex]}, retrying...`);
+          return this.askGemini(history, retries, undefined);
         }
+        this.logger.error('[AI] All models exhausted.');
+        throw new HttpException(
+          'All models reached their quota. Please try again in a few minutes.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
       }
 
       if (status === 429) {
-        if (retries > 0) {
-          this.logger.warn(`Квоту вичерпано. Спроб залишилось: ${retries}. Очікування 5с...`);
-          await new Promise(resolve => setTimeout(resolve, 5000));
-
-          this.switchToNextModel();
-          return this.askGemini(history, retries - 1);
-        }
-        throw new InternalServerErrorException(
-          'ШІ сервіс перевантажений. Спробуйте через хвилину.',
+        throw new HttpException(
+          'All models reached their quota. Please try again in a few minutes.',
+          HttpStatus.TOO_MANY_REQUESTS,
         );
       }
 
-      this.logger.error(
-        `Gemini API Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      this.logger.error(`[AI] Unhandled error: ${error instanceof Error ? error.message : 'Unknown'}`);
       throw new InternalServerErrorException(
-        'ШІ сервіс наразі перевантажений. Спробуйте змінити тему або зачекайте кілька секунд.',
+        'AI service is currently overloaded. Please try again.',
       );
     }
   }
@@ -159,7 +183,7 @@ export class AiService {
 
       return analysis;
     } catch (error: unknown) {
-      this.logger.error('Помилка класифікації наміру');
+      this.logger.error('Intent classification failed, defaulting to REFINE');
       return { intent: 'REFINE' };
     }
   }
@@ -168,6 +192,7 @@ export class AiService {
     history: Content[],
     newMessage: string,
     language: string,
+    modelName?: string,
   ): Promise<AiHintResponse | AiRiddleResponse> {
     const chatPrompt = `
       Ти — ігровий помічник у застосунку із загадками.
@@ -182,12 +207,8 @@ export class AiService {
       { role: 'user', parts: [{ text: chatPrompt }] }
     ];
 
-    try {
-      return this.askGemini<AiHintResponse | AiRiddleResponse>(updatedHistory);
-    } catch (error) {
-      this.logger.error(`Chat Error: ${error.message}`);
-      throw new InternalServerErrorException('ШІ не зміг відповісти у чаті');
-    }
+    // Let exceptions propagate — do NOT swallow HttpException from askGemini
+    return this.askGemini<AiHintResponse | AiRiddleResponse>(updatedHistory, 3, modelName);
   }
 
   async getContextualHint(
@@ -196,6 +217,7 @@ export class AiService {
     correctAnswer: string,
     language: string,
     retries: number = 3,
+    modelName?: string,
   ): Promise<Partial<AiHintResponse>> {
     const hintPrompt = `
     Ти — ігровий помічник у вебзастосунку із загадками.
@@ -220,8 +242,13 @@ export class AiService {
       }
     `;
 
+    const activeModelName = modelName || this.modelCandidates[this.currentModelIndex];
+    const modelInstance = this.getModelForRequest(modelName);
+
+    this.logger.log(`[AI] getContextualHint → ${activeModelName}`);
+
     try {
-      const chat = this.model.startChat({ history });
+      const chat = modelInstance.startChat({ history });
       const result = await chat.sendMessage(hintPrompt);
       const text = result.response.text();
       const cleanText = text.replace(/```json|```/g, '').trim();
@@ -229,24 +256,20 @@ export class AiService {
     } catch (error: any) {
       const status = error?.status;
 
-      if (status === 429 || status === 500 || status === 503) {
-        this.logger.warn(`Модель ${this.modelCandidates[this.currentModelIndex]} помилка ${status}.`);
+      this.logger.warn(`[AI] getContextualHint error — model: ${activeModelName}, status: ${status}`);
 
+      if (!modelName && this.isSwitchableError(status)) {
         if (this.switchToNextModel()) {
-          this.logger.log(`Перемикаємося на наступну модель...`);
-          return this.getContextualHint(history, userMessage, correctAnswer, language, retries);
+          this.logger.log(`[AI] Switched to ${this.modelCandidates[this.currentModelIndex]}, retrying hint...`);
+          return this.getContextualHint(history, userMessage, correctAnswer, language, retries, undefined);
         }
-
-        if (status === 429 && retries > 0) {
-          this.logger.warn(`Квоту вичерпано всюди. Очікування 5с...`);
-          await new Promise(resolve => setTimeout(resolve, 5000));
-          return this.getContextualHint(history, userMessage, correctAnswer, language, retries - 1);
-        }
+        this.logger.error('[AI] All models exhausted for hint.');
+      } else {
+        this.logger.error(`[AI] Hint error (specific model): ${error instanceof Error ? error.message : 'Unknown'}`);
       }
 
-      this.logger.error(`Hint Error: ${error.message}`);
       return {
-        content: 'Ой! ШІ трохи втомився. Спробуй ще раз через мить або перевір свою здогадку пізніше.',
+        content: 'AI service is temporarily unavailable. Please try again in a moment.',
         is_solved: false,
       };
     }

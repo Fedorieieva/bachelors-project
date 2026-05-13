@@ -74,6 +74,50 @@
   }
 }
 
+.chatItem {
+  position: relative;
+  width: 100%;
+
+  &:hover .deleteButton,
+  &:focus-within .deleteButton {
+    opacity: 1;
+  }
+}
+
+.chatButton {
+  padding-right: 28px;
+}
+
+.deleteButton {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  line-height: 0;
+
+  &:hover {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.12);
+    opacity: 1;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
 .chatTitle {
   display: block;
   min-width: 0;
@@ -89,6 +133,15 @@
   margin-top: auto;
   padding-top: 20px;
   border-top: 1px solid $bg-transp-glass-auth-form;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.langSwitcherWrapper {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
 }
 
 .overlay {

@@ -66,10 +66,7 @@ export class SessionService {
       }
 
       return { user: session.user };
-    } catch (e: unknown) {
-      if (e instanceof Error) {
-        throw new Error(`Invalid or expired token: ${e.message}`);
-      }
+    } catch {
       return null;
     }
   }
@@ -125,6 +122,10 @@ export class SessionService {
     } catch {
       return null;
     }
+  }
+
+  async removeByToken(token: string): Promise<void> {
+    await this.prisma.session.deleteMany({ where: { token } });
   }
 
   async findAll(): Promise<SessionWithUser[]> {

@@ -9,6 +9,7 @@ import { Select } from '@/components/atoms/Select/Select';
 import { RiddleSettings, RiddleType } from '@/types/riddle';
 import styles from './WelcomeSettings.module.scss';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 import GamepadIcon from '@/assets/gamepad-2-icon.svg';
 
@@ -36,6 +37,7 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
   initialSettings,
   onSync
 }) => {
+  const t = useTranslations('welcomeSettings');
   const formik = useFormik<RiddleSettings>({
     initialValues: initialSettings,
     validationSchema: WelcomeSettingsSchema,
@@ -48,11 +50,11 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
 
   return (
     <div className={styles.container}>
-      <Typography variant="h2">Налаштування</Typography>
+      <Typography variant="h2">{t('title')}</Typography>
 
       <div className={styles.form}>
         <div className={styles.field}>
-          <Typography variant="details" className={styles.label}>Категорія</Typography>
+          <Typography variant="details" className={styles.label}>{t('category')}</Typography>
           <div className={styles.optionsGrid}>
             {Object.values(RiddleType).map((t) => (
               <Button
@@ -70,7 +72,7 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
         <div className={styles.row}>
           <div className={styles.field}>
             <Select
-              label="Мова генерації"
+              label={t('generationLanguage')}
               options={LANGUAGE_OPTIONS}
               value={formik.values.language}
               onChange={(val) => formik.setFieldValue('language', val)}
@@ -78,7 +80,7 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
           </div>
 
           <div className={styles.field}>
-            <Typography variant="details" className={styles.label}>Складність</Typography>
+            <Typography variant="details" className={styles.label}>{t('difficulty')}</Typography>
             <div className={styles.complexityRow}>
               {[1, 2, 3, 4, 5].map((level) => (
                 <button
@@ -95,7 +97,7 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
         </div>
 
         <div className={styles.field}>
-          <Typography variant="details" className={styles.label}>Ігровий режим</Typography>
+          <Typography variant="details" className={styles.label}>{t('gameMode')}</Typography>
           <Button
             type="button"
             variant="icon-only"
