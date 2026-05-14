@@ -22,7 +22,7 @@ export class AuthService {
       throw new HttpException('Email already in use', HttpStatus.CONFLICT);
     }
 
-    const hashedPassword = await bcrypt.hash(password as string, 10);
+    const hashedPassword = await bcrypt.hash(password!, 10);
 
     const createUserDto: CreateUserDto = {
       email,

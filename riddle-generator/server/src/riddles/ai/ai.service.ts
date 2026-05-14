@@ -183,7 +183,7 @@ export class AiService {
 
       return analysis;
     } catch (error: unknown) {
-      this.logger.error('Intent classification failed, defaulting to REFINE');
+      this.logger.error('Intent classification failed, defaulting to REFINE', error);
       return { intent: 'REFINE' };
     }
   }

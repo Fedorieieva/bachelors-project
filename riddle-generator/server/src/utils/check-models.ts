@@ -20,7 +20,7 @@ async function listAvailableModels() {
       `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`,
     );
 
-    const data = (await response.json()) as any;
+    const data = await response.json();
 
     if (data.error) {
       throw new Error(data.error.message);

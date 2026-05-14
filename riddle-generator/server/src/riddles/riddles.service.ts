@@ -179,7 +179,7 @@ export class RiddlesService {
       const evaluation = await this.aiService.askGemini<EvaluationResult>(evalPrompt);
       return evaluation;
     } catch (e) {
-      this.logger.error('Критична помилка оцінки ШІ, пропускаємо перевірку');
+      this.logger.error('Критична помилка оцінки ШІ, пропускаємо перевірку', e);
       return { is_good: true, is_safe: true };
     }
   }
@@ -658,6 +658,7 @@ export class RiddlesService {
             const parsed = JSON.parse(msg.content);
             textContent = parsed.content;
           } catch (e) {
+            this.logger.warn('Could not parse model message as JSON, using raw content', e);
           }
         }
 

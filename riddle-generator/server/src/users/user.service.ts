@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { User, Follow } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,8 @@ import { UserStatsResponseDto } from './dto/user-stats.dto';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
@@ -94,6 +96,7 @@ export class UserService {
         },
       });
     } catch (e) {
+      this.logger.error('Unfollow failed', e);
       throw new NotFoundException('Підписку не знайдено');
     }
   }
