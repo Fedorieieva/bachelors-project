@@ -13,7 +13,7 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className, size = 'md' }) => {
-  const uid = useId().replace(/:/g, '');
+  const uid = useId().replaceAll(':', '');
   const g0 = `${uid}g0`;
   const g1 = `${uid}g1`;
   const g2 = `${uid}g2`;

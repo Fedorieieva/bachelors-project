@@ -39,23 +39,32 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
       {label && <Typography variant="details" className={styles.label}>{label}</Typography>}
 
       <div
+        role="button"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        tabIndex={0}
         className={cn(styles.selectHead, { [styles.open]: isOpen })}
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen); } }}
       >
         <Typography variant="body">{selectedOption?.label}</Typography>
         <ChevronIcon className={cn(styles.chevron, { [styles.rotate]: isOpen })} />
       </div>
 
       {isOpen && (
-        <div className={styles.dropdown}>
+        <div role="listbox" className={styles.dropdown}>
           {options.map((opt) => (
             <div
               key={opt.value}
+              role="option"
+              aria-selected={opt.value === value}
+              tabIndex={0}
               className={cn(styles.option, { [styles.selected]: opt.value === value })}
               onClick={() => {
                 onChange(opt.value);
                 setIsOpen(false);
               }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(opt.value); setIsOpen(false); } }}
             >
               <Typography variant="body">{opt.label}</Typography>
             </div>
