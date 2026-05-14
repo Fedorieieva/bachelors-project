@@ -280,12 +280,7 @@ export class RiddlesService {
     model?: string,
   ): Promise<ChatResponseDto> {
     const user = await this.prisma.user.findUnique({ where: { id: authorId } });
-    if (user?.banned_until && user.banned_until > new Date()) {
-      const remainingTime = Math.ceil((user.banned_until.getTime() - Date.now()) / 60000);
-      throw new ForbiddenException(
-        `Ви тимчасово заблоковані. Спробуйте через ${remainingTime} хв.`,
-      );
-    }
+    this.validateUserAccess(user);
 
     const analysis: RiddleIntentAnalysis = await this.aiService.classifyIntent(userMessage);
 
@@ -296,7 +291,6 @@ export class RiddlesService {
 
     if (analysis.intent === 'INAPPROPRIATE') {
       await this.handleUserViolation(authorId);
-
       return {
         type: ChatResponseType.SYSTEM_MESSAGE,
         data: {
@@ -315,13 +309,9 @@ export class RiddlesService {
         },
       };
     }
+
     if (analysis.intent === 'NEW' || analysis.intent === 'REFINE') {
-      if (user && user.violation_count > 0) {
-        await this.prisma.user.update({
-          where: { id: authorId },
-          data: { violation_count: 0 },
-        });
-      }
+      await this.resetViolationIfNeeded(user, authorId);
     }
 
     const chat = await this.prisma.chat.findUnique({
@@ -339,100 +329,150 @@ export class RiddlesService {
     }
 
     if (analysis.intent === 'NEW') {
-      const effectiveSettings: RiddleSettingsDto = {
-        complexity: chat.complexity,
-        type: chat.type,
-        language: chat.language,
-        is_interactive: chat.is_interactive,
-        model,
-      };
-
-      const newRiddle = await this.generateRiddle(
-        { topic: analysis.topic || userMessage, settings: effectiveSettings },
-        analysis,
-      );
-
-      await this.saveMessage(chatId, 'user', userMessage, true);
-      await this.saveMessage(chatId, 'model', JSON.stringify(newRiddle), true);
-
-      await this.prisma.chat.update({
-        where: { id: chatId },
-        data: {
-          current_riddle_answer: chat.is_interactive ? newRiddle.answer : null,
-        },
-      });
-
-      const newRiddleFallback = !model && this.aiService.consumeFallbackFlag();
-      return {
-        type: ChatResponseType.NEW_RIDDLE,
-        data: {
-          content: newRiddle.content,
-          answer: effectiveSettings.is_interactive ? undefined : newRiddle.answer,
-          prompt_context: newRiddle.prompt_context,
-          model_used: newRiddle.model_used,
-          fallback_occurred: newRiddleFallback || undefined,
-        },
-      };
+      return this.handleNewRiddleIntent(chatId, userMessage, chat, analysis, model);
     }
 
+    return this.handleContextualResponse(chatId, userMessage, authorId, chat, model);
+  }
+
+  private validateUserAccess(user: { banned_until: Date | null } | null): void {
+    if (user?.banned_until && user.banned_until > new Date()) {
+      const remainingTime = Math.ceil((user.banned_until.getTime() - Date.now()) / 60000);
+      throw new ForbiddenException(
+        `Ви тимчасово заблоковані. Спробуйте через ${remainingTime} хв.`,
+      );
+    }
+  }
+
+  private async resetViolationIfNeeded(
+    user: { violation_count: number } | null,
+    authorId: string,
+  ): Promise<void> {
+    if (user && user.violation_count > 0) {
+      await this.prisma.user.update({
+        where: { id: authorId },
+        data: { violation_count: 0 },
+      });
+    }
+  }
+
+  private async handleNewRiddleIntent(
+    chatId: string,
+    userMessage: string,
+    chat: { complexity: number; type: RiddleType; language: string; is_interactive: boolean },
+    analysis: RiddleIntentAnalysis,
+    model?: string,
+  ): Promise<ChatResponseDto> {
+    const effectiveSettings: RiddleSettingsDto = {
+      complexity: chat.complexity,
+      type: chat.type,
+      language: chat.language,
+      is_interactive: chat.is_interactive,
+      model,
+    };
+
+    const newRiddle = await this.generateRiddle(
+      { topic: analysis.topic || userMessage, settings: effectiveSettings },
+      analysis,
+    );
+
+    await this.saveMessage(chatId, 'user', userMessage, true);
+    await this.saveMessage(chatId, 'model', JSON.stringify(newRiddle), true);
+
+    await this.prisma.chat.update({
+      where: { id: chatId },
+      data: { current_riddle_answer: chat.is_interactive ? newRiddle.answer : null },
+    });
+
+    const fallback_occurred = (!model && this.aiService.consumeFallbackFlag()) || undefined;
+    return {
+      type: ChatResponseType.NEW_RIDDLE,
+      data: {
+        content: newRiddle.content,
+        answer: effectiveSettings.is_interactive ? undefined : newRiddle.answer,
+        prompt_context: newRiddle.prompt_context,
+        model_used: newRiddle.model_used,
+        fallback_occurred,
+      },
+    };
+  }
+
+  private async handleContextualResponse(
+    chatId: string,
+    userMessage: string,
+    authorId: string,
+    chat: { is_interactive: boolean; current_riddle_answer: string | null; complexity: number | null },
+    model?: string,
+  ): Promise<ChatResponseDto> {
     const modelUsed = this.aiService.getModelName(model);
-    this.aiService.consumeFallbackFlag(); // reset flag before AI calls
+    this.aiService.consumeFallbackFlag();
 
     if (chat.is_interactive) {
-      if (!chat.current_riddle_answer) {
-        throw new BadRequestException(
-          'У цьому чаті немає активної інтерактивної загадки. Згенеруйте нову з is_interactive: true',
-        );
-      }
-
-      const history = await this.getHistory(chatId);
-
-      const hintObj = await this.aiService.getContextualHint(
-        history,
-        userMessage,
-        chat.current_riddle_answer,
-        3,
-        model,
-      );
-
-      await this.saveMessage(chatId, 'user', userMessage);
-      await this.saveMessage(chatId, 'model', JSON.stringify({ ...hintObj, model_used: modelUsed }));
-
-      let xpEarned = 0;
-      if (hintObj.is_solved) {
-        xpEarned = this.BASE_XP_PER_COMPLEXITY * (chat.complexity || 1);
-
-        const previewText = history[0]?.parts[0]?.text || 'Загадка з чату';
-        await this.experienceService.awardXpForSolving(authorId, previewText, xpEarned);
-
-        await this.prisma.chat.update({
-          where: { id: chatId },
-          data: {
-            current_riddle_answer: null,
-          },
-        });
-      }
-
-      const hintFallback = !model && this.aiService.consumeFallbackFlag();
-      return {
-        type: ChatResponseType.REFINE_RIDDLE,
-        data: {
-          content: hintObj.content ?? '',
-          xp_earned: xpEarned > 0 ? xpEarned : undefined,
-          model_used: modelUsed,
-          fallback_occurred: hintFallback || undefined,
-        },
-      };
+      return this.handleInteractiveMessage(chatId, userMessage, authorId, chat, model, modelUsed);
     }
 
-    const rawHistory = await this.getHistory(chatId);
-    const aiUpdate = await this.aiService.askGeminiChat(
-      rawHistory,
+    return this.handleNonInteractiveMessage(chatId, userMessage, model, modelUsed);
+  }
+
+  private async handleInteractiveMessage(
+    chatId: string,
+    userMessage: string,
+    authorId: string,
+    chat: { current_riddle_answer: string | null; complexity: number | null },
+    model: string | undefined,
+    modelUsed: string,
+  ): Promise<ChatResponseDto> {
+    if (!chat.current_riddle_answer) {
+      throw new BadRequestException(
+        'У цьому чаті немає активної інтерактивної загадки. Згенеруйте нову з is_interactive: true',
+      );
+    }
+
+    const history = await this.getHistory(chatId);
+    const hintObj = await this.aiService.getContextualHint(
+      history,
       userMessage,
+      chat.current_riddle_answer,
+      3,
       model,
     );
 
-    const chatFallback = !model && this.aiService.consumeFallbackFlag();
+    await this.saveMessage(chatId, 'user', userMessage);
+    await this.saveMessage(chatId, 'model', JSON.stringify({ ...hintObj, model_used: modelUsed }));
+
+    let xpEarned = 0;
+    if (hintObj.is_solved) {
+      xpEarned = this.BASE_XP_PER_COMPLEXITY * (chat.complexity || 1);
+      const previewText = history[0]?.parts[0]?.text || 'Загадка з чату';
+      await this.experienceService.awardXpForSolving(authorId, previewText, xpEarned);
+      await this.prisma.chat.update({
+        where: { id: chatId },
+        data: { current_riddle_answer: null },
+      });
+    }
+
+    const fallback_occurred = (!model && this.aiService.consumeFallbackFlag()) || undefined;
+    return {
+      type: ChatResponseType.REFINE_RIDDLE,
+      data: {
+        content: hintObj.content ?? '',
+        xp_earned: xpEarned > 0 ? xpEarned : undefined,
+        model_used: modelUsed,
+        fallback_occurred,
+      },
+    };
+  }
+
+  private async handleNonInteractiveMessage(
+    chatId: string,
+    userMessage: string,
+    model: string | undefined,
+    modelUsed: string,
+  ): Promise<ChatResponseDto> {
+    const rawHistory = await this.getHistory(chatId);
+    const aiUpdate = await this.aiService.askGeminiChat(rawHistory, userMessage, model);
+
+    const fallback_occurred = (!model && this.aiService.consumeFallbackFlag()) || undefined;
     await this.saveMessage(chatId, 'user', userMessage);
     await this.saveMessage(chatId, 'model', JSON.stringify({ ...aiUpdate, model_used: modelUsed }));
 
@@ -441,7 +481,7 @@ export class RiddlesService {
       data: {
         content: (aiUpdate as any).content,
         model_used: modelUsed,
-        fallback_occurred: chatFallback || undefined,
+        fallback_occurred,
       },
     };
   }
