@@ -36,7 +36,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, currentUserId, isAuthenticated,
     isAuthenticated && isOtherUser && initialIsFollowing === undefined,
   );
 
-  const isFollowingUser = initialIsFollowing !== undefined ? initialIsFollowing : (followData?.isFollowing ?? false);
+  const isFollowingUser = initialIsFollowing === undefined ? (followData?.isFollowing ?? false) : initialIsFollowing;
   const { follow, unfollow, isFollowingPending, isUnfollowingPending } = useSocialActions(user.id);
 
   const handleToggle = () => {
