@@ -26,7 +26,7 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+      if (event.target instanceof Node && selectRef.current && !selectRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };

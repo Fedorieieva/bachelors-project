@@ -11,7 +11,6 @@ import LightbulbIcon from '@/assets/lightbulb-icon.svg';
 
 interface ChatMessageItemProps {
   msg: Message;
-  index: number;
   isLast: boolean;
   isSending: boolean;
   onRegenerate: (settings: RiddleSettings) => void;

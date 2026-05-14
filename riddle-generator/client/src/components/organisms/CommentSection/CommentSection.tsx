@@ -11,7 +11,6 @@ import { InfiniteScrollList } from '@/components/organisms/InfiniteScrollList/In
 import { useTranslations } from 'next-intl';
 
 interface CommentSectionProps {
-  riddleId: string;
   comments: Comment[];
   isLoading: boolean;
   isFetchingMore: boolean;
@@ -59,7 +58,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         className={styles.list}
         renderItem={(comment) => (
           <CommentItem
-            id={comment.id}
             userId={comment.user_id}
             currentUserId={currentUserId}
             userName={comment.user.name || 'Anonymous'}

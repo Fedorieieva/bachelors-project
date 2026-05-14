@@ -52,9 +52,14 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, className, hideAvat
           <>
             {isAuthenticated && authUser ? (
               <div
+                role="button"
+                tabIndex={0}
+                aria-expanded={isDropdownOpen}
+                aria-label={t('myProfile')}
                 className={styles.avatarWrapper}
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsDropdownOpen((v) => !v); } }}
               >
                 <Button variant="icon-only">
                   <Avatar

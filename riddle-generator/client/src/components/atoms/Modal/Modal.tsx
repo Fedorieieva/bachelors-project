@@ -72,14 +72,14 @@ export const Modal: React.FC<ModalProps> = ({
                     )}
 
                     <div className={styles.header}>
-                      {!hideCloseButton ? (
+                      {hideCloseButton ? (
+                        <div />
+                      ) : (
                         <Dialog.Close asChild>
                           <Button variant="icon-only" size="auto" className={styles.closeBtn}>
                             <X size={24} />
                           </Button>
                         </Dialog.Close>
-                      ) : (
-                        <div />
                       )}
                     </div>
 

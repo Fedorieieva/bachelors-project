@@ -15,7 +15,6 @@ interface RiddleStatusModalProps {
   onClose: () => void;
   onRetry?: () => void;
   status: RiddleStatus;
-  correctAnswer?: string;
   attemptsRemaining?: number;
   hasBoughtRetry?: boolean;
   xpEarned?: number;
@@ -60,7 +59,7 @@ export const RiddleStatusModal: React.FC<RiddleStatusModalProps> = ({
 
   const renderExtraText = (text: string) => {
     if (status === 'correct' && text.includes("XP")) {
-      const parts = text.split(new RegExp(`(\\+${xpEarned} XP)`));
+      const parts = text.split(new RegExp(String.raw`(\+${xpEarned} XP)`));
       return (
         <>
           {parts.map((part, i) =>

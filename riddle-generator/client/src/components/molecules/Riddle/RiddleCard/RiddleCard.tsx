@@ -358,7 +358,6 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
         {showComments && (
           <CommentSection
-            riddleId={id}
             comments={comments}
             isLoading={isLoading}
             isFetchingMore={isFetchingMore}
@@ -400,7 +399,6 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
       <RiddleStatusModal
         isOpen={statusModal.isOpen}
         status={statusModal.status}
-        correctAnswer={statusModal.correctAnswer}
         attemptsRemaining={statusModal.attemptsRemaining}
         xpEarned={statusModal.xpEarned}
         hasBoughtRetry={hasBoughtRetry}

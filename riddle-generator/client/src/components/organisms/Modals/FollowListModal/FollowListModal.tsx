@@ -30,9 +30,10 @@ interface UserRowProps {
 const UserRow: React.FC<UserRowProps> = ({ user, currentUserId, isAuthenticated, initialIsFollowing }) => {
   const t = useTranslations('followListModal');
   const isSelf = currentUserId === user.id;
+  const isOtherUser = !isSelf;
   const { data: followData, isLoading: checkLoading } = useIsFollowing(
     user.id,
-    isAuthenticated && !isSelf && initialIsFollowing === undefined,
+    isAuthenticated && isOtherUser && initialIsFollowing === undefined,
   );
 
   const isFollowingUser = initialIsFollowing !== undefined ? initialIsFollowing : (followData?.isFollowing ?? false);
@@ -59,7 +60,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, currentUserId, isAuthenticated,
         </Typography>
       </Link>
 
-      {isAuthenticated && !isSelf && (
+      {isAuthenticated && isOtherUser && (
         <Button
           variant={isFollowingUser ? 'colored-glass-inactive' : 'primary-glow'}
           size="auto"

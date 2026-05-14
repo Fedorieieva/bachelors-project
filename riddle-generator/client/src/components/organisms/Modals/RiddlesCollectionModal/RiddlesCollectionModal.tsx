@@ -73,7 +73,6 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
               <div key={item.id} className={styles.riddleWrapper}>
                 <ChatMessageItem
                   msg={msg}
-                  index={index}
                   isLast={false}
                   isSending={false}
                   displayContent={displayContent}
@@ -84,16 +83,7 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
                 />
 
                 <div className={cn(styles.riddleFooter)}>
-                  {!isSaved ? (
-                    <button
-                      className={styles.saveButton}
-                      onClick={() => !isSaving && onSave(item.id)}
-                      disabled={isSaving}
-                      type="button"
-                    >
-                      <SaveIcon className={styles.saveIcon} />
-                    </button>
-                  ) : (
+                  {isSaved ? (
                     <div className={styles.footerActions}>
                       {isConfirming ? (
                         <div className={styles.confirmInline}>
@@ -139,6 +129,15 @@ export const RiddleCollectionModal: React.FC<RiddleCollectionModalProps> = ({
                         </>
                       )}
                     </div>
+                  ) : (
+                    <button
+                      className={styles.saveButton}
+                      onClick={() => !isSaving && onSave(item.id)}
+                      disabled={isSaving}
+                      type="button"
+                    >
+                      <SaveIcon className={styles.saveIcon} />
+                    </button>
                   )}
                 </div>
               </div>

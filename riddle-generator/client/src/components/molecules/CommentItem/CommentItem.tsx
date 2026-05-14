@@ -8,7 +8,6 @@ import TrashIcon from '@/assets/trash-icon.svg';
 import styles from './CommentItem.module.scss';
 
 interface CommentItemProps {
-  id: string;
   userName: string;
   userId: string;
   currentUserId?: string;

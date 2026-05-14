@@ -35,6 +35,7 @@ export const AvatarUpload: React.FC<AvatarUploadProps> = ({
         const url = await uploadImage(file);
         onUploadSuccess(url);
       } catch (err) {
+        console.error('Avatar upload failed:', err);
         onError(t('uploadError'));
       } finally {
         if (fileInputRef.current) fileInputRef.current.value = '';
