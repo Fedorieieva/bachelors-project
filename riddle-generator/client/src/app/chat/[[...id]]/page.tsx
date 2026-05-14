@@ -13,14 +13,13 @@ import { useDeleteRiddle, useRiddleActions } from '@/hooks/riddles/useRiddleActi
 import styles from './ChatPage.module.scss';
 import { RiddleCollectionModal } from '@/components/organisms/Modals/RiddlesCollectionModal/RiddlesCollectionModal';
 import { useRiddleMessages } from '@/hooks/riddles/useRiddleMessages';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 
 const MODEL_STORAGE_KEY = 'genigma-model';
 const DEFAULT_MODEL = 'gemini-2.0-flash';
 
 function getInitialSettings(): RiddleSettings {
   let savedModel = DEFAULT_MODEL;
-  let language: RiddleSettings['language'] = 'ukrainian';
 
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(MODEL_STORAGE_KEY);
@@ -29,17 +28,11 @@ function getInitialSettings(): RiddleSettings {
     } else if (stored) {
       localStorage.setItem(MODEL_STORAGE_KEY, DEFAULT_MODEL);
     }
-
-    const localeCookie = document.cookie.split(';').find(c => c.trim().startsWith('NEXT_LOCALE='));
-    if (localeCookie?.split('=')[1]?.trim() === 'en') {
-      language = 'english';
-    }
   }
 
   return {
     type: RiddleType.LOGIC,
     complexity: 3,
-    language,
     is_interactive: true,
     model: savedModel,
   };
@@ -47,7 +40,6 @@ function getInitialSettings(): RiddleSettings {
 
 export default function ChatPage() {
   const t = useTranslations('chatPage');
-  const locale = useLocale();
   const params = useParams();
   const chatId = params.id
     ? Array.isArray(params.id)
@@ -90,13 +82,6 @@ export default function ChatPage() {
       localStorage.setItem(MODEL_STORAGE_KEY, currentSettings.model);
     }
   }, [currentSettings.model]);
-
-  useEffect(() => {
-    const riddleLang: RiddleSettings['language'] = locale === 'en' ? 'english' : 'ukrainian';
-    setCurrentSettings(prev =>
-      prev.language === riddleLang ? prev : { ...prev, language: riddleLang },
-    );
-  }, [locale]);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);

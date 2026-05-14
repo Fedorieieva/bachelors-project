@@ -43,13 +43,19 @@ export class RiddlesService {
     const riddleType = aiAnalysis?.type || dto.settings.type || RiddleType.DANETKI;
     const style = aiAnalysis?.style || 'neutral';
     const topic = aiAnalysis?.topic || dto.topic;
-    const { language, complexity, model: preferredModel } = dto.settings;
+    const { complexity, model: preferredModel } = dto.settings;
     const modelUsed = this.aiService.getModelName(preferredModel);
 
     const promptName = `${riddleType.toLowerCase()}_generator`;
 
+    const languageInstruction =
+      'the language of the user\'s input topic. ' +
+      'CRITICAL LANGUAGE RULE: Analyze the topic and generate the riddle and all responses ' +
+      'strictly in the same language as the user\'s input. ' +
+      'If the input is ambiguous or the language cannot be determined, you MUST default to English.';
+
     let mainPrompt = await this.promptsService.getRenderedPrompt(promptName, {
-      language,
+      language: languageInstruction,
       topic,
       complexity,
     });
@@ -86,7 +92,7 @@ export class RiddlesService {
         );
       }
 
-      const evaluation = await this.evaluateRiddle(aiResult, riddleType, language);
+      const evaluation = await this.evaluateRiddle(aiResult, riddleType);
 
       if (!evaluation.is_safe) {
         this.logger.error(`🚨 Спроба #${attempts} заблокована через SAFETY: ${evaluation.reason}`);
@@ -125,7 +131,7 @@ export class RiddlesService {
       prompt_context: {
         message: dto.topic,
         complexity: dto.settings.complexity,
-        language: dto.settings.language || 'ukrainian',
+        language: 'auto',
         prompt_name: promptName,
         generation_attempts: attempts,
         type: type,
@@ -137,7 +143,6 @@ export class RiddlesService {
   private async evaluateRiddle(
     riddle: AiRiddleResponse,
     type: RiddleType,
-    language?: string,
   ): Promise<EvaluationResult> {
     const evalPrompt = `
       Analyze this riddle for quality and safety.
@@ -161,7 +166,6 @@ export class RiddlesService {
       TECHNICAL CHECK:
       1. Is the logic sound?
       2. Does the answer make sense?
-      3. Correct language: ${language}.
 
       Return JSON ONLY:
       {
@@ -231,20 +235,17 @@ export class RiddlesService {
     } else {
       const chat = await this.prisma.chat.findUnique({ where: { id: chatId } });
       const history = await this.getHistory(chatId);
-      const lang = chat?.language || 'ukrainian';
 
       if (chat?.is_interactive && chat.current_riddle_answer) {
         responseData = await this.aiService.getContextualHint(
           history,
           lastUserMessage.content,
           chat.current_riddle_answer,
-          lang
         );
       } else {
         responseData = await this.aiService.askGeminiChat(
           history,
           lastUserMessage.content,
-          lang
         );
       }
 
@@ -265,7 +266,7 @@ export class RiddlesService {
         user_id: authorId,
         complexity: settings.complexity || 1,
         type: settings.type || RiddleType.LOGIC,
-        language: settings.language || 'ukrainian',
+        language: 'auto',
         is_interactive: settings.is_interactive ?? false,
       },
     });
@@ -374,7 +375,6 @@ export class RiddlesService {
       };
     }
 
-    const chatLanguage = chat.language || 'ukrainian';
     const modelUsed = this.aiService.getModelName(model);
     this.aiService.consumeFallbackFlag(); // reset flag before AI calls
 
@@ -391,7 +391,6 @@ export class RiddlesService {
         history,
         userMessage,
         chat.current_riddle_answer,
-        chatLanguage,
         3,
         model,
       );
@@ -430,7 +429,6 @@ export class RiddlesService {
     const aiUpdate = await this.aiService.askGeminiChat(
       rawHistory,
       userMessage,
-      chatLanguage,
       model,
     );
 
@@ -470,12 +468,10 @@ export class RiddlesService {
       throw new ForbiddenException('Спроби вичерпано. Зачекайте годину або скористайтеся розблокуванням за XP.');
     }
 
-    const riddleLang = (riddle.prompt_context as any)?.language || 'ukrainian';
     const result = await this.aiService.getContextualHint(
       [],
       guess,
       riddle.answer,
-      riddleLang
     );
 
     if (result.is_solved) {

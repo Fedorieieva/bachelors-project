@@ -191,15 +191,15 @@ export class AiService {
   async askGeminiChat(
     history: Content[],
     newMessage: string,
-    language: string,
     modelName?: string,
   ): Promise<AiHintResponse | AiRiddleResponse> {
     const chatPrompt = `
-      Ти — ігровий помічник у застосунку із загадками.
-      Спілкуйся з користувачем виключно мовою: ${language}.
-      Дай відповідь на наступне повідомлення: "${newMessage}"
+      You are a game assistant in a riddle application.
+      Analyze the language of the user's message and respond strictly in that same language.
+      If the language cannot be determined, default to English.
+      Respond to the following message: "${newMessage}"
 
-      ПОВЕРНИ ТІЛЬКИ JSON.
+      RETURN JSON ONLY.
     `;
 
     const updatedHistory: Content[] = [
@@ -215,29 +215,29 @@ export class AiService {
     history: Content[],
     userMessage: string,
     correctAnswer: string,
-    language: string,
     retries: number = 3,
     modelName?: string,
   ): Promise<Partial<AiHintResponse>> {
     const hintPrompt = `
-    Ти — ігровий помічник у вебзастосунку із загадками.
-    МОВА СПІЛКУВАННЯ: ${language} (відповідай тільки цією мовою).
-    ПРАВИЛЬНА ВІДПОВІДЬ (секретно): "${correctAnswer}"
-    КОРИСТУВАЧ ПИШЕ: "${userMessage}"
+    You are a game assistant in a riddle web application.
+    Analyze the language of the user's message and respond strictly in that same language.
+    If the language cannot be determined, default to English.
+    SECRET CORRECT ANSWER: "${correctAnswer}"
+    USER WRITES: "${userMessage}"
 
-      ЗАВДАННЯ:
-      1. Спочатку в полі "reasoning" проаналізуй повідомлення користувача: чи це синонім, чи це частина слова, чи це абсолютно хибна здогадка.
-      2. На основі аналізу виріши: підтвердити розв'язок (is_solved: true) або дати підказку.
-      3. Якщо користувач вгадав (відповідь близька за змістом, точно відповідє правильній відповіді загадки чи загалом має схожий сенс до правильної відпоаіді),
-         привітай його мовою ${language} і підтверди розв'язок -> is_solved: true.
-      4. Якщо не вгадав, проаналізуй його помилку та дай тонку підказку мовою ${language}, що наближає до цілі.
-      5. ЖОРСТКЕ ПРАВИЛО: Не називай слово "${correctAnswer}" прямо, якщо користувач його ще не вгадав.
-      6. Використовуй історію діалогу, щоб не повторювати однакові підказки.
+      TASKS:
+      1. In the "reasoning" field, analyze the user's message: is it a synonym, part of the word, or a completely wrong guess?
+      2. Based on the analysis, decide: confirm the solution (is_solved: true) or give a hint.
+      3. If the user guessed correctly (answer is close in meaning, matches the riddle answer, or has similar sense),
+         congratulate them in the detected language and confirm the solution -> is_solved: true.
+      4. If they did not guess, analyze their mistake and give a subtle hint in the detected language that moves toward the goal.
+      5. STRICT RULE: Do not reveal the word "${correctAnswer}" directly if the user has not guessed it yet.
+      6. Use the conversation history to avoid repeating the same hints.
 
-      ПОВЕРНИ ТІЛЬКИ JSON:
+      RETURN JSON ONLY:
       {
-        "reasoning": "твій покроковий аналіз здогадки користувача" ("string"),
-        "content": "текст відповіді або підказки" ("string"),
+        "reasoning": "your step-by-step analysis of the user's guess" ("string"),
+        "content": "response or hint text" ("string"),
         "is_solved": boolean
       }
     `;
@@ -261,7 +261,7 @@ export class AiService {
       if (!modelName && this.isSwitchableError(status)) {
         if (this.switchToNextModel()) {
           this.logger.log(`[AI] Switched to ${this.modelCandidates[this.currentModelIndex]}, retrying hint...`);
-          return this.getContextualHint(history, userMessage, correctAnswer, language, retries, undefined);
+          return this.getContextualHint(history, userMessage, correctAnswer, retries, undefined);
         }
         this.logger.error('[AI] All models exhausted for hint.');
       } else {

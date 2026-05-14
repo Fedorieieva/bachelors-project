@@ -34,14 +34,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAppSelector(state => state.auth);
   const t = useTranslations('settings');
-
-  useEffect(() => {
-    if (!isAuthenticated || user?.is_guest) {
-      router.replace('/login');
-    }
-  }, [isAuthenticated, user, router]);
-
-  if (!isAuthenticated || user?.is_guest) return null;
   const tv = useTranslations('validation');
   const tt = useTranslations('toasts');
 
@@ -53,10 +45,6 @@ export default function SettingsPage() {
     message: '',
     type: 'success' as ToastType
   });
-
-  const showToast = (message: string, type: ToastType): void => {
-    setToast({ isVisible: true, message, type });
-  };
 
   const profileSchema = useMemo(() => Yup.object().shape({
     name: Yup.string()
@@ -76,6 +64,10 @@ export default function SettingsPage() {
       .oneOf([Yup.ref('newPassword')], tv('confirmPasswordMatch'))
       .required(tv('confirmPasswordRequired')),
   }), [tv]);
+
+  const showToast = (message: string, type: ToastType): void => {
+    setToast({ isVisible: true, message, type });
+  };
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: { name?: string; avatar_url: string | null }) =>
@@ -101,6 +93,14 @@ export default function SettingsPage() {
       showToast(msg, 'error');
     },
   });
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.is_guest) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, user, router]);
+
+  if (!isAuthenticated || user?.is_guest) return null;
 
   const extractPublicId = (url: string): string | undefined => {
     const parts = url.split('/');

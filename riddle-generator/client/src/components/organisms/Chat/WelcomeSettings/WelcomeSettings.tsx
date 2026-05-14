@@ -5,7 +5,6 @@ import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Typography } from '@/components/atoms/Typography/Typography';
 import { Button } from '@/components/atoms/Button/Button';
-import { Select } from '@/components/atoms/Select/Select';
 import { RiddleSettings, RiddleType } from '@/types/riddle';
 import styles from './WelcomeSettings.module.scss';
 import { cn } from '@/lib/utils';
@@ -18,18 +17,9 @@ interface WelcomeSettingsProps {
   onSync: (settings: RiddleSettings) => void;
 }
 
-const LANGUAGE_OPTIONS = [
-  { label: 'Українська', value: 'ukrainian' },
-  { label: 'English', value: 'english' },
-  { label: 'Español', value: 'spanish' },
-  { label: 'Français', value: 'french' },
-  { label: 'Deutsch', value: 'german' },
-];
-
 const WelcomeSettingsSchema = Yup.object().shape({
   type: Yup.string().required(),
   complexity: Yup.number().min(1).max(5).required(),
-  language: Yup.string().required(),
   is_interactive: Yup.boolean(),
 });
 
@@ -69,30 +59,19 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
           </div>
         </div>
 
-        <div className={styles.row}>
-          <div className={styles.field}>
-            <Select
-              label={t('generationLanguage')}
-              options={LANGUAGE_OPTIONS}
-              value={formik.values.language}
-              onChange={(val) => formik.setFieldValue('language', val)}
-            />
-          </div>
-
-          <div className={styles.field}>
-            <Typography variant="details" className={styles.label}>{t('difficulty')}</Typography>
-            <div className={styles.complexityRow}>
-              {[1, 2, 3, 4, 5].map((level) => (
-                <button
-                  key={level}
-                  type="button"
-                  className={cn(styles.levelDot, {
-                    [styles.active]: formik.values.complexity >= level,
-                  })}
-                  onClick={() => formik.setFieldValue('complexity', level)}
-                />
-              ))}
-            </div>
+        <div className={styles.field}>
+          <Typography variant="details" className={styles.label}>{t('difficulty')}</Typography>
+          <div className={styles.complexityRow}>
+            {[1, 2, 3, 4, 5].map((level) => (
+              <button
+                key={level}
+                type="button"
+                className={cn(styles.levelDot, {
+                  [styles.active]: formik.values.complexity >= level,
+                })}
+                onClick={() => formik.setFieldValue('complexity', level)}
+              />
+            ))}
           </div>
         </div>
 

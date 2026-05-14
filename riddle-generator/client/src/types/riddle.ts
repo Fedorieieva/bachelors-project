@@ -8,7 +8,7 @@ export enum RiddleType {
 export interface RiddleSettings {
   type: RiddleType;
   complexity: number;
-  language: 'ukrainian' | 'english' | 'spanish' | 'french' | 'german';
+  language?: string;
   is_interactive?: boolean;
   model?: string;
 }

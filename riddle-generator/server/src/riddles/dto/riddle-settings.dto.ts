@@ -38,10 +38,10 @@ export class RiddleSettingsDto {
 
   @ApiPropertyOptional({
     example: 'english',
-    description: 'Language of the generated content',
+    description: 'Language of the generated content (deprecated — AI auto-detects from topic)',
   })
   @IsOptional()
-  @IsEnum(['ukrainian', 'english', 'spanish', 'french', 'german'])
+  @IsString()
   language?: string;
 
   @ApiPropertyOptional({
