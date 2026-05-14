@@ -29,7 +29,6 @@ import { UserHeader } from '@/components/molecules/UserHeader/UserHeader';
 import { Badge, BadgeVariant } from '@/components/atoms/Badge/Badge';
 import { RiddleBody } from '@/components/molecules/Riddle/RiddleBody/RiddleBody';
 import { CommentSection } from '@/components/organisms/CommentSection/CommentSection';
-import { ToastType } from '@/components/atoms/Toast/Toast';
 import { useGlobalToast } from '@/providers/ToastProvider';
 import { useTranslations } from 'next-intl';
 import { ConfirmModal } from '@/components/organisms/Modals/ConfirmModal/ConfirmModal';
@@ -101,10 +100,6 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   const { showGlobalToast } = useGlobalToast();
   const { deleteRiddle, isDeleting } = useDeleteRiddle();
 
-  const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: ToastType }>({
-    isVisible: false, message: '', type: 'success'
-  });
-
   const [isPublicLocal, setIsPublicLocal] = useState(initialIsPublic);
   const [liked, setLiked] = useState(initialIsLiked);
   const [saved, setSaved] = useState(initialIsSaved);
@@ -148,10 +143,6 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
   const displayCommentsCount = totalComments > 0 ? totalComments : initialCommentsCount;
 
-  const showToast = (message: string, type: ToastType = 'success') => {
-    setToast({ isVisible: true, message, type });
-  };
-
   const handleLike = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!canInteract) return;
@@ -183,15 +174,15 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     try {
       if (editingComment) {
         await updateComment({ id: editingComment.id, content: text });
-        showToast(t('commentUpdated'));
+        showGlobalToast(t('commentUpdated'));
       } else {
         await addComment(text);
-        showToast(t('commentAdded'));
+        showGlobalToast(t('commentAdded'));
       }
       setIsCommentModalOpen(false);
       setEditingComment(null);
     } catch {
-      showToast(t('actionFailed'), 'error');
+      showGlobalToast(t('actionFailed'), 'error');
     }
   };
 
@@ -209,9 +200,9 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     if (commentToDelete) {
       try {
         await deleteComment(commentToDelete);
-        showToast(t('commentDeleted'));
+        showGlobalToast(t('commentDeleted'));
       } catch {
-        showToast(t('couldNotDelete'), 'error');
+        showGlobalToast(t('couldNotDelete'), 'error');
       } finally {
         setIsDeleteModalOpen(false);
         setCommentToDelete(null);

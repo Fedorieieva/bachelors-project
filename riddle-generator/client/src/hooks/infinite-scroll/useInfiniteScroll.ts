@@ -46,9 +46,6 @@ export function useInfiniteScroll<T>({
   staleTime = 1000 * 60 * 2,
 }: UseInfiniteScrollOptions<T>): UseInfiniteScrollResult<T> {
   const getNextPageParam: GetNextPageParamFunction<number, PaginatedPage<T>> = (lastPage) => {
-    if (direction === 'down') {
-      return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
-    }
     return lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined;
   };
 
@@ -65,7 +62,7 @@ export function useInfiniteScroll<T>({
   >({
     queryKey,
     queryFn: ({ pageParam }) => fetchPage(pageParam),
-    initialPageParam: direction === 'up' ? 1 : 1,
+    initialPageParam: 1,
     getNextPageParam,
     getPreviousPageParam,
     enabled,

@@ -6,7 +6,7 @@ export function useOnClickOutside<T extends HTMLElement>(
 ) {
   useEffect(() => {
     const listener = (e: MouseEvent | TouchEvent) => {
-      if (!ref.current || ref.current.contains(e.target as Node)) return;
+      if (!ref.current || !(e.target instanceof Node) || ref.current.contains(e.target)) return;
       handler();
     };
     document.addEventListener('mousedown', listener);

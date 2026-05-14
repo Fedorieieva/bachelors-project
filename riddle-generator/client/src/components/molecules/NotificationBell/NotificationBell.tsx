@@ -117,13 +117,11 @@ export const NotificationBell: React.FC = () => {
                   <p className={styles.empty}>{t('empty')}</p>
                 ) : (
                   notifications.map((n) => (
-                    <div
+                    <button
                       key={n.id}
-                      role="button"
-                      tabIndex={0}
+                      type="button"
                       className={`${styles.item} ${n.isRead ? '' : styles.unread}`}
                       onClick={() => handleItemClick(n)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleItemClick(n); } }}
                     >
                       {n.actor ? (
                         <div className={styles.avatarWrap}>
@@ -142,7 +140,7 @@ export const NotificationBell: React.FC = () => {
                         <p className={styles.itemTime}>{timeAgo(n.createdAt)}</p>
                       </div>
                       {!n.isRead && <span className={styles.unreadDot} />}
-                    </div>
+                    </button>
                   ))
                 )}
               </div>

@@ -18,6 +18,12 @@ interface ToastProps {
   onClose: () => void;
 }
 
+function getIcon(type: ToastType, iconClass: string) {
+  if (type === 'success') return <CheckIcon className={iconClass} />;
+  if (type === 'warning') return <AlertTriangle size={20} className={iconClass} />;
+  return <ErrorIcon className={iconClass} />;
+}
+
 export const Toast: React.FC<ToastProps> = ({ message, type, isVisible, onClose }) => {
   useEffect(() => {
     if (isVisible) {
@@ -36,13 +42,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type, isVisible, onClose 
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           className={cn(styles.toast, styles[type])}
         >
-          {type === 'success' ? (
-            <CheckIcon className={styles.icon} />
-          ) : type === 'warning' ? (
-            <AlertTriangle size={20} className={styles.icon} />
-          ) : (
-            <ErrorIcon className={styles.icon} />
-          )}
+          {getIcon(type, styles.icon)}
           <Typography variant="details">
             {message}
           </Typography>

@@ -20,32 +20,25 @@ interface SidebarProps {
   isMobile?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) => {
-  const { chats, isLoading, isFetchingMore, hasMore, loadMore } = useChats();
-  const { deleteChat, isDeleting, deletingId } = useDeleteChat();
-  const pathname = usePathname();
-  const router = useRouter();
+interface SidebarContentProps {
+  activeChatId: string | null;
+  chats: ChatHistoryItem[];
+  isLoading: boolean;
+  isFetchingMore: boolean;
+  hasMore: boolean;
+  loadMore: () => void;
+  isDeleting: boolean;
+  deletingId: string | null | undefined;
+  onDeleteChat: (chatId: string) => void;
+  isRegisteredUser: boolean;
+}
+
+const SidebarContent: React.FC<SidebarContentProps> = ({
+  activeChatId, chats, isLoading, isFetchingMore, hasMore, loadMore,
+  isDeleting, deletingId, onDeleteChat, isRegisteredUser,
+}) => {
   const t = useTranslations('sidebar');
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
-  const isRegisteredUser = isAuthenticated && !user?.is_guest;
-  const activeChatId: string | null = pathname?.startsWith('/chat/') ? pathname.split('/chat/')[1] : null;
-
-  const handleDeleteChat = (chatId: string) => {
-    if (chatId === activeChatId) {
-      router.push('/chat');
-    }
-    deleteChat(chatId);
-  };
-
-  const sidebarVariants: Variants = {
-    closed: { x: '-100%' },
-    open: {
-      x: 0,
-      transition: { type: 'spring', stiffness: 300, damping: 30 },
-    },
-  };
-
-  const SidebarContent = () => (
+  return (
     <>
       <div className={styles.header}>
         <Logo />
@@ -92,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
                   </Button>
                   <button
                     className={styles.deleteButton}
-                    onClick={(e) => { e.preventDefault(); handleDeleteChat(chat.id); }}
+                    onClick={(e) => { e.preventDefault(); onDeleteChat(chat.id); }}
                     disabled={isThisDeleting}
                     title={t('deleteChat')}
                     aria-label={t('deleteChat')}
@@ -121,6 +114,44 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
       </div>
     </>
   );
+};
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) => {
+  const { chats, isLoading, isFetchingMore, hasMore, loadMore } = useChats();
+  const { deleteChat, isDeleting, deletingId } = useDeleteChat();
+  const pathname = usePathname();
+  const router = useRouter();
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const isRegisteredUser = isAuthenticated && !user?.is_guest;
+  const activeChatId: string | null = pathname?.startsWith('/chat/') ? pathname.split('/chat/')[1] : null;
+
+  const handleDeleteChat = (chatId: string) => {
+    if (chatId === activeChatId) {
+      router.push('/chat');
+    }
+    deleteChat(chatId);
+  };
+
+  const sidebarVariants: Variants = {
+    closed: { x: '-100%' },
+    open: {
+      x: 0,
+      transition: { type: 'spring', stiffness: 300, damping: 30 },
+    },
+  };
+
+  const contentProps: SidebarContentProps = {
+    activeChatId,
+    chats,
+    isLoading,
+    isFetchingMore,
+    hasMore,
+    loadMore,
+    isDeleting,
+    deletingId,
+    onDeleteChat: handleDeleteChat,
+    isRegisteredUser,
+  };
 
   if (isMobile) {
     return (
@@ -141,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
               exit="closed"
               variants={sidebarVariants}
             >
-              <SidebarContent />
+              <SidebarContent {...contentProps} />
             </motion.aside>
           </>
         )}
@@ -151,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
 
   return (
     <aside className={styles.sidebarContainer}>
-      <SidebarContent />
+      <SidebarContent {...contentProps} />
     </aside>
   );
 };

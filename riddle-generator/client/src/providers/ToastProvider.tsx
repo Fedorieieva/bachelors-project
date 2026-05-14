@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { Toast, ToastType } from '@/components/atoms/Toast/Toast';
 
 interface ToastContextType {
@@ -22,8 +22,10 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToast(prev => ({ ...prev, isVisible: false }));
   }, []);
 
+  const contextValue = useMemo(() => ({ showGlobalToast }), [showGlobalToast]);
+
   return (
-    <ToastContext.Provider value={{ showGlobalToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <Toast
         message={toast.message}

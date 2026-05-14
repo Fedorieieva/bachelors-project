@@ -62,11 +62,9 @@ export const RiddleStatusModal: React.FC<RiddleStatusModalProps> = ({
       const parts = text.split(new RegExp(String.raw`(\+${xpEarned} XP)`));
       return (
         <>
-          {parts.map((part, i) =>
-            part === `+${xpEarned} XP`
-              ? <span key={i} className={styles.highlight}>{part}</span>
-              : part
-          )}
+          {parts[0]}
+          {parts[1] && <span className={styles.highlight}>{parts[1]}</span>}
+          {parts[2]}
         </>
       );
     }

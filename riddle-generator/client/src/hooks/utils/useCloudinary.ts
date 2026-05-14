@@ -34,14 +34,11 @@ export const useCloudinary = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
         throw new Error('Cloudinary upload failed');
       }
 
       const data = await response.json();
       return data.secure_url;
-    } catch (error) {
-      throw error;
     } finally {
       setIsUploading(false);
     }

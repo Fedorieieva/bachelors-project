@@ -38,18 +38,16 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
     <div className={styles.wrapper} ref={selectRef}>
       {label && <Typography variant="details" className={styles.label}>{label}</Typography>}
 
-      <div
-        role="button"
+      <button
+        type="button"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        tabIndex={0}
         className={cn(styles.selectHead, { [styles.open]: isOpen })}
         onClick={() => setIsOpen(!isOpen)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(!isOpen); } }}
       >
         <Typography variant="body">{selectedOption?.label}</Typography>
         <ChevronIcon className={cn(styles.chevron, { [styles.rotate]: isOpen })} />
-      </div>
+      </button>
 
       {isOpen && (
         <div role="listbox" className={styles.dropdown}>

@@ -41,11 +41,8 @@ function getInitialSettings(): RiddleSettings {
 export default function ChatPage() {
   const t = useTranslations('chatPage');
   const params = useParams();
-  const chatId = params.id
-    ? Array.isArray(params.id)
-      ? params.id[0]
-      : params.id
-    : undefined;
+  const rawId = params.id;
+  const chatId: string | undefined = Array.isArray(rawId) ? rawId[0] : rawId;
 
   const {
     messages,
