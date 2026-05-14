@@ -20,7 +20,7 @@ apiClient.interceptors.response.use(
     const status = error.response?.status;
     const url: string = error.config?.url ?? '';
 
-    if (status === 401 && !url.includes('/auth/') && !isHandlingUnauthorized && typeof window !== 'undefined') {
+    if (status === 401 && !url.includes('/auth/') && !isHandlingUnauthorized && typeof globalThis.window !== 'undefined') {
       isHandlingUnauthorized = true;
       try {
         store.dispatch(logout());
@@ -30,7 +30,7 @@ apiClient.interceptors.response.use(
       } finally {
         isHandlingUnauthorized = false;
       }
-      window.location.href = '/login';
+      globalThis.window.location.href = '/login';
     }
 
     throw error;

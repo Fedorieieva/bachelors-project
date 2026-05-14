@@ -80,7 +80,7 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
       if (!activeId) {
         const { chatId: newId } = await RiddleService.initializeChat(settings);
         activeId = newId;
-        window.history.replaceState(null, '', `/chat/${activeId}`);
+        globalThis.window.history.replaceState(null, '', `/chat/${activeId}`);
       }
 
       const response = await RiddleService.sendChatMessage(activeId, topic, settings.model);

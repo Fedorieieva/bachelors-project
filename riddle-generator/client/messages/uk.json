@@ -178,7 +178,8 @@
   },
   "commentModal": {
     "placeholder": "Введіть коментар тут",
-    "submit": "Коментувати"
+    "submit": "Коментувати",
+    "closePicker": "Закрити вибір емодзі"
   },
   "guessModal": {
     "title": "Відгадайте загадку",

@@ -178,7 +178,8 @@
   },
   "commentModal": {
     "placeholder": "Enter your comment here",
-    "submit": "Comment"
+    "submit": "Comment",
+    "closePicker": "Close emoji picker"
   },
   "guessModal": {
     "title": "Guess this riddle",

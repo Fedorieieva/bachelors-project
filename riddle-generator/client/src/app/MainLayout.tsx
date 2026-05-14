@@ -8,7 +8,7 @@ import { Container } from '@/components/templates/Container/Container';
 import styles from './MainLayout.module.scss';
 import { Header } from '@/components/organisms/Header/Header';
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const params = useParams();

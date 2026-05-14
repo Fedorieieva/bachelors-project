@@ -119,8 +119,11 @@ export const NotificationBell: React.FC = () => {
                   notifications.map((n) => (
                     <div
                       key={n.id}
+                      role="button"
+                      tabIndex={0}
                       className={`${styles.item} ${!n.isRead ? styles.unread : ''}`}
                       onClick={() => handleItemClick(n)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleItemClick(n); } }}
                     >
                       {n.actor ? (
                         <div className={styles.avatarWrap}>

@@ -54,7 +54,7 @@ export function InfiniteScrollList<T extends { id: string }>({
   className,
   listClassName,
   preserveScrollOnLoad = false,
-}: InfiniteScrollListProps<T>) {
+}: Readonly<InfiniteScrollListProps<T>>) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevScrollHeightRef = useRef<number>(0);

@@ -21,7 +21,7 @@ const DEFAULT_MODEL = 'gemini-2.0-flash';
 function getInitialSettings(): RiddleSettings {
   let savedModel = DEFAULT_MODEL;
 
-  if (typeof window !== 'undefined') {
+  if (typeof globalThis.window !== 'undefined') {
     const stored = localStorage.getItem(MODEL_STORAGE_KEY);
     if (stored && !stored.startsWith('gemini-1.')) {
       savedModel = stored;

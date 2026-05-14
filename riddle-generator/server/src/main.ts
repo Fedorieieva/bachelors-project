@@ -11,7 +11,7 @@ async function bootstrap() {
     bodyParser: false,
   });
   const logger = new Logger('Bootstrap');
-  const port = parseInt(process.env.PORT ?? '8000', 10);
+  const port = Number.parseInt(process.env.PORT ?? '8000', 10);
 
   app.setGlobalPrefix('api');
   app.use(cookieParser());

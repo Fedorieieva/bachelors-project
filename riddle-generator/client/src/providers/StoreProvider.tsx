@@ -4,7 +4,7 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "@/store";
 
-export default function StoreProvider({ children }: { children: React.ReactNode }) {
+export default function StoreProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <Provider store={store}>
       <PersistGate

@@ -1,7 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
+
+const sanitizeLog = (value: string): string =>
+  String(value).replaceAll('\r', '').replaceAll('\n', '');
 
 async function listAvailableModels() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -28,14 +30,17 @@ async function listAvailableModels() {
 
     data.models.forEach((model: any) => {
       if (model.supportedGenerationMethods.includes('generateContent')) {
-        const name = model.name.replace('models/', '');
+        const name = sanitizeLog(model.name.replace('models/', ''));
+        const methods = sanitizeLog(model.supportedGenerationMethods.join(', '));
+        const description = sanitizeLog(String(model.description ?? '').trim());
         console.log(`--> ${name}`);
-        console.log(`   Методи: ${model.supportedGenerationMethods.join(', ')}`);
-        console.log(`   Опис: ${model.description}\n`);
+        console.log(`   Методи: ${methods}`);
+        console.log(`   Опис: ${description}\n`);
       }
     });
-  } catch (error: any) {
-    console.error('Помилка:', error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('Помилка:', sanitizeLog(message));
   }
 }
 

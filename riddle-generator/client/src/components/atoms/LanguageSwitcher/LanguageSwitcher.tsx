@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useTransition } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { setLocale } from '@/actions/locale';
 import { cn } from '@/lib/utils';
 import styles from './LanguageSwitcher.module.scss';
-import { useTranslations } from 'next-intl';
 
 export const LanguageSwitcher: React.FC = () => {
   const locale = useLocale();

@@ -13,7 +13,7 @@ export class CloudinaryService {
   }
 
   generateSignature() {
-    const timestamp = Math.round(new Date().getTime() / 1000);
+    const timestamp = Math.round(Date.now() / 1000);
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET')!;
 
     const signature = cloudinary.utils.api_sign_request(

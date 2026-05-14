@@ -3,7 +3,7 @@ import { Message } from '../types/riddle';
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
 
-  if (isNaN(date.getTime())) return dateString;
+  if (Number.isNaN(date.getTime())) return dateString;
 
   const now = new Date();
   const isToday = date.toDateString() === now.toDateString();
