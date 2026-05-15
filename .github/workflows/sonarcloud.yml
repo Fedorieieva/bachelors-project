@@ -20,14 +20,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Analyze with SonarCloud
-        uses: SonarSource/sonarcloud-github-action@4006f663ecaf1f8093e8e4abb9227f6041f52216
+      # 1. Аналіз КЛІЄНТА
+      - name: Analyze Client
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
             -Dsonar.projectKey=Fedorieieva_bachelors-project
-            -Dsonar.organization=fedorieieva
-            -Dsonar.sources=riddle-generator/client/src,riddle-generator/server/src
-            -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts
+            -Dsonar.sources=riddle-generator/client/src
+          projectBaseDir: .
+
+      # 2. Аналіз СЕРВЕРА
+      - name: Analyze Server
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=Fedorieieva_bachelors-project-server
+            -Dsonar.sources=riddle-generator/server/src
           projectBaseDir: .
