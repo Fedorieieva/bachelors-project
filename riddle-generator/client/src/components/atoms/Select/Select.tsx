@@ -75,9 +75,11 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
       {isOpen && (
         <div className={styles.dropdown}>
           {options.map((opt) => (
-            <div
+            <button
               key={opt.value}
-              tabIndex={0}
+              type="button"
+              role="option"
+              aria-selected={opt.value === value}
               className={cn(styles.option, { [styles.selected]: opt.value === value })}
               onClick={() => {
                 onChange(opt.value);
@@ -92,7 +94,7 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
               }}
             >
               <Typography variant="body">{opt.label}</Typography>
-            </div>
+            </button>
           ))}
         </div>
       )}

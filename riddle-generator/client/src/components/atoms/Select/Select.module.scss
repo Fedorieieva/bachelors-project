@@ -46,7 +46,13 @@
 }
 
 .option {
+  display: block;
+  width: 100%;
   padding: 14px 20px;
+  background: none;
+  border: none;
+  text-align: left;
+  font: inherit;
   cursor: pointer;
   color: $white-2;
   transition: all 0.2s ease;
