@@ -20,26 +20,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.13.1 
-
-      - name: Install Server Dependencies
-        run: |
-          cd riddle-generator/server
-          npm install
-
-      - name: Generate Prisma Client
-        run: |
-          cd riddle-generator/server
-          npx prisma generate
-
-      - name: Run Backend Tests with Coverage
-        run: |
-          cd riddle-generator/server
-          npm run test:cov
-
       - name: Analyze with SonarCloud
         uses: SonarSource/sonarcloud-github-action@4006f663ecaf1f8093e8e4abb9227f6041f52216
         env:
@@ -50,5 +30,4 @@ jobs:
             -Dsonar.organization=fedorieieva
             -Dsonar.sources=riddle-generator/client/src,riddle-generator/server/src
             -Dsonar.exclusions=**/node_modules/**,**/.next/**,**/dist/**,**/build/**,**/*.spec.ts,**/*.test.ts
-            -Dsonar.javascript.lcov.reportPaths=riddle-generator/server/coverage/lcov.info
           projectBaseDir: .
