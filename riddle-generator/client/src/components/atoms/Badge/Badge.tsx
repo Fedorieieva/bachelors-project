@@ -31,7 +31,7 @@ export const Badge: React.FC<BadgeProps> = ({
         className
       )}
     >
-      {icon && <span className={styles.icon}>{icon}</span>}
+      {icon}
       <Typography variant="details" className={styles.text}>
         {children}
       </Typography>

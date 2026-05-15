@@ -48,6 +48,7 @@ export const ProfileStats: React.FC<ProfileStatsProps> = ({
           userName={userName}
           avatarUrl={avatarUrl}
           size="lg"
+          priority
           badge={{ type: 'level', value: level, position: 'right' }}
         />
       </div>

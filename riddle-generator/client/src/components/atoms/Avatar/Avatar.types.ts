@@ -11,5 +11,6 @@ export interface AvatarProps {
     value: number;
     position?: 'left' | 'right';
   };
+  priority?: boolean;
   className?: string;
 }

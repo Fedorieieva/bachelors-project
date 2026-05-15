@@ -13,7 +13,13 @@ interface UserHeaderProps {
   userName: string;
   avatarUrl?: string | null;
   size?: UserHeaderSize;
+  priority?: boolean;
   className?: string;
+}
+
+function optimizeCloudinaryUrl(url: string): string {
+  if (!url.includes('res.cloudinary.com')) return url;
+  return url.replace('/upload/', '/upload/w_140,h_140,c_fill,g_face,f_auto,q_auto/');
 }
 
 export const UserHeader: React.FC<UserHeaderProps> = ({
@@ -21,6 +27,7 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
   userName,
   avatarUrl,
   size = 'md',
+  priority = false,
   className,
 }) => {
   const getNameVariant = () => {
@@ -41,9 +48,10 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
       <div className={styles.avatarWrapper}>
         {avatarUrl ? (
           <img
-            src={avatarUrl}
+            src={optimizeCloudinaryUrl(avatarUrl)}
             alt={`${userName}'s avatar`}
             className={styles.avatar}
+            fetchPriority={priority ? 'high' : 'auto'}
           />
         ) : (
           <div className={cn(styles.avatar, styles.placeholder)}>

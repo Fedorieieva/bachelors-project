@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const matcher = [
+  String.raw`/((?!_next/static|_next/image|favicon\.ico).*)`,
+];
+
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
 

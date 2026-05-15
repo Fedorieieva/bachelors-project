@@ -4,11 +4,17 @@ import { Typography } from '../Typography/Typography';
 import { AvatarProps } from './Avatar.types';
 import styles from './Avatar.module.scss';
 
+function optimizeCloudinaryUrl(url: string): string {
+  if (!url.includes('res.cloudinary.com')) return url;
+  return url.replace('/upload/', '/upload/w_140,h_140,c_fill,g_face,f_auto,q_auto/');
+}
+
 export const Avatar: React.FC<AvatarProps> = ({
   userName,
   avatarUrl,
   size = 'md',
   badge,
+  priority = false,
   className,
 }) => {
   const firstLetter = userName.charAt(0);
@@ -22,7 +28,11 @@ export const Avatar: React.FC<AvatarProps> = ({
   return (
     <div className={cn(styles.avatarWrapper, styles[size], className)}>
       {avatarUrl ? (
-        <img src={avatarUrl} alt={userName} />
+        <img
+          src={optimizeCloudinaryUrl(avatarUrl)}
+          alt={userName}
+          fetchPriority={priority ? 'high' : 'auto'}
+        />
       ) : (
         <span className={styles.initials}>{firstLetter}</span>
       )}
