@@ -78,8 +78,6 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
             <button
               key={opt.value}
               type="button"
-              role="option"
-              aria-selected={opt.value === value}
               className={cn(styles.option, { [styles.selected]: opt.value === value })}
               onClick={() => {
                 onChange(opt.value);
