@@ -293,20 +293,21 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
               </Badge>
             )}
             {isOwnPost && (
-              <div className={styles.badgeContainer}>
+              <>
                 <VisibilityToggle
                   isPublic={isPublicLocal}
                   onClick={handleToggleVisibility}
                   isLoading={isChangingVisibility}
+                  aria-label={t('aria.visibilityStatus')}
                 />
                 <Button
                   variant="icon-only"
                   onClick={() => setIsDeleteRiddleModalOpen(true)}
-                  title={t('deleteRiddleTitle')}
+                  aria-label={t('aria.delete')}
                 >
                   <TrashIcon className={styles.deleteIcon} />
                 </Button>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -317,7 +318,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
           <div className={styles.actions}>
             {canInteract && (
               <div className={styles.actionsContainer}>
-                <Button variant="icon-only" onClick={handleLike}>
+                <Button variant="icon-only" onClick={handleLike} aria-label={t('aria.like')}>
                   <HeartIcon className={cn(styles.icon, styles.heart, { [styles.active]: liked })} />
                 </Button>
                 <Typography variant="details">{localLikesCount}</Typography>
@@ -325,7 +326,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
             )}
 
             <div className={styles.actionsContainer}>
-              <Button variant="icon-only" onClick={handleToggleComments}>
+              <Button variant="icon-only" onClick={handleToggleComments} aria-label={t('aria.comment')}>
                 <CommentIcon className={cn(styles.icon, { [styles.active]: showComments })} />
               </Button>
               <Typography variant="details">{displayCommentsCount}</Typography>
@@ -333,7 +334,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
             {canInteract && !isOwnPost && (
               <div className={styles.actionsContainer}>
-                <Button variant="icon-only" onClick={handleSave}>
+                <Button variant="icon-only" onClick={handleSave} aria-label={t('aria.save')}>
                   <SaveIcon className={cn(styles.icon, styles.save, { [styles.active]: saved })} />
                 </Button>
               </div>
@@ -341,7 +342,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
           </div>
 
           {canInteract && !isOwnPost && !solved && canAttemptLocal && (
-            <Button variant="icon-only" onClick={() => setIsGuessModalOpen(true)}>
+            <Button variant="icon-only" onClick={() => setIsGuessModalOpen(true)} aria-label={t('aria.solve')}>
               <PuzzleIcon className={cn(styles.icon, styles.puzzle)} />
             </Button>
           )}

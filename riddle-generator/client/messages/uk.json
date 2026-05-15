@@ -12,7 +12,10 @@
     "myProfile": "Мій профіль",
     "logout": "Вийти",
     "signingOut": "Виходимо…",
-    "signIn": "Увійти"
+    "signIn": "Увійти",
+    "aria": {
+      "openMenu": "Відкрити меню навігації"
+    }
   },
   "welcomeSettings": {
     "title": "Налаштування",
@@ -136,6 +139,14 @@
     "anonymous": "Анонім"
   },
   "riddleCard": {
+    "aria": {
+      "like": "Вподобати",
+      "comment": "Коментарі",
+      "save": "Зберегти загадку",
+      "solve": "Розв'язати загадку",
+      "delete": "Видалити загадку",
+      "visibilityStatus": "Змінити видимість"
+    },
     "solved": "Розв'язано",
     "blocked": "Заблоковано",
     "madePublic": "Загадку опубліковано",

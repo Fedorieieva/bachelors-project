@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, Poppins } from 'next/font/google';
+import { headers } from 'next/headers';
 import './globals.scss';
 import MainLayout from './MainLayout';
 import QueryProvider from '../providers/QueryProvider';
@@ -30,10 +31,11 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
 
   return (
     <html lang={locale} className={`${inter.variable} ${poppins.variable}`}>
-      <body className="antialiased">
+      <body className="antialiased" nonce={nonce}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <StoreProvider>
             <QueryProvider>

@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl';
 
 interface HeaderProps {
   onMenuClick?: () => void;
+  isSidebarOpen?: boolean;
   className?: string;
   hideAvatar?: boolean;
 }
@@ -26,7 +27,7 @@ const dropdownVariants = {
   exit: { opacity: 0, y: -6, scale: 0.97 },
 };
 
-export const Header: React.FC<HeaderProps> = ({ onMenuClick, className, hideAvatar }) => {
+export const Header: React.FC<HeaderProps> = ({ onMenuClick, isSidebarOpen = false, className, hideAvatar }) => {
   const { user: authUser, isAuthenticated } = useAppSelector((state) => state.auth);
   const { data: stats } = useUserStats();
   const logoutMutation = useLogout();
@@ -41,6 +42,8 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, className, hideAvat
       <Button
         variant="icon-only"
         onClick={onMenuClick}
+        aria-label={t('aria.openMenu')}
+        aria-expanded={isSidebarOpen}
         className={styles.burgerButton}
       >
         <Menu size={24} color="white" />

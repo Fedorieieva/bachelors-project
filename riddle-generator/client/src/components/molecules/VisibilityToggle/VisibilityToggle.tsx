@@ -11,14 +11,16 @@ interface VisibilityToggleProps {
   isPublic: boolean;
   onClick: (e: React.MouseEvent) => void;
   isLoading?: boolean;
+  'aria-label'?: string;
 }
 
-export const VisibilityToggle: React.FC<VisibilityToggleProps> = ({ isPublic, onClick, isLoading }) => {
+export const VisibilityToggle: React.FC<VisibilityToggleProps> = ({ isPublic, onClick, isLoading, 'aria-label': ariaLabel }) => {
   return (
     <Button
       variant="icon-only"
       onClick={onClick}
       isLoading={isLoading}
+      aria-label={ariaLabel}
       className={cn(styles.toggle, { [styles.public]: isPublic })}
     >
       {isPublic ? <EyeIcon className={styles.icon} /> : <EyeOffIcon className={styles.icon} />}

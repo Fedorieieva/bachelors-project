@@ -45,6 +45,7 @@ export default function MainLayout({ children }: Readonly<{ children: React.Reac
         <Container>
           <Header
             onMenuClick={() => setIsMobileMenuOpen(true)}
+            isSidebarOpen={isMobileMenuOpen}
             hideAvatar={shouldHideAvatar}
           />
 

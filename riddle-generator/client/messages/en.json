@@ -12,7 +12,10 @@
     "myProfile": "My Profile",
     "logout": "Logout",
     "signingOut": "Signing out…",
-    "signIn": "Sign In"
+    "signIn": "Sign In",
+    "aria": {
+      "openMenu": "Open navigation menu"
+    }
   },
   "welcomeSettings": {
     "title": "Settings",
@@ -136,6 +139,14 @@
     "anonymous": "Anonymous"
   },
   "riddleCard": {
+    "aria": {
+      "like": "Like",
+      "comment": "Comments",
+      "save": "Save riddle",
+      "solve": "Solve riddle",
+      "delete": "Delete riddle",
+      "visibilityStatus": "Toggle visibility"
+    },
     "solved": "Solved",
     "blocked": "Blocked",
     "madePublic": "Riddle is now public",
