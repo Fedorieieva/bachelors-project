@@ -97,13 +97,11 @@ export const CommentModal: React.FC<CommentModalProps> = ({
 
         {showEmojiPicker && mounted && createPortal(
           <>
-            <div
-              role="button"
+            <button
+              type="button"
               aria-label={t('closePicker')}
-              tabIndex={0}
               className={styles.backdrop}
               onClick={() => setShowEmojiPicker(false)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); setShowEmojiPicker(false); } }}
             />
             <div
               className={styles.portalWrapper}
