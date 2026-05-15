@@ -6,9 +6,9 @@ import { NotificationsService } from '../notifications/notifications.service';
 @Injectable()
 export class LikesService {
   constructor(
-    private prisma: PrismaService,
-    private experienceService: ExperienceService,
-    private notificationsService: NotificationsService,
+    private readonly prisma: PrismaService,
+    private readonly experienceService: ExperienceService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async toggleLike(userId: string, riddleId: string) {

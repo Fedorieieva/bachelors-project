@@ -4,7 +4,7 @@ import type { AIPrompt } from '../../prisma/client';
 
 @Injectable()
 export class PromptsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getRenderedPrompt(name: string, variables: Record<string, any>): Promise<string> {
     const promptTemplate = (await this.prisma.aIPrompt.findUnique({

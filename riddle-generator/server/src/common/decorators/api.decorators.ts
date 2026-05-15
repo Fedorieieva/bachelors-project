@@ -162,10 +162,14 @@ export function ApiFileUploadEndpoint(
     maxSize?: string;
   },
 ) {
+  const typeDesc = options?.fileType ? ` типу ${options.fileType}` : '';
+  const sizeDesc = options?.maxSize ? `. Максимальний розмір: ${options.maxSize}` : '';
+  const fileTypeDesc = options?.fileType ? ` (${options.fileType})` : '';
+
   return applyDecorators(
     ApiOperation({
       summary,
-      description: `Завантаження файлу${options?.fileType ? ` типу ${options.fileType}` : ''}${options?.maxSize ? `. Максимальний розмір: ${options.maxSize}` : ''}`,
+      description: `Завантаження файлу${typeDesc}${sizeDesc}`,
     }),
     ApiBearerAuth('JWT-auth'),
     ApiBody({
@@ -175,7 +179,7 @@ export function ApiFileUploadEndpoint(
           file: {
             type: 'string',
             format: 'binary',
-            description: `Файл для завантаження${options?.fileType ? ` (${options.fileType})` : ''}`,
+            description: `Файл для завантаження${fileTypeDesc}`,
           },
         },
       },

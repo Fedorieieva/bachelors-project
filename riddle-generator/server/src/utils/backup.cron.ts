@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import cron from 'node-cron';
-import { exec } from 'child_process';
-import path from 'path';
-import fs from 'fs';
+import { exec } from 'node:child_process';
+import path from 'node:path';
+import fs from 'node:fs';
 import { Logger } from '@nestjs/common';
 
 const logger = new Logger('DatabaseBackup');

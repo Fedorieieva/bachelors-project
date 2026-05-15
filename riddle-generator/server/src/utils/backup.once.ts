@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
-import { exec } from 'child_process';
+import { exec } from 'node:child_process';
 import 'dotenv/config';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const logger = new Logger('DatabaseBackup');
 const timestamp = new Date().toISOString().split('T')[0];

@@ -549,7 +549,7 @@ export class RiddlesService {
       where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } }
     });
 
-    if (!attempt || !attempt.is_blocked) throw new BadRequestException('Загадка не заблокована');
+    if (!attempt?.is_blocked) throw new BadRequestException('Загадка не заблокована');
 
     return await this.prisma.$transaction(async (tx) => {
       await tx.user.update({

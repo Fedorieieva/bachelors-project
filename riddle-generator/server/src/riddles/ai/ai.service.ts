@@ -6,7 +6,7 @@ import { RiddleType } from '@prisma/client';
 
 @Injectable()
 export class AiService {
-  private genAI: GoogleGenerativeAI;
+  private readonly genAI: GoogleGenerativeAI;
   private model: GenerativeModel;
   private readonly logger = new Logger(AiService.name);
 
@@ -26,7 +26,7 @@ export class AiService {
   private currentModelIndex = 0;
   private fallbackOccurred = false;
 
-  constructor(private configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (!apiKey) throw new Error('GEMINI_API_KEY is not defined');
 
@@ -109,7 +109,7 @@ export class AiService {
       if (!modelName && this.isSwitchableError(status)) {
         if (this.switchToNextModel()) {
           this.logger.log(`[AI] Switched to ${this.modelCandidates[this.currentModelIndex]}, retrying...`);
-          return this.askGemini(history, retries, undefined);
+          return this.askGemini(history, retries);
         }
         this.logger.error('[AI] All models exhausted.');
         throw new HttpException(
@@ -261,7 +261,7 @@ export class AiService {
       if (!modelName && this.isSwitchableError(status)) {
         if (this.switchToNextModel()) {
           this.logger.log(`[AI] Switched to ${this.modelCandidates[this.currentModelIndex]}, retrying hint...`);
-          return this.getContextualHint(history, userMessage, correctAnswer, retries, undefined);
+          return this.getContextualHint(history, userMessage, correctAnswer, retries);
         }
         this.logger.error('[AI] All models exhausted for hint.');
       } else {

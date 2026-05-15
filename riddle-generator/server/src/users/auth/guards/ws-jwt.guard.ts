@@ -23,7 +23,7 @@ export class WsJwtGuard implements CanActivate {
 
       const result = await this.sessionService.validateToken(token);
 
-      if (!result || !result.user) {
+      if (!result?.user) {
         throw new WsException('Unauthorized: Invalid token');
       }
 
