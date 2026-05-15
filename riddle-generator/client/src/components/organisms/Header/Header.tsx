@@ -51,28 +51,25 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, className, hideAvat
         {!hideAvatar && (
           <>
             {isAuthenticated && authUser ? (
-              <div
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 aria-expanded={isDropdownOpen}
                 aria-label={t('myProfile')}
                 className={styles.avatarWrapper}
+                onClick={() => setIsDropdownOpen((v) => !v)}
                 onMouseEnter={() => setIsDropdownOpen(true)}
                 onMouseLeave={() => setIsDropdownOpen(false)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsDropdownOpen((v) => !v); } }}
               >
-                <Button variant="icon-only">
-                  <Avatar
-                    userName={displayUser?.name || 'User'}
-                    avatarUrl={displayUser?.avatar_url}
-                    size="md"
-                    badge={{
-                      type: 'xp',
-                      value: displayUser?.xp || 0,
-                      position: 'left'
-                    }}
-                  />
-                </Button>
+                <Avatar
+                  userName={displayUser?.name || 'User'}
+                  avatarUrl={displayUser?.avatar_url}
+                  size="md"
+                  badge={{
+                    type: 'xp',
+                    value: displayUser?.xp || 0,
+                    position: 'left'
+                  }}
+                />
 
                 <AnimatePresence>
                   {isDropdownOpen && (
@@ -105,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, className, hideAvat
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </button>
             ) : (
               <Button
                 href="/login"
