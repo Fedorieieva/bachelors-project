@@ -28,7 +28,7 @@ export default function ProfilePage() {
 
   const { follow, unfollow, isFollowingPending, isUnfollowingPending } = useSocialActions(id);
 
-  const [activeTab, setActiveTab] = useState<FeedType>('my-public');
+  const [activeTab, setActiveTab] = useState<FeedType>('user-public');
   const [followModal, setFollowModal] = useState<'followers' | 'following' | null>(null);
 
   if (isLoading || !stats) return <Preloader />;
@@ -53,8 +53,8 @@ export default function ProfilePage() {
       <div className={styles.feedWrapper}>
         <div className={styles.tabs}>
           <Button
-            variant={activeTab === 'my-public' ? 'simple-tab' : 'simple'}
-            onClick={() => setActiveTab('my-public')}
+            variant={activeTab === 'user-public' ? 'simple-tab' : 'simple'}
+            onClick={() => setActiveTab('user-public')}
           >
             {t('posted')}
           </Button>
@@ -75,7 +75,8 @@ export default function ProfilePage() {
             {t('saved')}
           </Button>
         </div>
-        <FeedList type={activeTab} />
+
+        <FeedList type={activeTab} userId={id} />
       </div>
 
       <FollowListModal

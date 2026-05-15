@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsInt, Min, Max, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class FeedPaginationDto {
@@ -14,6 +14,14 @@ export class FeedPaginationDto {
   @Min(1)
   @Max(50)
   limit: number = 10;
+
+  @IsOptional()
+  @IsString()
+  authorId?: string;
+
+  @IsOptional()
+  @IsString()
+  userId?: string;
 }
 
 export interface FeedMetaDto {

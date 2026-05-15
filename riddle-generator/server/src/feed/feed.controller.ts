@@ -15,7 +15,7 @@ export class FeedController {
     @CurrentUser() user: PrismaModels.User | undefined,
     @Query() query: FeedPaginationDto
   ): Promise<FeedResponseDto<FeedRiddleItem>> {
-    return this.feedService.getPublicFeed(user?.id, query.page, query.limit);
+    return this.feedService.getPublicFeed(user?.id, query.page, query.limit, query.authorId);
   }
 
   @Get('saved')
@@ -23,7 +23,8 @@ export class FeedController {
     @CurrentUser() user: PrismaModels.User,
     @Query() query: FeedPaginationDto,
   ): Promise<FeedResponseDto<FeedRiddleItem>> {
-    return this.feedService.getSavedOtherFeed(user.id, query.page, query.limit);
+    const savedByUserId = query.userId ?? user.id;
+    return this.feedService.getSavedOtherFeed(savedByUserId, user.id, query.page, query.limit);
   }
 
   @Get('my-public')

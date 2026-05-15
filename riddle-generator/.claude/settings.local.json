@@ -6,7 +6,13 @@
       "Bash(node_modules/.bin/tsc --noEmit)",
       "Bash(./node_modules/.bin/tsc --noEmit)",
       "Bash(npx --no-install tsc --noEmit)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\" -Recurse -Force)",
+      "Bash(Select-Object -First 100)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\client\\\\src\" -Recurse -File -Name)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }

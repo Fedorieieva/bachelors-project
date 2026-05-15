@@ -17,16 +17,16 @@ export const SocialService = {
     return data;
   },
 
-  async getPublicFeed(page = 1, limit = 10): Promise<PaginatedResponse<FeedRiddle>> {
+  async getPublicFeed(page = 1, limit = 10, authorId?: string): Promise<PaginatedResponse<FeedRiddle>> {
     const { data } = await apiClient.get<PaginatedResponse<FeedRiddle>>('/feed/public', {
-      params: { page, limit }
+      params: { page, limit, ...(authorId ? { authorId } : {}) }
     });
     return data;
   },
 
-  async getSavedFeed(page = 1, limit = 10): Promise<PaginatedResponse<FeedRiddle>> {
+  async getSavedFeed(page = 1, limit = 10, userId?: string): Promise<PaginatedResponse<FeedRiddle>> {
     const { data } = await apiClient.get<PaginatedResponse<FeedRiddle>>('/feed/saved', {
-      params: { page, limit }
+      params: { page, limit, ...(userId ? { userId } : {}) }
     });
     return data;
   },

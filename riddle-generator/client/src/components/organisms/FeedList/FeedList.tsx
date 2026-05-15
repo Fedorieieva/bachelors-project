@@ -12,11 +12,12 @@ import { useTranslations } from 'next-intl';
 
 interface FeedListProps {
   type: FeedType;
+  userId?: string;
 }
 
-export const FeedList: React.FC<FeedListProps> = ({ type }) => {
+export const FeedList: React.FC<FeedListProps> = ({ type, userId }) => {
   const t = useTranslations('feedList');
-  const { items, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useFeed(type);
+  const { items, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useFeed(type, userId);
 
   if (error) {
     return (

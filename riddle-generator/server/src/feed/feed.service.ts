@@ -64,17 +64,20 @@ export class FeedService {
     };
   }
 
-  async getPublicFeed(userId: string | undefined, page: number, limit: number) {
+  async getPublicFeed(userId: string | undefined, page: number, limit: number, authorId?: string) {
     const skip = (page - 1) * limit;
+    const where: Prisma.RiddlesWhereInput = { is_public: true };
+    if (authorId) where.author_id = authorId;
+
     const [items, total] = await Promise.all([
       this.prisma.riddles.findMany({
-        where: { is_public: true },
+        where,
         include: this.getFeedInclude(userId),
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.riddles.count({ where: { is_public: true } }),
+      this.prisma.riddles.count({ where }),
     ]);
 
     return {
@@ -121,28 +124,28 @@ export class FeedService {
     };
   }
 
-  async getSavedOtherFeed(userId: string, page: number, limit: number) {
+  async getSavedOtherFeed(savedByUserId: string, viewerUserId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
     const [savedRecords, total] = await Promise.all([
       this.prisma.savedRiddles.findMany({
         where: {
-          user_id: userId,
-          riddle: { author_id: { not: userId } }
+          user_id: savedByUserId,
+          riddle: { author_id: { not: savedByUserId } }
         },
         include: {
-          riddle: { include: this.getFeedInclude(userId) },
+          riddle: { include: this.getFeedInclude(viewerUserId) },
         },
         orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),
       this.prisma.savedRiddles.count({
-        where: { user_id: userId, riddle: { author_id: { not: userId } } }
+        where: { user_id: savedByUserId, riddle: { author_id: { not: savedByUserId } } }
       }),
     ]);
 
     return {
-      data: savedRecords.map((record) => this.formatRiddleItem(record.riddle, userId)),
+      data: savedRecords.map((record) => this.formatRiddleItem(record.riddle, viewerUserId)),
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
