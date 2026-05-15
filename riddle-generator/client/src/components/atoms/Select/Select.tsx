@@ -18,6 +18,18 @@ interface SelectProps {
   label?: string;
 }
 
+const visuallyHidden: React.CSSProperties = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0,0,0,0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};
+
 export const Select: React.FC<SelectProps> = ({ options, value, onChange, label }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
@@ -38,6 +50,17 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
     <div className={styles.wrapper} ref={selectRef}>
       {label && <Typography variant="details" className={styles.label}>{label}</Typography>}
 
+      <select
+        style={visuallyHidden}
+        value={value}
+        aria-label={label}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+
       <button
         type="button"
         aria-expanded={isOpen}
@@ -50,19 +73,23 @@ export const Select: React.FC<SelectProps> = ({ options, value, onChange, label 
       </button>
 
       {isOpen && (
-        <div role="listbox" className={styles.dropdown}>
+        <div className={styles.dropdown}>
           {options.map((opt) => (
             <div
               key={opt.value}
-              role="option"
-              aria-selected={opt.value === value}
               tabIndex={0}
               className={cn(styles.option, { [styles.selected]: opt.value === value })}
               onClick={() => {
                 onChange(opt.value);
                 setIsOpen(false);
               }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChange(opt.value); setIsOpen(false); } }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }
+              }}
             >
               <Typography variant="body">{opt.label}</Typography>
             </div>
