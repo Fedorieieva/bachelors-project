@@ -1,14 +1,18 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
+import dynamic from 'next/dynamic';
+import { Theme, EmojiStyle, SuggestionMode } from 'emoji-picker-react';
+import type { EmojiClickData } from 'emoji-picker-react';
 import { Modal } from '@/components/atoms/Modal/Modal';
 import { Input } from '@/components/atoms/Input/Input';
 import { Button } from '@/components/atoms/Button/Button';
 import EmojiIcon from '@/assets/emoji.svg';
 import { useTranslations } from 'next-intl';
 import styles from './CommentModal.module.scss';
+
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 
 interface CommentModalProps {
   isOpen: boolean;
@@ -30,6 +34,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [mounted, setMounted] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const pickerPortalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -47,6 +52,16 @@ export const CommentModal: React.FC<CommentModalProps> = ({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+    const frame = requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollY, left: scrollX, behavior: 'instant' as ScrollBehavior });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [showEmojiPicker]);
+
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setText((prev) => prev + emojiData.emoji);
   };
@@ -54,11 +69,20 @@ export const CommentModal: React.FC<CommentModalProps> = ({
   const getPickerPosition = () => {
     if (!triggerRef.current) return {};
     const rect = triggerRef.current.getBoundingClientRect();
+    const pickerWidth = 320;
+    const pickerHeight = 360;
+    const gap = 8;
+
+    let top = rect.top - pickerHeight - gap;
+    let left = rect.right - pickerWidth;
+
+    top = Math.max(gap, Math.min(top, window.innerHeight - pickerHeight - gap));
+    left = Math.max(gap, Math.min(left, window.innerWidth - pickerWidth - gap));
 
     return {
       position: 'fixed' as const,
-      top: `${rect.top - 360}px`,
-      left: `${rect.left - 280}px`,
+      top: `${top}px`,
+      left: `${left}px`,
       zIndex: 10001,
     };
   };
@@ -70,8 +94,14 @@ export const CommentModal: React.FC<CommentModalProps> = ({
     setShowEmojiPicker(false);
   };
 
+  const handleInteractOutside = useCallback((event: Event) => {
+    if (pickerPortalRef.current?.contains(event.target as Node)) {
+      event.preventDefault();
+    }
+  }, []);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} onInteractOutside={handleInteractOutside}>
       <div className={styles.container}>
         <Input
           variant="multiline"
@@ -87,7 +117,7 @@ export const CommentModal: React.FC<CommentModalProps> = ({
               className={styles.emojiTrigger}
               onClick={(e) => {
                 e.stopPropagation();
-                setShowEmojiPicker(!showEmojiPicker);
+                setShowEmojiPicker(prev => !prev);
               }}
             >
               <EmojiIcon className={styles.icon} />
@@ -104,20 +134,26 @@ export const CommentModal: React.FC<CommentModalProps> = ({
               onClick={() => setShowEmojiPicker(false)}
             />
             <div
+              ref={pickerPortalRef}
               className={styles.portalWrapper}
               style={getPickerPosition()}
               onWheel={(e) => e.stopPropagation()}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <EmojiPicker
-                onEmojiClick={handleEmojiClick}
-                theme={Theme.DARK}
-                width={320}
-                height={350}
-                autoFocusSearch={false}
-                searchDisabled
-                skinTonesDisabled
-              />
+              <div className={styles.pickerContainer}>
+                <EmojiPicker
+                  onEmojiClick={handleEmojiClick}
+                  theme={Theme.DARK}
+                  emojiStyle={EmojiStyle.NATIVE}
+                  suggestedEmojisMode={SuggestionMode.RECENT}
+                  lazyLoadEmojis={true}
+                  width={320}
+                  height={350}
+                  autoFocusSearch={false}
+                  searchDisabled
+                  skinTonesDisabled
+                />
+              </div>
             </div>
           </>,
           document.body

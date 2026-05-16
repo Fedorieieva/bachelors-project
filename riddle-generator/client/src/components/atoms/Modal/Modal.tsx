@@ -18,6 +18,7 @@ export interface ModalProps {
   children: React.ReactNode;
   className?: string;
   hideCloseButton?: boolean;
+  onInteractOutside?: (e: Event) => void;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -27,6 +28,7 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   className,
   hideCloseButton = false,
+  onInteractOutside,
 }) => {
   const tm = useTranslations('modal');
   const overlayVariants = {
@@ -57,7 +59,7 @@ export const Modal: React.FC<ModalProps> = ({
               </Dialog.Overlay>
 
               <div className={styles.contentWrapper}>
-                <Dialog.Content asChild>
+                <Dialog.Content asChild onInteractOutside={onInteractOutside}>
                   <motion.div
                     className={cn(styles.content, className)}
                     initial="closed"
@@ -68,6 +70,7 @@ export const Modal: React.FC<ModalProps> = ({
                     {!title && (
                       <VisuallyHidden.Root>
                         <Dialog.Title>{tm('dialogTitle')}</Dialog.Title>
+                        <Dialog.Description>{tm('dialogTitle')}</Dialog.Description>
                       </VisuallyHidden.Root>
                     )}
 

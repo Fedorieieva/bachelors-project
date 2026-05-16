@@ -28,6 +28,13 @@
   }
 }
 
+.pickerContainer {
+  width: 320px;
+  height: 350px;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
 .portalWrapper {
   position: fixed;
   pointer-events: auto !important;
@@ -71,7 +78,7 @@
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 2;
+  z-index: 5;
   background: none;
   border: none;
   padding: 0;

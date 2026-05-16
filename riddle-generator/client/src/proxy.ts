@@ -11,14 +11,13 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-inline' 'unsafe-eval' https: http:`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: res.cloudinary.com",
+    "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     "connect-src 'self' http://localhost:8000 https://riddle-generator-api-puce.vercel.app api.cloudinary.com wss: ws:",
     "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "require-trusted-types-for 'script'",
   ].join('; ');
 
   const requestHeaders = new Headers(request.headers);
