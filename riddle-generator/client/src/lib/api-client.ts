@@ -4,6 +4,8 @@ import { logout } from '@/store/slices/authSlice';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
+console.debug('[api-client] baseURL:', API_BASE_URL);
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
