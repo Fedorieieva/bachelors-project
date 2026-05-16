@@ -14,7 +14,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\" -Directory)",
       "Bash(Select-Object Name)",
       "Bash(npx jest *)",
-      "Bash(npx --no-install jest)"
+      "Bash(npx --no-install jest)",
+      "Bash(npx prisma *)"
     ]
   }
 }

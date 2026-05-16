@@ -85,6 +85,7 @@ enum NotificationType {
   XP_EARNED
   PROFILE_DELETED
   NEW_RIDDLE
+  RIDDLE_SOLVED
 }
 
 enum RiddleType {

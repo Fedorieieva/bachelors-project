@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Heart, Star, UserPlus, UserX, MessageCircle, Zap } from 'lucide-react';
+import { Bell, Heart, Star, UserPlus, UserX, MessageCircle, Zap, Trophy } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   useNotifications,
@@ -30,8 +30,18 @@ function typeIcon(type: Notification['type']) {
     case 'LEVEL_UP': return <Star size={14} />;
     case 'XP_EARNED': return <Zap size={14} />;
     case 'PROFILE_DELETED': return <UserX size={14} />;
+    case 'RIDDLE_SOLVED': return <Trophy size={14} />;
     default: return <Bell size={14} />;
   }
+}
+
+function getContent(n: Notification, t: ReturnType<typeof useTranslations<'notifications'>>) {
+  if (n.type === 'RIDDLE_SOLVED' && n.actor) {
+    const raw = typeof n.metadata?.riddleContent === 'string' ? n.metadata.riddleContent : '';
+    const title = raw.length > 40 ? `${raw.slice(0, 40)}…` : raw;
+    return t('riddleSolved', { actor: n.actor.name, title });
+  }
+  return n.content;
 }
 
 function timeAgo(dateStr: string) {
@@ -136,7 +146,7 @@ export const NotificationBell: React.FC = () => {
                         <span className={styles.iconWrap}>{typeIcon(n.type)}</span>
                       )}
                       <div className={styles.itemBody}>
-                        <p className={styles.itemContent}>{n.content}</p>
+                        <p className={styles.itemContent}>{getContent(n, t)}</p>
                         <p className={styles.itemTime}>{timeAgo(n.createdAt)}</p>
                       </div>
                       {!n.isRead && <span className={styles.unreadDot} />}

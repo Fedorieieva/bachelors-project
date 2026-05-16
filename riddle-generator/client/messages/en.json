@@ -225,6 +225,7 @@
     "bellLabel": "Notifications",
     "empty": "No notifications yet",
     "markAllRead": "Mark all read",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "riddleSolved": "{actor} solved your riddle \"{title}\""
   }
 }

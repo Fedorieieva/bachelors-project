@@ -2,7 +2,7 @@ import { apiClient } from '@/lib/api-client';
 
 export interface Notification {
   id: string;
-  type: 'COMMENT' | 'LIKE' | 'FOLLOW' | 'LEVEL_UP' | 'XP_EARNED' | 'PROFILE_DELETED' | 'NEW_RIDDLE';
+  type: 'COMMENT' | 'LIKE' | 'FOLLOW' | 'LEVEL_UP' | 'XP_EARNED' | 'PROFILE_DELETED' | 'NEW_RIDDLE' | 'RIDDLE_SOLVED';
   content: string;
   isRead: boolean;
   metadata?: Record<string, unknown>;

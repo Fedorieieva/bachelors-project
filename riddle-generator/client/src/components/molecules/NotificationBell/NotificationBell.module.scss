@@ -131,6 +131,8 @@
 // ─── Individual notification item ────────────────────────────────────────────
 
 .item {
+  width: 100%;
+  text-align: left;
   display: flex;
   align-items: flex-start;
   gap: 10px;

@@ -119,6 +119,18 @@ export class NotificationsService {
     });
   }
 
+  async notifyRiddleSolved(riddleAuthorId: string, actorId: string, actorName: string, riddleContent: string) {
+    if (riddleAuthorId === actorId) return;
+    const preview = riddleContent.length > 40 ? `${riddleContent.slice(0, 40)}…` : riddleContent;
+    return this.createNotification({
+      userId: riddleAuthorId,
+      type: NotificationType.RIDDLE_SOLVED,
+      actorId,
+      content: `${actorName} solved your riddle: "${preview}"`,
+      metadata: { riddleContent },
+    });
+  }
+
   async notifyProfileDeleted(followerId: string, deletedUserName: string) {
     return this.createNotification({
       userId: followerId,

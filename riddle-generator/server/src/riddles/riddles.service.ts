@@ -15,6 +15,7 @@ import { AiRiddleResponse, EvaluationResult, RiddleIntentAnalysis } from './ai/a
 import { RiddleMetadata, ToggleSaveResponse } from './dto/riddle-persistence.dto';
 import { ChatResponseDto, ChatResponseType } from './dto/chat-response.dto';
 import { ExperienceService } from '../experience/experience.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { RiddleDto, RiddleSettingsDto } from './dto/riddle-settings.dto';
 
 @Injectable()
@@ -30,6 +31,7 @@ export class RiddlesService {
     private readonly promptsService: PromptsService,
     private readonly prisma: PrismaService,
     private readonly experienceService: ExperienceService,
+    private readonly notificationsService: NotificationsService,
   ) {
   }
 
@@ -516,12 +518,18 @@ export class RiddlesService {
 
     if (result.is_solved) {
       await this.experienceService.awardXpForSolving(userId, riddle.content, 20);
+      if (userId !== riddle.author_id) {
+        const solver = await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+        if (solver) {
+          await this.notificationsService.notifyRiddleSolved(riddle.author_id, userId, solver.name ?? 'Someone', riddle.content);
+        }
+      }
       await this.prisma.riddleAttempt.upsert({
         where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
         update: { attempts: -1, is_blocked: false, last_try: now },
         create: { user_id: userId, riddle_id: riddleId, attempts: -1, last_try: now },
       });
-      return { success: true, message: 'Геніально! +20 XP', answer: riddle.answer };
+      return { success: true, message: 'Геніально! +20 XP', answer: riddle.answer, xp_earned: 20 };
     } else {
       const newAttempts = (attempt?.attempts || 0) + 1;
       const isBlocked = newAttempts >= 3;
