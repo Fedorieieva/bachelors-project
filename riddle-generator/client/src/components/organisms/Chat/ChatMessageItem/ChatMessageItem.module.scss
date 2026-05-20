@@ -135,6 +135,23 @@
   }
 }
 
+.systemRow {
+  justify-content: center;
+}
+
+.systemMessage {
+  max-width: 80%;
+  text-align: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: $font-main;
+  line-height: 1.5;
+  background: rgba($warning, 0.08);
+  border: 1px solid rgba($warning, 0.25);
+  color: rgba($white, 0.65);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }

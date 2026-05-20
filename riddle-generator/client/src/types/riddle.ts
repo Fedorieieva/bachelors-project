@@ -14,12 +14,12 @@ export interface RiddleSettings {
 }
 
 export const GEMINI_MODELS = [
-  { label: 'Gemini 2.0 Flash', value: 'gemini-2.0-flash' },
-  { label: 'Gemini 2.0 Flash Lite', value: 'gemini-2.0-flash-lite' },
   { label: 'Gemini 2.5 Flash Lite', value: 'gemini-2.5-flash-lite' },
+  { label: 'Gemini 2.5 Flash', value: 'gemini-2.5-flash' },
+  { label: 'Gemini 3.1 Flash Lite', value: 'gemini-3.1-flash-lite' },
+  { label: 'Gemini 3.5 Flash', value: 'gemini-3.5-flash' },
+  { label: 'Gemini 3 Flash Preview', value: 'gemini-3-flash-preview' },
   { label: 'Gemini Flash (latest)', value: 'gemini-flash-latest' },
-  { label: 'Gemini 2.5 Pro', value: 'gemini-2.5-pro' },
-  { label: 'Gemini 2.0 Flash Exp', value: 'gemini-2.0-flash-exp' },
 ] as const;
 
 export interface RiddleMetadata {
@@ -51,7 +51,7 @@ export interface ChatResponse {
 export interface Message {
   id: string;
   chat_id: string;
-  role: 'user' | 'model';
+  role: 'user' | 'model' | 'system';
   content: string;
   is_initial: boolean;
   createdAt: string;

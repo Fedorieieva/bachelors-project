@@ -86,6 +86,9 @@ enum NotificationType {
   PROFILE_DELETED
   NEW_RIDDLE
   RIDDLE_SOLVED
+  USER_BANNED
+  USER_UNBANNED
+  ATTEMPTS_RESET
 }
 
 enum RiddleType {

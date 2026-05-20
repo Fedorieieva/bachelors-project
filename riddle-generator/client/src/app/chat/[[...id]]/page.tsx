@@ -16,14 +16,15 @@ import { useRiddleMessages } from '@/hooks/riddles/useRiddleMessages';
 import { useTranslations } from 'next-intl';
 
 const MODEL_STORAGE_KEY = 'genigma-model';
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+const DEFAULT_MODEL = 'gemini-2.5-flash-lite';
 
 function getInitialSettings(): RiddleSettings {
   let savedModel = DEFAULT_MODEL;
 
   if (globalThis.window !== undefined) {
     const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-    if (stored && !stored.startsWith('gemini-1.')) {
+    const isLegacy = stored && (stored.startsWith('gemini-1.') || stored.startsWith('gemini-2.0'));
+    if (stored && !isLegacy) {
       savedModel = stored;
     } else if (stored) {
       localStorage.setItem(MODEL_STORAGE_KEY, DEFAULT_MODEL);
@@ -46,6 +47,7 @@ export default function ChatPage() {
 
   const {
     messages,
+    extraMessages,
     sendGuess,
     isSending,
     regenerate,
@@ -122,17 +124,21 @@ export default function ChatPage() {
 
   const displayMessages = useMemo<Message[]>(() => {
     const base = messages || [];
-    if (!optimisticMessage) return base;
-    const optMsg: Message = {
-      id: 'optimistic',
-      role: 'user',
-      chat_id: chatId || '',
-      content: optimisticMessage,
-      is_initial: false,
-      createdAt: new Date().toISOString(),
-    };
-    return [...base, optMsg];
-  }, [messages, optimisticMessage, chatId]);
+    const withOptimistic: Message[] = optimisticMessage
+      ? [
+          ...base,
+          {
+            id: 'optimistic',
+            role: 'user' as const,
+            chat_id: chatId || '',
+            content: optimisticMessage,
+            is_initial: false,
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      : base;
+    return extraMessages.length > 0 ? [...withOptimistic, ...extraMessages] : withOptimistic;
+  }, [messages, extraMessages, optimisticMessage, chatId]);
 
   const getDisplayContent = (msg: Message): string => {
     try {

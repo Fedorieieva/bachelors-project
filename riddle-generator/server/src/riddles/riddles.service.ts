@@ -5,12 +5,14 @@ import {
   ForbiddenException,
   BadRequestException,
   InternalServerErrorException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { AiService } from './ai/ai.service';
 import { PromptsService } from './prompts/prompts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Content } from '@google/generative-ai';
-import { RiddleType } from '@prisma/client';
+import { RiddleType, NotificationType } from '@prisma/client';
 import { AiRiddleResponse, EvaluationResult, RiddleIntentAnalysis } from './ai/ai-responses.dto';
 import { RiddleMetadata, ToggleSaveResponse } from './dto/riddle-persistence.dto';
 import { ChatResponseDto, ChatResponseType } from './dto/chat-response.dto';
@@ -38,7 +40,7 @@ export class RiddlesService {
   async generateRiddle(
     dto: RiddleDto,
     aiAnalysis?: RiddleIntentAnalysis,
-  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; model_used: string }> {
+  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; model_used: string; is_error?: boolean }> {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
 
@@ -89,9 +91,21 @@ export class RiddlesService {
       lastResult = aiResult;
 
       if (aiResult.content === 'ERROR_OFF_TOPIC') {
-        throw new BadRequestException(
-          'Згенерований контент не відповідає правилам безпеки. Спробуйте змінити тему.',
-        );
+        return {
+          content: 'error.offTopicRestriction',
+          answer: '',
+          is_error: true,
+          model_used: modelUsed,
+          prompt_context: {
+            message: dto.topic,
+            complexity: dto.settings.complexity,
+            language: 'auto',
+            prompt_name: promptName,
+            generation_attempts: attempts,
+            type: riddleType,
+            style,
+          },
+        };
       }
 
       const evaluation = await this.evaluateRiddle(aiResult, riddleType);
@@ -282,7 +296,7 @@ export class RiddlesService {
     model?: string,
   ): Promise<ChatResponseDto> {
     const user = await this.prisma.user.findUnique({ where: { id: authorId } });
-    this.validateUserAccess(user);
+    await this.validateUserAccess(user);
 
     const analysis: RiddleIntentAnalysis = await this.aiService.classifyIntent(userMessage);
 
@@ -293,21 +307,20 @@ export class RiddlesService {
 
     if (analysis.intent === 'INAPPROPRIATE') {
       await this.handleUserViolation(authorId);
-      return {
-        type: ChatResponseType.SYSTEM_MESSAGE,
-        data: {
-          content:
-            'Ваш запит містить неприпустимий контент. Будь ласка, дотримуйтесь правил спільноти.',
-        },
-      };
+      throw new HttpException(
+        { status: 'MODERATION_VIOLATION', code: 'POLICY_RESTRICTION' },
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
 
     if (analysis.intent === 'OFF_TOPIC') {
+      await this.saveMessage(chatId, 'user', userMessage);
+      await this.saveMessage(chatId, 'model', JSON.stringify({ content: 'error.offTopicRestriction', is_error: true }));
       return {
-        type: ChatResponseType.SYSTEM_MESSAGE,
+        type: ChatResponseType.REFINE_RIDDLE,
         data: {
-          content:
-            'Вибачте, я спеціалізуюся лише на загадках. Чим я можу допомогти у межах цієї теми?',
+          content: 'error.offTopicRestriction',
+          model_used: this.aiService.getModelName(model),
         },
       };
     }
@@ -337,13 +350,25 @@ export class RiddlesService {
     return this.handleContextualResponse(chatId, userMessage, authorId, chat, model);
   }
 
-  private validateUserAccess(user: { banned_until: Date | null } | null): void {
-    if (user?.banned_until && user.banned_until > new Date()) {
+  private async validateUserAccess(user: { id: string; banned_until: Date | null } | null): Promise<void> {
+    if (!user?.banned_until) return;
+
+    if (user.banned_until > new Date()) {
       const remainingTime = Math.ceil((user.banned_until.getTime() - Date.now()) / 60000);
       throw new ForbiddenException(
         `Ви тимчасово заблоковані. Спробуйте через ${remainingTime} хв.`,
       );
     }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { banned_until: null },
+    });
+    await this.notificationsService.createNotification({
+      userId: user.id,
+      type: NotificationType.USER_UNBANNED,
+      content: 'Ваше тимчасове обмеження знято. Ласкаво просимо назад!',
+    });
   }
 
   private async resetViolationIfNeeded(
@@ -377,6 +402,18 @@ export class RiddlesService {
       { topic: analysis.topic || userMessage, settings: effectiveSettings },
       analysis,
     );
+
+    if (newRiddle.is_error) {
+      await this.saveMessage(chatId, 'user', userMessage, true);
+      await this.saveMessage(chatId, 'model', JSON.stringify({ content: newRiddle.content, is_error: true }), true);
+      return {
+        type: ChatResponseType.REFINE_RIDDLE,
+        data: {
+          content: newRiddle.content,
+          model_used: newRiddle.model_used,
+        },
+      };
+    }
 
     await this.saveMessage(chatId, 'user', userMessage, true);
     await this.saveMessage(chatId, 'model', JSON.stringify(newRiddle), true);
@@ -504,6 +541,13 @@ export class RiddlesService {
         where: { id: attempt.id },
         data: { is_blocked: false, attempts: 0 },
       });
+
+      await this.notificationsService.createNotification({
+        userId,
+        type: NotificationType.ATTEMPTS_RESET,
+        content: 'Ваші спроби для загадки відновлено!',
+        metadata: { riddleId },
+      });
     }
 
     if (attempt?.is_blocked) {
@@ -616,6 +660,13 @@ export class RiddlesService {
         },
       });
       this.logger.error(`🚨 Користувач ${userId} забанений до ${bannedUntil}`);
+
+      await this.notificationsService.createNotification({
+        userId,
+        type: NotificationType.USER_BANNED,
+        content: `Ваш акаунт тимчасово обмежено на ${this.BAN_DURATION_MINUTES} хвилин через порушення правил.`,
+        metadata: { banned_until: bannedUntil.toISOString(), duration_minutes: this.BAN_DURATION_MINUTES },
+      });
     }
   }
 

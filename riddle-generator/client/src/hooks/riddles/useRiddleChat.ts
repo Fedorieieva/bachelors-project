@@ -4,7 +4,7 @@ import { RiddleService } from '@/services/riddle.service';
 import { RiddleSettings, ChatResponse, Message } from '@/types/riddle';
 import { useRouter } from 'next/navigation';
 import { useGlobalToast } from '@/providers/ToastProvider';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
 import { PaginatedPage } from '@/hooks/infinite-scroll/useInfiniteScroll';
 import { useTranslations } from 'next-intl';
 
@@ -32,6 +32,12 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
   const router = useRouter();
   const { showGlobalToast } = useGlobalToast();
   const t = useTranslations('toasts');
+
+  const [extraMessages, setExtraMessages] = useState<Message[]>([]);
+
+  useEffect(() => {
+    setExtraMessages([]);
+  }, [chatId]);
 
   const extractErrorToast = (error: Error): { message: string; type: 'error' | 'warning' } => {
     const axiosErr = error as AxiosError<{ message?: string }>;
@@ -101,6 +107,18 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
       }
     },
     onError: (error: Error) => {
+      const axiosErr = error as AxiosError<{ code?: string; status?: string; message?: string }>;
+      if (axiosErr.response?.data?.code === 'POLICY_RESTRICTION') {
+        setExtraMessages(prev => [...prev, {
+          id: crypto.randomUUID(),
+          role: 'system' as const,
+          chat_id: chatId || '',
+          content: 'moderationViolation',
+          is_initial: false,
+          createdAt: new Date().toISOString(),
+        }]);
+        return;
+      }
       const { message, type } = extractErrorToast(error);
       showGlobalToast(message, type);
     },
@@ -124,6 +142,7 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
 
   return {
     messages,
+    extraMessages,
     sendGuess: (text: string, settings: RiddleSettings) =>
       sendMessage.mutate({ topic: text, settings }),
     isSending: sendMessage.isPending,

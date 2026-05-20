@@ -35,8 +35,25 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   fullWidth = false,
 }) => {
   const t = useTranslations('chatMessageItem');
+  const isSystem = msg.role === 'system';
   const isModel = msg.role === 'model';
   const isMainRiddle = isModel && msg.is_initial;
+
+  if (isSystem) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className={cn(styles.messageRow, styles.systemRow)}
+      >
+        <div className={styles.systemMessage}>
+          {t('moderationViolation')}
+        </div>
+      </motion.div>
+    );
+  }
 
   const parsedData = React.useMemo(() => {
     try {
@@ -46,10 +63,27 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
     }
   }, [msg.content]);
 
+  const isError = !!parsedData?.is_error;
   const isSolved = !!(parsedData?.xp_earned || parsedData?.is_solved);
   const isRevealed = isModel && parsedData === null;
-  const isFinished = isSolved || isRevealed;
+  const isFinished = isSolved || isRevealed || isError;
   const modelUsed: string | undefined = parsedData?.model_used;
+
+  if (isError && displayContent === 'error.offTopicRestriction') {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className={cn(styles.messageRow, styles.systemRow)}
+      >
+        <div className={styles.systemMessage}>
+          {t('offTopicRestriction')}
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
