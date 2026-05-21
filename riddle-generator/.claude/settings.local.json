@@ -17,7 +17,11 @@
       "Bash(npx --no-install jest)",
       "Bash(npx prisma *)",
       "Bash(grep -E \"\\\\.tsx?$\")",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "PowerShell(Head-Object *)",
+      "PowerShell(npm run *)",
+      "PowerShell(Test-Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\"; \\(Get-ChildItem \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\" -ErrorAction SilentlyContinue\\).Count)",
+      "PowerShell(\\(Get-ChildItem \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\" -ErrorAction SilentlyContinue\\) | ForEach-Object { $_.FullName })"
     ]
   }
 }

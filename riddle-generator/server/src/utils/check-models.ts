@@ -6,7 +6,7 @@ const sanitizeLog = (value: string): string =>
   String(value).replaceAll('\r', '').replaceAll('\n', '');
 
 async function listAvailableModels() {
-  const apiKey = "AIzaSyA1Tbw24FDPxxBw7DDfb6Kk834pmmXlXBE";
+  const apiKey = "";
 
   if (!apiKey) {
     console.error('Помилка: GEMINI_API_KEY не знайдено в .env');

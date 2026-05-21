@@ -6,8 +6,8 @@ import { RiddleType } from '@prisma/client';
 
 @Injectable()
 export class AiService {
-  private readonly genAI: GoogleGenerativeAI;
-  private model: GenerativeModel;
+  private genAI!: GoogleGenerativeAI;
+  private model!: GenerativeModel;
   private readonly logger = new Logger(AiService.name);
 
   private readonly modelCandidates = [
@@ -15,22 +15,33 @@ export class AiService {
     'gemini-2.5-flash',
     'gemini-3.1-flash-lite',
     'gemini-3.5-flash',
-    'gemini-3-flash-preview',
     'gemini-flash-latest',
+    'gemini-2.5-pro',
   ];
 
+  private apiKeys: string[];
+  private currentKeyIndex = 0;
   private currentModelIndex = 0;
   private fallbackOccurred = false;
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not defined');
+    const primaryKey = this.configService.get<string>('GEMINI_API_KEY');
+    if (!primaryKey) throw new Error('GEMINI_API_KEY is not defined');
 
-    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.apiKeys = [
+      primaryKey,
+      this.configService.get<string>('GEMINI_API_KEY2'),
+      this.configService.get<string>('GEMINI_API_KEY3'),
+      this.configService.get<string>('GEMINI_API_KEY4'),
+    ].filter((k): k is string => !!k);
+
     this.initModel();
   }
 
   private initModel(): void {
+    const activeKey = this.apiKeys[this.currentKeyIndex];
+    this.genAI = new GoogleGenerativeAI(activeKey);
+
     const modelName = this.modelCandidates[this.currentModelIndex];
     this.logger.log(`[AI] Active model: ${modelName}`);
 
@@ -50,6 +61,35 @@ export class AiService {
       this.fallbackOccurred = true;
       return true;
     }
+    return false;
+  }
+
+  private switchToNextApiKey(): boolean {
+    if (this.currentKeyIndex < this.apiKeys.length - 1) {
+      this.currentKeyIndex++;
+      this.currentModelIndex = 0;
+      this.initModel();
+      return true;
+    }
+    return false;
+  }
+
+  private async handleFallback(status: number | undefined): Promise<boolean> {
+    // Phase 1: try the next model on the current API key
+    if (this.switchToNextModel()) {
+      this.logger.log(`[AI] Switched to model ${this.modelCandidates[this.currentModelIndex]}, applying 1s cooldown...`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return true;
+    }
+
+    // Phase 2: all models exhausted for this key — rotate to the next API key
+    if (this.switchToNextApiKey()) {
+      this.logger.warn(`[AI] All models exhausted. Switched to API key index ${this.currentKeyIndex}, applying 1.5s cooldown...`);
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return true;
+    }
+
+    // Phase 3: all models and all keys exhausted
     return false;
   }
 
@@ -103,11 +143,10 @@ export class AiService {
       this.logger.warn(`[AI] askGemini error — model: ${activeModelName}, status: ${status}`);
 
       if (!modelName && this.isSwitchableError(status)) {
-        if (this.switchToNextModel()) {
-          this.logger.log(`[AI] Switched to ${this.modelCandidates[this.currentModelIndex]}, retrying...`);
+        if (await this.handleFallback(status)) {
           return this.askGemini(history, retries);
         }
-        this.logger.error('[AI] All models exhausted.');
+        this.logger.error('[AI] All models and keys exhausted.');
         throw new HttpException(
           'All models reached their quota. Please try again in a few minutes.',
           HttpStatus.TOO_MANY_REQUESTS,
@@ -255,11 +294,10 @@ export class AiService {
       this.logger.warn(`[AI] getContextualHint error — model: ${activeModelName}, status: ${status}`);
 
       if (!modelName && this.isSwitchableError(status)) {
-        if (this.switchToNextModel()) {
-          this.logger.log(`[AI] Switched to ${this.modelCandidates[this.currentModelIndex]}, retrying hint...`);
+        if (await this.handleFallback(status)) {
           return this.getContextualHint(history, userMessage, correctAnswer, retries);
         }
-        this.logger.error('[AI] All models exhausted for hint.');
+        this.logger.error('[AI] All models and keys exhausted for hint.');
       } else {
         this.logger.error(`[AI] Hint error (specific model): ${error instanceof Error ? error.message : 'Unknown'}`);
       }
