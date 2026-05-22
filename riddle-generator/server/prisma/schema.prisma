@@ -33,18 +33,23 @@ model User {
   riddles_solved Int   @default(0)
   rating         Float @default(0.0)
 
-  sessions              Session[]
-  riddles               Riddles[]
-  saved_riddles         SavedRiddles[]
-  comments              Comment[]
-  likes                 Like[]
-  Chat                  Chat[]
-  followers             Follow[]         @relation("following")
-  following             Follow[]         @relation("follower")
-  SolvedRiddle          SolvedRiddle[]
-  RiddleAttempt         RiddleAttempt[]
-  notifications         Notification[]   @relation("NotificationRecipient")
-  triggered_notifs      Notification[]   @relation("NotificationActor")
+  streak_count   Int       @default(0)
+  last_active_at DateTime?
+  xp_multiplier  Float     @default(1.0)
+
+  sessions         Session[]
+  riddles          Riddles[]
+  saved_riddles    SavedRiddles[]
+  comments         Comment[]
+  likes            Like[]
+  Chat             Chat[]
+  followers        Follow[]        @relation("following")
+  following        Follow[]        @relation("follower")
+  SolvedRiddle     SolvedRiddle[]
+  RiddleAttempt    RiddleAttempt[]
+  notifications    Notification[]  @relation("NotificationRecipient")
+  triggered_notifs Notification[]  @relation("NotificationActor")
+  user_quests      UserQuest[]
 
   @@map("users")
 }
@@ -89,6 +94,18 @@ enum NotificationType {
   USER_BANNED
   USER_UNBANNED
   ATTEMPTS_RESET
+  QUEST_COMPLETED
+  STREAK_INCREMENTED
+  LEADERBOARD_RANK_UP
+}
+
+enum QuestType {
+  SOLVE_RIDDLES
+  EARN_XP
+  MAINTAIN_STREAK
+  GENERATE_IMAGE_RIDDLE
+  SOLVE_MATH
+  SOLVE_LOGIC
 }
 
 enum RiddleType {
@@ -109,6 +126,8 @@ model Riddles {
 
   is_public   Boolean @default(false)
   is_verified Boolean @default(false)
+
+  image_url String? @db.Text
 
   likes_count    Int @default(0)
   comments_count Int @default(0)
@@ -229,10 +248,10 @@ model Like {
 }
 
 model Notification {
-  id      String           @id @default(uuid())
-  type    NotificationType
-  content String           @db.Text
-  isRead  Boolean          @default(false)
+  id       String           @id @default(uuid())
+  type     NotificationType
+  content  String           @db.Text
+  isRead   Boolean          @default(false)
   metadata Json?
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
@@ -257,4 +276,36 @@ model AIPrompt {
   updated_at DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@map("ai_prompts")
+}
+
+model Quest {
+  id           String    @id @default(uuid())
+  title        String    @db.Text
+  description  String    @db.Text
+  xp_reward    Int
+  quest_type   QuestType
+  target_count Int
+  expires_at   DateTime
+  is_active    Boolean   @default(true)
+
+  user_quests UserQuest[]
+
+  created_at DateTime @default(now())
+
+  @@map("quests")
+}
+
+model UserQuest {
+  id           String    @id @default(uuid())
+  progress     Int       @default(0)
+  is_completed Boolean   @default(false)
+  completed_at DateTime?
+
+  user     User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id  String
+  quest    Quest  @relation(fields: [quest_id], references: [id], onDelete: Cascade)
+  quest_id String
+
+  @@unique([user_id, quest_id])
+  @@map("user_quests")
 }

@@ -1,0 +1,377 @@
+@use "../../styles/abstracts/variables" as *;
+@use "../../styles/abstracts/mixins" as *;
+
+// ─── Page Layout ──────────────────────────────────────────────
+
+.page {
+  min-height: 100vh;
+  padding: 24px 16px 48px;
+
+  @include respond-to("md") {
+    padding: 40px 32px 64px;
+  }
+}
+
+.pageTitle {
+  font-family: $font-second;
+  font-size: 22px;
+  font-weight: 700;
+  color: $white;
+  margin: 0 0 24px;
+
+  @include respond-to("md") {
+    font-size: 28px;
+    margin-bottom: 32px;
+  }
+}
+
+// ─── Content Grid ─────────────────────────────────────────────
+
+.contentGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  @include respond-to("lg") {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 28px;
+  }
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar {
+  width: 100%;
+
+  @include respond-to("lg") {
+    width: 300px;
+    flex-shrink: 0;
+  }
+}
+
+// ─── Tab Selector ─────────────────────────────────────────────
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 4px;
+  border-radius: $border-radius-primary;
+  @include glass-panel(8px, rgba($white, 0.03), rgba($white, 0.07));
+  width: fit-content;
+}
+
+.tab {
+  padding: 8px 20px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: rgba($white, 0.45);
+  font-family: $font-second;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  letter-spacing: 0.02em;
+
+  &:hover:not(.tabActive) {
+    background: rgba($white, 0.06);
+    color: rgba($white, 0.7);
+  }
+
+  &.tabActive {
+    background: $gradient-primary;
+    color: $white;
+    @include shadow-violet-glow-soft;
+  }
+}
+
+// ─── Profile Link Wrappers ────────────────────────────────────
+
+.podiumLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.listLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+// ─── Podium ───────────────────────────────────────────────────
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+
+  @include respond-to("sm") {
+    gap: 16px;
+  }
+}
+
+.podiumCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 10px;
+  border-radius: $border-radius-secondary;
+  text-align: center;
+  border: 1px solid transparent;
+  position: relative;
+  transition: transform 0.2s ease;
+
+  &:hover { transform: translateY(-2px); }
+
+  &.gold {
+    background: rgba(255, 215, 0, 0.08);
+    border-color: rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.12);
+  }
+
+  &.silver {
+    background: rgba(192, 192, 192, 0.07);
+    border-color: rgba(192, 192, 192, 0.25);
+    box-shadow: 0 0 16px rgba(192, 192, 192, 0.08);
+  }
+
+  &.bronze {
+    background: rgba(205, 127, 50, 0.08);
+    border-color: rgba(205, 127, 50, 0.25);
+    box-shadow: 0 0 16px rgba(205, 127, 50, 0.08);
+  }
+}
+
+// ─── Podium Medal Icons ───────────────────────────────────────
+
+.medalGold {
+  color: #FFD700;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.55));
+  flex-shrink: 0;
+}
+
+.medalSilver {
+  color: #C8C8D4;
+  filter: drop-shadow(0 0 6px rgba(192, 192, 192, 0.4));
+  flex-shrink: 0;
+}
+
+.medalBronze {
+  color: #CD7F32;
+  filter: drop-shadow(0 0 6px rgba(205, 127, 50, 0.45));
+  flex-shrink: 0;
+}
+
+.podiumAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba($white, 0.1);
+
+  @include respond-to("sm") {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+.podiumAvatarFallback {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba($violet, 0.2);
+  border: 1px solid rgba($violet, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-second;
+  font-size: 16px;
+  font-weight: 700;
+  color: $violet;
+
+  @include respond-to("sm") {
+    width: 56px;
+    height: 56px;
+    font-size: 20px;
+  }
+}
+
+.podiumName {
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 600;
+  color: $white;
+  @include truncate;
+  max-width: 80px;
+
+  @include respond-to("sm") {
+    font-size: 13px;
+    max-width: 100px;
+  }
+}
+
+.podiumXp {
+  font-size: 11px;
+  color: rgba($white, 0.5);
+
+  @include respond-to("sm") {
+    font-size: 12px;
+  }
+}
+
+// ─── Player List ──────────────────────────────────────────────
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: $border-radius-primary;
+  @include glass-panel(8px, rgba($white, 0.03), rgba($white, 0.07));
+  transition: background 0.18s ease;
+
+  &:hover {
+    background: rgba($white, 0.06);
+  }
+
+  &.currentUser {
+    background: rgba($violet, 0.1);
+    border-color: rgba($violet, 0.28);
+    @include glow($violet, 0.12);
+  }
+}
+
+.listRank {
+  font-family: $font-second;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba($white, 0.35);
+  min-width: 28px;
+  text-align: center;
+}
+
+.listAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba($white, 0.1);
+  flex-shrink: 0;
+}
+
+.listAvatarFallback {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba($violet, 0.18);
+  border: 1px solid rgba($violet, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-second;
+  font-size: 13px;
+  font-weight: 700;
+  color: $violet;
+  flex-shrink: 0;
+}
+
+.listName {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: $white;
+  @include truncate;
+}
+
+.listXp {
+  font-family: $font-second;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba($white, 0.45);
+  white-space: nowrap;
+}
+
+.listStreak {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-family: $font-second;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba($white, 0.4);
+  white-space: nowrap;
+
+  @include respond-to("sm") {
+    display: flex;
+  }
+}
+
+.listStreakIcon {
+  color: $warning;
+  filter: drop-shadow(0 0 4px rgba(255, 159, 67, 0.5));
+  flex-shrink: 0;
+}
+
+// ─── My Rank Banner ───────────────────────────────────────────
+
+.myRankBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: $border-radius-primary;
+  border: 1px dashed rgba($violet, 0.35);
+  background: rgba($violet, 0.06);
+  color: rgba($white, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+
+  strong {
+    color: $violet;
+    font-weight: 700;
+  }
+}
+
+// ─── Loading / Empty ──────────────────────────────────────────
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonRow {
+  height: 58px;
+  border-radius: $border-radius-primary;
+  background: rgba($white, 0.04);
+  border: 1px solid rgba($white, 0.06);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: rgba($white, 0.35);
+  font-size: 14px;
+}

@@ -21,15 +21,18 @@ const WelcomeSettingsSchema = Yup.object().shape({
   type: Yup.string().required(),
   complexity: Yup.number().min(1).max(5).required(),
   is_interactive: Yup.boolean(),
+  model: Yup.string(),
+  generate_image: Yup.boolean(),
 });
 
 export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
   initialSettings,
-  onSync
+  onSync,
 }) => {
   const t = useTranslations('welcomeSettings');
+
   const formik = useFormik<RiddleSettings>({
-    initialValues: initialSettings,
+    initialValues: { ...initialSettings },
     validationSchema: WelcomeSettingsSchema,
     onSubmit: () => {},
   });
@@ -46,14 +49,14 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
         <div className={styles.field}>
           <Typography variant="details" className={styles.label}>{t('category')}</Typography>
           <div className={styles.optionsGrid}>
-            {Object.values(RiddleType).map((t) => (
+            {Object.values(RiddleType).map((type) => (
               <Button
-                key={t}
-                variant={formik.values.type === t ? 'colored-glass' : 'colored-glass-inactive'}
-                onClick={() => formik.setFieldValue('type', t)}
+                key={type}
+                variant={formik.values.type === type ? 'colored-glass' : 'colored-glass-inactive'}
+                onClick={() => formik.setFieldValue('type', type)}
                 fullWidth
               >
-                {t}
+                {type}
               </Button>
             ))}
           </div>

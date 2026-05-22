@@ -10,6 +10,7 @@ export interface RiddleMetadata {
   generation_attempts: number;
   type: RiddleType;
   style: string;
+  image_url?: string;
 }
 
 export class SaveRiddleDto {

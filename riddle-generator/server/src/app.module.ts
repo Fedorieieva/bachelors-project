@@ -18,6 +18,9 @@ import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
 import { ExperienceModule } from './experience/experience.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { StreakModule } from './streaks/streak.module';
+import { QuestsModule } from './quests/quests.module';
+import { LeaderboardModule } from './leaderboard/leaderboard.module';
 
 @Module({
   imports: [
@@ -36,6 +39,9 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
     CommentsModule,
     ExperienceModule,
     CloudinaryModule,
+    StreakModule,
+    QuestsModule,
+    LeaderboardModule,
   ],
   controllers: [AppController],
   providers: [

@@ -52,6 +52,7 @@ export const FeedList: React.FC<FeedListProps> = ({ type, userId }) => {
           isSolved={riddle.is_solved}
           isPublic={riddle.is_public}
           canAttempt={riddle.can_attempt}
+          imageUrl={riddle.image_url}
         />
       )}
       renderEmpty={() => (

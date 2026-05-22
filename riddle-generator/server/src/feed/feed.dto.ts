@@ -40,6 +40,7 @@ export interface FeedRiddleItem {
   id: string;
   content: string;
   answer: string | null;
+  image_url: string | null;
   complexity: number;
   type: string;
   is_public: boolean;

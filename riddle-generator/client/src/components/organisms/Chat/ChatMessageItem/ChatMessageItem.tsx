@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Message, RiddleSettings } from '@/types/riddle';
@@ -19,6 +20,7 @@ interface ChatMessageItemProps {
   displayContent: string;
   onReveal?: () => void;
   isRevealing?: boolean;
+  imageUrl?: string;
   fullWidth?: boolean;
 }
 
@@ -32,6 +34,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   isRevealing,
   currentSettings,
   displayContent,
+  imageUrl,
   fullWidth = false,
 }) => {
   const t = useTranslations('chatMessageItem');
@@ -97,6 +100,18 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       })}
     >
       <div className={styles.messageContentWrapper}>
+        {isModel && imageUrl && (
+          <div className={styles.imageContainer}>
+            <Image
+              src={imageUrl}
+              alt="Riddle illustration"
+              fill
+              className={styles.image}
+              unoptimized
+            />
+          </div>
+        )}
+
         <RiddleBody
           content={displayContent}
           className={cn({ [styles.riddleStyle]: isMainRiddle })}

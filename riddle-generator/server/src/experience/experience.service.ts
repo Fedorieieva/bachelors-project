@@ -12,7 +12,13 @@ export class ExperienceService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async awardXpForSolving(userId: string, content: string, amount: number) {
+  async awardXpForSolving(userId: string, content: string, amount: number): Promise<number> {
+    const userMeta = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { xp_multiplier: true },
+    });
+    const scaledAmount = Math.round(amount * (userMeta?.xp_multiplier ?? 1.0));
+
     let leveledUp = false;
     let newLevel = 0;
 
@@ -21,18 +27,20 @@ export class ExperienceService {
         data: {
           user_id: userId,
           content_preview: content.substring(0, 100),
-          xp_earned: amount,
+          xp_earned: scaledAmount,
         },
       });
-      const result = await this.updateUserXp(tx, userId, amount, true);
+      const result = await this.updateUserXp(tx, userId, scaledAmount, true);
       leveledUp = result.leveledUp;
       newLevel = result.newLevel;
     });
 
-    void this.notificationsService.notifyXpEarned(userId, amount);
+    void this.notificationsService.notifyXpEarned(userId, scaledAmount);
     if (leveledUp) {
       void this.notificationsService.notifyLevelUp(userId, newLevel);
     }
+
+    return scaledAmount;
   }
 
   async awardXpForActivity(

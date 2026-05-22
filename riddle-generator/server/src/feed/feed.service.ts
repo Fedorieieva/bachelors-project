@@ -42,6 +42,7 @@ export class FeedService {
       id: riddle.id,
       content: riddle.content,
       is_public: riddle.is_public,
+      image_url: riddle.image_url ?? null,
       created_at: riddle.created_at,
       complexity: riddle.complexity,
       type: riddle.type,

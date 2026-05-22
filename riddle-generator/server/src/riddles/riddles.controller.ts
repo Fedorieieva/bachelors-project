@@ -52,10 +52,10 @@ export class RiddlesController {
   @Post('chat/:chatId')
   async handleChat(
     @Param('chatId') chatId: string,
-    @Body() body: { topic: string; model?: string },
+    @Body() body: { topic: string; model?: string; generate_image?: boolean },
     @CurrentUser() user: PrismaModels.User,
   ) {
-    return this.riddlesService.processChatMessage(chatId, body.topic, user.id, body.model);
+    return this.riddlesService.processChatMessage(chatId, body.topic, user.id, body.model, body.generate_image);
   }
 
   @ApiOperation({

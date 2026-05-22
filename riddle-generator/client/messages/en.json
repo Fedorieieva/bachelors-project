@@ -2,6 +2,7 @@
   "sidebar": {
     "newChat": "New Chat",
     "socialNetwork": "Social Network",
+    "leaderboard": "Leaderboard",
     "chatHistory": "Chat History",
     "historyEmpty": "History is empty",
     "settings": "Settings",

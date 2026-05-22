@@ -21,7 +21,16 @@
       "PowerShell(Head-Object *)",
       "PowerShell(npm run *)",
       "PowerShell(Test-Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\"; \\(Get-ChildItem \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\" -ErrorAction SilentlyContinue\\).Count)",
-      "PowerShell(\\(Get-ChildItem \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\" -ErrorAction SilentlyContinue\\) | ForEach-Object { $_.FullName })"
+      "PowerShell(\\(Get-ChildItem \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\" -ErrorAction SilentlyContinue\\) | ForEach-Object { $_.FullName })",
+      "Bash(Find C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\src\\\\riddles\\\\dto *)",
+      "Bash(Find \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\src\\\\riddles\" -type f \\\\\\( -name \"*.interface.ts\" -o -name \"*.types.ts\" -o -name \"*.dto.ts\" \\\\\\))",
+      "Bash(Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\src\" -Recurse -Depth 2 | Where-Object { $_.PSIsContainer -eq $true } | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\src\\\\\", \"src\\\\\"\\) } | Sort-Object)",
+      "Bash(node -e \"const p = require\\('./node_modules/@prisma/client/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node *)",
+      "Bash(node_modules/.bin/prisma generate *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\client\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

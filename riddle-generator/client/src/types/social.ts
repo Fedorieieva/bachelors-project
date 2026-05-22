@@ -26,23 +26,11 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
-export interface Comment {
-  id: string;
-  content: string;
-  user_id: string;
-  riddle_id: string;
-  created_at: string;
-  user: {
-    id: string;
-    name: string | null;
-    avatar_url: string | null;
-  };
-}
-
 export interface FeedRiddle {
   id: string;
   content: string;
   answer: string | null;
+  image_url: string | null;
   complexity: number;
   type: string;
   is_public: boolean;

@@ -79,64 +79,57 @@
   }
 }
 
+
 .gameToggle {
   width: 54px;
   height: 54px;
   border-radius: 16px !important;
-  position: relative; // Для позиціонування закреслення
+  position: relative;
 
-  // Використовуємо твій міксін для ефекту скла
   @include glass-panel(12px, rgba($white, 0.03), rgba($white, 0.1));
 
-  // Анімація рамки, як на кнопках
   @include glass-border-spin(1px, 0.5, -45deg, 2s, false);
 
   .icon {
     width: 28px;
     height: 28px;
-    stroke: rgba($white, 0.3); // Білий, приглушений, коли не активний
+    stroke: rgba($white, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 2; // Іконка під лінією закреслення
+    z-index: 2;
   }
 
-  // --- Створення лінії закреслення (коли не активний) ---
   &::after {
     content: '';
     position: absolute;
     top: 50%;
-    left: 15%; // Трохи відступаємо від країв
+    left: 15%;
     width: 70%;
     height: 2px;
-    background: rgba($white, 0.5); // Біла лінія
+    background: rgba($white, 0.5);
     border-radius: 2px;
-    // Нахиляємо лінію під кутом
     transform: translateY(-50%) rotate(-45deg);
     transition: all 0.3s ease;
-    z-index: 3; // Лінія поверх іконки
+    z-index: 3;
     opacity: 1;
     visibility: visible;
   }
 
-  // --- Стан, коли Game Mode АКТИВНИЙ ---
   &.active {
-    background: rgba($violet, 0.1) !important; // Фіолетовий фон скла
-    border-color: rgba($violet, 0.3) !important; // Фіолетова рамка
+    background: rgba($violet, 0.1) !important;
+    border-color: rgba($violet, 0.3) !important;
 
     .icon {
-      stroke: $violet; // Іконка стає фіолетовою
-      // Додаємо фіолетовий неоновий drop-shadow
+      stroke: $violet;
       filter: drop-shadow(0 0 5px rgba($violet, 0.7));
     }
 
-    // Ховаємо лінію закреслення, коли мод активний
     &::after {
       opacity: 0;
       visibility: hidden;
-      transform: translateY(-50%) rotate(0deg) scaleX(0); // Красива анімація зникнення
+      transform: translateY(-50%) rotate(0deg) scaleX(0);
     }
   }
 
-  // Ховер-ефект
   &:hover:not(.active) {
     background: rgba($white, 0.08) !important;
     .icon {

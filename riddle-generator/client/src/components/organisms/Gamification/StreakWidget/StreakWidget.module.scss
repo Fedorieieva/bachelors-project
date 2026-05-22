@@ -1,0 +1,60 @@
+@use "../../../../styles/abstracts/variables" as *;
+@use "../../../../styles/abstracts/mixins" as *;
+
+.widget {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: $border-radius-quaternary;
+  cursor: default;
+  user-select: none;
+  transition: background 0.2s ease;
+
+  @include glass-panel(10px, rgba($white, 0.04), rgba($white, 0.08));
+
+  &.active {
+    background: rgba($pink, 0.08);
+    border-color: rgba($pink, 0.25);
+    @include glow($pink, 0.15);
+  }
+
+  &:hover {
+    background: rgba($white, 0.08);
+  }
+}
+
+.flame {
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    stroke: $error;
+  }
+}
+
+.count {
+  font-family: $font-second;
+  font-size: 13px;
+  font-weight: 700;
+  color: $white;
+  min-width: 12px;
+  text-align: center;
+  align-self: anchor-center;
+}
+
+.multiplier {
+  font-family: $font-second;
+  font-size: 10px;
+  font-weight: 700;
+  color: $violet;
+  padding: 2px 6px;
+  background: rgba($violet, 0.18);
+  border-radius: 100px;
+  border: 1px solid rgba($violet, 0.3);
+  letter-spacing: 0.03em;
+}

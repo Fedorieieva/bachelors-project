@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Typography } from '@/components/atoms/Typography/Typography';
 import { Button } from '@/components/atoms/Button/Button';
@@ -51,6 +52,7 @@ interface RiddleCardProps {
   isSolved?: boolean;
   isPublic?: boolean;
   canAttempt?: boolean;
+  imageUrl?: string | null;
   className?: string;
 }
 
@@ -75,6 +77,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   isSolved: initialIsSolved = false,
   isPublic: initialIsPublic = false,
   canAttempt: initialCanAttempt = true,
+  imageUrl,
   className,
 }) => {
   const t = useTranslations('riddleCard');
@@ -311,6 +314,18 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
             )}
           </div>
         </div>
+
+        {imageUrl && (
+          <div className={styles.riddleImageFrame}>
+            <Image
+              src={imageUrl}
+              alt="Riddle illustration"
+              fill
+              className={styles.riddleImage}
+              unoptimized
+            />
+          </div>
+        )}
 
         <RiddleBody content={content} className={styles.riddleBody} />
 

@@ -5,12 +5,15 @@ export enum RiddleType {
   MATH = 'MATH',
 }
 
+export const IMAGE_GENERATION_MODEL = 'pollinations-image' as const;
+
 export interface RiddleSettings {
   type: RiddleType;
   complexity: number;
   language?: string;
   is_interactive?: boolean;
   model?: string;
+  generate_image?: boolean;
 }
 
 export const GEMINI_MODELS = [
@@ -20,6 +23,7 @@ export const GEMINI_MODELS = [
   { label: 'Gemini 3.5 Flash', value: 'gemini-3.5-flash' },
   { label: 'Gemini 3 Flash Preview', value: 'gemini-3-flash-preview' },
   { label: 'Gemini Flash (latest)', value: 'gemini-flash-latest' },
+  { label: 'Pollinations AI (Image Riddle)', value: IMAGE_GENERATION_MODEL },
 ] as const;
 
 export interface RiddleMetadata {
@@ -41,6 +45,7 @@ export interface ChatResponse {
   data: {
     content: string;
     answer?: string;
+    image_url?: string;
     prompt_context?: RiddleMetadata;
     xp_earned?: number;
     model_used?: string;

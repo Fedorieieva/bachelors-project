@@ -60,6 +60,14 @@ export class RiddleSettingsDto {
   @IsString()
   @Matches(/^gemini-[\w.-]+$/, { message: 'Invalid model name format' })
   model?: string;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'When true, generates an illustrative image for the riddle via Pollinations.ai',
+  })
+  @IsOptional()
+  @IsBoolean()
+  generate_image?: boolean;
 }
 
 export class RiddleDto {

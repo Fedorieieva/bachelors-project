@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useRiddleChat } from '@/hooks/riddles/useRiddleChat';
 import { WelcomeSettings } from '@/components/organisms/Chat/WelcomeSettings/WelcomeSettings';
-import { RiddleType, RiddleSettings, Message } from '@/types/riddle';
+import { IMAGE_GENERATION_MODEL, RiddleType, RiddleSettings, Message } from '@/types/riddle';
 import { ChatMessageItem } from '@/components/organisms/Chat/ChatMessageItem/ChatMessageItem';
 import { ChatInput } from '@/components/organisms/Chat/ChatInput/ChatInput';
 import { Button } from '@/components/atoms/Button/Button';
@@ -23,7 +23,11 @@ function getInitialSettings(): RiddleSettings {
 
   if (globalThis.window !== undefined) {
     const stored = localStorage.getItem(MODEL_STORAGE_KEY);
-    const isLegacy = stored && (stored.startsWith('gemini-1.') || stored.startsWith('gemini-2.0'));
+    const isLegacy = stored && (
+      stored.startsWith('gemini-1.') ||
+      stored.startsWith('gemini-2.0') ||
+      stored === 'gemini-2.5-flash-image'
+    );
     if (stored && !isLegacy) {
       savedModel = stored;
     } else if (stored) {
@@ -36,6 +40,7 @@ function getInitialSettings(): RiddleSettings {
     complexity: 3,
     is_interactive: true,
     model: savedModel,
+    generate_image: savedModel === IMAGE_GENERATION_MODEL,
   };
 }
 
@@ -56,7 +61,11 @@ export default function ChatPage() {
     isFetchingOlder,
     hasOlderMessages,
   } = useRiddleChat(chatId, (fallbackModel) => {
-    setCurrentSettings(prev => ({ ...prev, model: fallbackModel }));
+    setCurrentSettings(prev => ({
+      ...prev,
+      model: fallbackModel,
+      generate_image: fallbackModel === IMAGE_GENERATION_MODEL,
+    }));
   });
 
   const {
@@ -143,13 +152,26 @@ export default function ChatPage() {
   const getDisplayContent = (msg: Message): string => {
     try {
       if (msg.role === 'model') {
-        const parsed = JSON.parse(msg.content);
-        return parsed.content || parsed.message || msg.content;
+        const parsed = JSON.parse(msg.content) as Record<string, unknown>;
+        return (typeof parsed.content === 'string' ? parsed.content : null)
+          ?? (typeof parsed.message === 'string' ? parsed.message : null)
+          ?? msg.content;
       }
     } catch {
       return msg.content;
     }
     return msg.content;
+  };
+
+  const getDisplayImageUrl = (msg: Message): string | undefined => {
+    if (msg.role !== 'model') return undefined;
+    try {
+      const parsed = JSON.parse(msg.content) as Record<string, unknown>;
+      if (typeof parsed.image_url === 'string') return parsed.image_url;
+    } catch {
+      return undefined;
+    }
+    return undefined;
   };
 
   return (
@@ -207,6 +229,7 @@ export default function ChatPage() {
                     isRevealing={isRevealing}
                     currentSettings={currentSettings}
                     displayContent={getDisplayContent(msg)}
+                    imageUrl={getDisplayImageUrl(msg)}
                   />
                 ))}
               </LayoutGroup>
@@ -235,7 +258,11 @@ export default function ChatPage() {
           isSending={isSending}
           selectedModel={currentSettings.model}
           onModelChange={(model) =>
-            setCurrentSettings(prev => ({ ...prev, model }))
+            setCurrentSettings(prev => ({
+              ...prev,
+              model,
+              generate_image: model === IMAGE_GENERATION_MODEL,
+            }))
           }
         />
       </div>

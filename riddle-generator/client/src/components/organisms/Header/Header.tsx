@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { useUserStats } from '@/hooks/users/useUser';
 import { useLogout } from '@/hooks/users/useAuth';
 import { useTranslations } from 'next-intl';
+import { StreakWidget } from '@/components/organisms/Gamification/StreakWidget/StreakWidget';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -50,6 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, isSidebarOpen = fal
       </Button>
 
       <div className={styles.userStatus}>
+        {isAuthenticated && authUser && <StreakWidget />}
         {isAuthenticated && authUser && <NotificationBell />}
         {!hideAvatar && (
           <>

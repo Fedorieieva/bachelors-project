@@ -89,13 +89,22 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
         globalThis.window.history.replaceState(null, '', `/chat/${activeId}`);
       }
 
-      const response = await RiddleService.sendChatMessage(activeId, topic, settings.model);
+      const response = await RiddleService.sendChatMessage(activeId, topic, {
+        model: settings.model,
+        generate_image: settings.generate_image,
+      });
       return { response, activeId };
     },
     onSuccess: ({ response, activeId }, { settings }) => {
       queryClient.invalidateQueries({ queryKey: ['chat-history', activeId] });
       queryClient.invalidateQueries({ queryKey: ['user-stats', 'me'] });
       queryClient.invalidateQueries({ queryKey: ['user-stats'] });
+      if (response.data.xp_earned) {
+        queryClient.invalidateQueries({ queryKey: ['dailyQuests'] });
+        queryClient.invalidateQueries({ queryKey: ['userStreak'] });
+        queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+        queryClient.invalidateQueries({ queryKey: ['myRank'] });
+      }
       if (!chatId) router.replace(`/chat/${activeId}`, { scroll: false });
 
       if (response.data.fallback_occurred && !settings.model) {

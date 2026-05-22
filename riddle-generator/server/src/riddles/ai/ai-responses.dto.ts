@@ -26,3 +26,8 @@ export interface AiHintResponse {
   content: string;
   is_solved: boolean;
 }
+
+export interface AiImageRiddleResult {
+  imageBase64: string;
+  imageMimeType: string;
+}

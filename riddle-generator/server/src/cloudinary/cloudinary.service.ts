@@ -49,11 +49,26 @@ export class CloudinaryService {
     }
   }
 
+  async uploadBase64Image(
+    base64Data: string,
+    mimeType: string,
+    folder: string = 'riddles',
+  ): Promise<string> {
+    try {
+      const dataUri = `data:${mimeType};base64,${base64Data}`;
+      const result = await cloudinary.uploader.upload(dataUri, { folder });
+      return result.secure_url;
+    } catch (error) {
+      this.logger.error('Failed to upload generated image to Cloudinary', error);
+      throw new BadRequestException('Failed to upload generated image to Cloudinary');
+    }
+  }
+
   extractPublicId(url: string): string {
     const parts = url.split('/');
     const fileNameWithExtension = parts.pop() || '';
     const publicIdWithoutExtension = fileNameWithExtension.split('.')[0];
-    const folder = parts.slice(parts.indexOf('upload') + 2).join('/'); // Отримуємо шлях після 'upload/v12345/'
+    const folder = parts.slice(parts.indexOf('upload') + 2).join('/');
 
     return folder ? `${folder}/${publicIdWithoutExtension}` : publicIdWithoutExtension;
   }

@@ -19,11 +19,12 @@ export const RiddleService = {
   async sendChatMessage(
     chatId: string,
     topic: string,
-    model?: string,
+    settings?: { model?: string; generate_image?: boolean },
   ): Promise<ChatResponse> {
     const { data } = await apiClient.post<ChatResponse>(`/riddles/chat/${chatId}`, {
       topic,
-      ...(model && { model }),
+      ...(settings?.model && !settings.generate_image && { model: settings.model }),
+      ...(settings?.generate_image && { generate_image: true }),
     });
     return data;
   },

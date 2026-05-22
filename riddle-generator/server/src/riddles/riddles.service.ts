@@ -11,14 +11,17 @@ import {
 import { AiService } from './ai/ai.service';
 import { PromptsService } from './prompts/prompts.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Content } from '@google/generative-ai';
-import { RiddleType, NotificationType } from '@prisma/client';
+import { QuestType, RiddleType, NotificationType } from '@prisma/client';
 import { AiRiddleResponse, EvaluationResult, RiddleIntentAnalysis } from './ai/ai-responses.dto';
 import { RiddleMetadata, ToggleSaveResponse } from './dto/riddle-persistence.dto';
 import { ChatResponseDto, ChatResponseType } from './dto/chat-response.dto';
 import { ExperienceService } from '../experience/experience.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { RiddleDto, RiddleSettingsDto } from './dto/riddle-settings.dto';
+import { StreakService } from '../streaks/streak.service';
+import { QuestsService } from '../quests/quests.service';
 
 @Injectable()
 export class RiddlesService {
@@ -32,15 +35,17 @@ export class RiddlesService {
     private readonly aiService: AiService,
     private readonly promptsService: PromptsService,
     private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService,
     private readonly experienceService: ExperienceService,
     private readonly notificationsService: NotificationsService,
-  ) {
-  }
+    private readonly streakService: StreakService,
+    private readonly questsService: QuestsService,
+  ) {}
 
   async generateRiddle(
     dto: RiddleDto,
     aiAnalysis?: RiddleIntentAnalysis,
-  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; model_used: string; is_error?: boolean }> {
+  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; model_used: string; is_error?: boolean; image_url?: string }> {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
 
@@ -48,15 +53,17 @@ export class RiddlesService {
     const style = aiAnalysis?.style || 'neutral';
     const topic = aiAnalysis?.topic || dto.topic;
     const { complexity, model: preferredModel } = dto.settings;
+    const textModelToUse = preferredModel === 'gemini-2.5-flash-image' ? 'gemini-2.5-flash-lite' : preferredModel;
     const modelUsed = this.aiService.getModelName(preferredModel);
 
     const promptName = `${riddleType.toLowerCase()}_generator`;
 
     const languageInstruction =
       'the language of the user\'s input topic. ' +
-      'CRITICAL LANGUAGE RULE: Analyze the topic and generate the riddle and all responses ' +
-      'strictly in the same language as the user\'s input. ' +
-      'If the input is ambiguous or the language cannot be determined, you MUST default to English.';
+      'CRITICAL LANGUAGE RULE: Analyze the topic language and generate the final "content" and "answer" field values ' +
+      'strictly in that same language. ' +
+      'However, your internal reasoning process, JSON structure, and all parsing guidelines must strictly follow English language conventions. ' +
+      'If the input language is ambiguous or cannot be determined, you MUST default to English for both output and internal reasoning.';
 
     let mainPrompt = await this.promptsService.getRenderedPrompt(promptName, {
       language: languageInstruction,
@@ -84,10 +91,16 @@ export class RiddlesService {
 
     You MUST provide your thought process in the "reasoning" field of the JSON.`;
 
+    if (dto.settings.generate_image) {
+      mainPrompt += `\n\nVISUAL SYNERGY INSTRUCTION:
+        The generated riddle text content should implicitly guide the user to inspect the accompanying visual illustration closely.
+        Prompt them to seek out a visual anomaly, clever logical contradiction, paradox, or hidden clue embedded directly within the scenery.`;
+    }
+
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
       attempts++;
 
-      const aiResult = await this.aiService.askGemini<AiRiddleResponse>(mainPrompt, 3, preferredModel);
+      const aiResult = await this.aiService.askGemini<AiRiddleResponse>(mainPrompt, 3, textModelToUse);
       lastResult = aiResult;
 
       if (aiResult.content === 'ERROR_OFF_TOPIC') {
@@ -118,7 +131,14 @@ export class RiddlesService {
       }
 
       if (evaluation.is_good) {
-        return this.formatResponse(aiResult, dto, promptName, attempts, riddleType, style, modelUsed);
+        const rebusVisualPrompt = dto.settings.generate_image
+          ? await this.aiService.generateVisualRebusPrompt(aiResult.answer, style)
+          : aiResult.answer;
+        return this.maybeGenerateImage(
+          this.formatResponse(aiResult, dto, promptName, attempts, riddleType, style, modelUsed),
+          rebusVisualPrompt,
+          dto.settings.generate_image,
+        );
       }
 
       this.logger.warn(`Спроба #${attempts} відхилена критиком: ${evaluation.reason}`);
@@ -128,7 +148,30 @@ export class RiddlesService {
       throw new InternalServerErrorException('Не вдалося згенерувати контент. Спробуйте пізніше.');
     }
 
-    return this.formatResponse(lastResult, dto, promptName, attempts, riddleType, style, modelUsed);
+    const rebusVisualPrompt = dto.settings.generate_image
+      ? await this.aiService.generateVisualRebusPrompt(lastResult.answer, style)
+      : lastResult.answer;
+    return this.maybeGenerateImage(
+      this.formatResponse(lastResult, dto, promptName, attempts, riddleType, style, modelUsed),
+      rebusVisualPrompt,
+      dto.settings.generate_image,
+    );
+  }
+
+  private async maybeGenerateImage(
+    result: { content: string; answer: string; prompt_context: RiddleMetadata; model_used: string },
+    topic: string,
+    generateImage: boolean | undefined,
+  ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; model_used: string; image_url?: string }> {
+    if (!generateImage) return result;
+    try {
+      const { imageBase64, imageMimeType } = await this.aiService.generateImageRiddle(topic);
+      const image_url = await this.cloudinaryService.uploadBase64Image(imageBase64, imageMimeType);
+      return { ...result, image_url };
+    } catch (err) {
+      this.logger.warn('[RiddlesService] Image generation skipped due to error', err);
+      return result;
+    }
   }
 
   private formatResponse(
@@ -294,7 +337,10 @@ export class RiddlesService {
     userMessage: string,
     authorId: string,
     model?: string,
+    generateImage?: boolean,
   ): Promise<ChatResponseDto> {
+    const textModel = model === 'gemini-2.5-flash-image' ? 'gemini-2.5-flash-lite' : model;
+
     const user = await this.prisma.user.findUnique({ where: { id: authorId } });
     await this.validateUserAccess(user);
 
@@ -320,7 +366,7 @@ export class RiddlesService {
         type: ChatResponseType.REFINE_RIDDLE,
         data: {
           content: 'error.offTopicRestriction',
-          model_used: this.aiService.getModelName(model),
+          model_used: this.aiService.getModelName(textModel),
         },
       };
     }
@@ -344,10 +390,10 @@ export class RiddlesService {
     }
 
     if (analysis.intent === 'NEW') {
-      return this.handleNewRiddleIntent(chatId, userMessage, chat, analysis, model);
+      return this.handleNewRiddleIntent(chatId, userMessage, chat, analysis, authorId, textModel, generateImage);
     }
 
-    return this.handleContextualResponse(chatId, userMessage, authorId, chat, model);
+    return this.handleContextualResponse(chatId, userMessage, authorId, chat, textModel);
   }
 
   private async validateUserAccess(user: { id: string; banned_until: Date | null } | null): Promise<void> {
@@ -388,7 +434,9 @@ export class RiddlesService {
     userMessage: string,
     chat: { complexity: number; type: RiddleType; language: string; is_interactive: boolean },
     analysis: RiddleIntentAnalysis,
+    authorId: string,
     model?: string,
+    generateImage?: boolean,
   ): Promise<ChatResponseDto> {
     const effectiveSettings: RiddleSettingsDto = {
       complexity: chat.complexity,
@@ -396,6 +444,7 @@ export class RiddlesService {
       language: chat.language,
       is_interactive: chat.is_interactive,
       model,
+      generate_image: generateImage,
     };
 
     const newRiddle = await this.generateRiddle(
@@ -423,12 +472,17 @@ export class RiddlesService {
       data: { current_riddle_answer: chat.is_interactive ? newRiddle.answer : null },
     });
 
+    if (newRiddle.image_url) {
+      void this.questsService.incrementProgress(authorId, QuestType.GENERATE_IMAGE_RIDDLE);
+    }
+
     const fallback_occurred = (!model && this.aiService.consumeFallbackFlag()) || undefined;
     return {
       type: ChatResponseType.NEW_RIDDLE,
       data: {
         content: newRiddle.content,
         answer: effectiveSettings.is_interactive ? undefined : newRiddle.answer,
+        image_url: newRiddle.image_url,
         prompt_context: newRiddle.prompt_context,
         model_used: newRiddle.model_used,
         fallback_occurred,
@@ -440,7 +494,7 @@ export class RiddlesService {
     chatId: string,
     userMessage: string,
     authorId: string,
-    chat: { is_interactive: boolean; current_riddle_answer: string | null; complexity: number | null },
+    chat: { is_interactive: boolean; current_riddle_answer: string | null; complexity: number | null; type: RiddleType },
     model?: string,
   ): Promise<ChatResponseDto> {
     const modelUsed = this.aiService.getModelName(model);
@@ -457,7 +511,7 @@ export class RiddlesService {
     chatId: string,
     userMessage: string,
     authorId: string,
-    chat: { current_riddle_answer: string | null; complexity: number | null },
+    chat: { current_riddle_answer: string | null; complexity: number | null; type: RiddleType },
     model: string | undefined,
     modelUsed: string,
   ): Promise<ChatResponseDto> {
@@ -481,9 +535,23 @@ export class RiddlesService {
 
     let xpEarned = 0;
     if (hintObj.is_solved) {
-      xpEarned = this.BASE_XP_PER_COMPLEXITY * (chat.complexity || 1);
+      const baseXp = this.BASE_XP_PER_COMPLEXITY * (chat.complexity || 1);
       const previewText = history[0]?.parts[0]?.text || 'Загадка з чату';
-      await this.experienceService.awardXpForSolving(authorId, previewText, xpEarned);
+      xpEarned = await this.experienceService.awardXpForSolving(authorId, previewText, baseXp);
+
+      const { streakIncremented } = await this.streakService.updateStreak(authorId);
+
+      await this.questsService.incrementProgress(authorId, QuestType.SOLVE_RIDDLES);
+      await this.questsService.incrementProgress(authorId, QuestType.EARN_XP, xpEarned);
+      if (chat.type === RiddleType.MATH) {
+        await this.questsService.incrementProgress(authorId, QuestType.SOLVE_MATH);
+      } else if (chat.type === RiddleType.LOGIC) {
+        await this.questsService.incrementProgress(authorId, QuestType.SOLVE_LOGIC);
+      }
+      if (streakIncremented) {
+        await this.questsService.incrementProgress(authorId, QuestType.MAINTAIN_STREAK);
+      }
+
       await this.prisma.chat.update({
         where: { id: chatId },
         data: { current_riddle_answer: null },
@@ -518,7 +586,7 @@ export class RiddlesService {
     return {
       type: ChatResponseType.REFINE_RIDDLE,
       data: {
-        content: (aiUpdate as any).content,
+        content: aiUpdate.content,
         model_used: modelUsed,
         fallback_occurred,
       },
@@ -561,19 +629,32 @@ export class RiddlesService {
     );
 
     if (result.is_solved) {
-      await this.experienceService.awardXpForSolving(userId, riddle.content, 20);
+      const actualXp = await this.experienceService.awardXpForSolving(userId, riddle.content, 20);
       if (userId !== riddle.author_id) {
         const solver = await this.prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
         if (solver) {
           await this.notificationsService.notifyRiddleSolved(riddle.author_id, userId, solver.name ?? 'Someone', riddle.content);
         }
       }
+
+      const { streakIncremented } = await this.streakService.updateStreak(userId);
+      await this.questsService.incrementProgress(userId, QuestType.SOLVE_RIDDLES);
+      await this.questsService.incrementProgress(userId, QuestType.EARN_XP, actualXp);
+      if (riddle.type === RiddleType.MATH) {
+        await this.questsService.incrementProgress(userId, QuestType.SOLVE_MATH);
+      } else if (riddle.type === RiddleType.LOGIC) {
+        await this.questsService.incrementProgress(userId, QuestType.SOLVE_LOGIC);
+      }
+      if (streakIncremented) {
+        await this.questsService.incrementProgress(userId, QuestType.MAINTAIN_STREAK);
+      }
+
       await this.prisma.riddleAttempt.upsert({
         where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
         update: { attempts: -1, is_blocked: false, last_try: now },
         create: { user_id: userId, riddle_id: riddleId, attempts: -1, last_try: now },
       });
-      return { success: true, message: 'Геніально! +20 XP', answer: riddle.answer, xp_earned: 20 };
+      return { success: true, message: `Геніально! +${actualXp} XP`, answer: riddle.answer, xp_earned: actualXp };
     } else {
       const newAttempts = (attempt?.attempts || 0) + 1;
       const isBlocked = newAttempts >= 3;
@@ -804,10 +885,12 @@ export class RiddlesService {
 
     let content = message.content;
     let answer = '';
+    let image_url: string | undefined;
     try {
-      const parsed = JSON.parse(message.content);
-      content = parsed.content || message.content;
-      answer = parsed.answer || '';
+      const parsed = JSON.parse(message.content) as Record<string, unknown>;
+      content = typeof parsed.content === 'string' ? parsed.content : message.content;
+      answer = typeof parsed.answer === 'string' ? parsed.answer : '';
+      image_url = typeof parsed.image_url === 'string' ? parsed.image_url : undefined;
     } catch {}
 
     const riddle = await this.prisma.riddles.create({
@@ -818,6 +901,7 @@ export class RiddlesService {
         complexity: message.chat.complexity,
         type: message.chat.type,
         is_public: false,
+        image_url,
         source_message: {
           connect: { id: messageId },
         },
@@ -894,6 +978,15 @@ export class RiddlesService {
 
     if (riddle.author_id !== userId) {
       throw new ForbiddenException('Ви можете видаляти лише власні загадки');
+    }
+
+    if (riddle.image_url) {
+      try {
+        const publicId = this.cloudinaryService.extractPublicId(riddle.image_url);
+        await this.cloudinaryService.deleteImage(publicId);
+      } catch (err) {
+        this.logger.warn(`[RiddlesService] Failed to delete Cloudinary image for riddle ${id}`, err);
+      }
     }
 
     return this.prisma.riddles.delete({

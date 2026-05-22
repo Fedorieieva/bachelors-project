@@ -11,6 +11,7 @@ export interface ChatResponseDto {
   data: {
     content?: string;
     answer?: string;
+    image_url?: string;
     prompt_context?: RiddleMetadata;
     xp_earned?: number;
     model_used?: string;

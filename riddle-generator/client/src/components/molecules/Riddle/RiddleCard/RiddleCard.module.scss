@@ -39,6 +39,23 @@
   }
 }
 
+.riddleImageFrame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid rgba($violet, 0.25);
+  background: rgba($violet, 0.04);
+  box-shadow: 0 4px 24px rgba($violet, 0.12), inset 0 0 40px rgba($violet, 0.04);
+}
+
+.riddleImage {
+  object-fit: cover;
+  border-radius: 16px;
+}
+
 .riddleBody {
   margin-bottom: 15px;
 }
