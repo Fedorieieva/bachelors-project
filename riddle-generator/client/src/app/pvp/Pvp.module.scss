@@ -1,0 +1,796 @@
+@use "../../styles/abstracts/variables" as *;
+@use "../../styles/abstracts/mixins" as *;
+
+// ─── Page Layout ──────────────────────────────────────────────
+
+.page {
+  min-height: 100vh;
+  padding: 24px 16px 48px;
+
+  @include respond-to("md") {
+    padding: 40px 32px 64px;
+  }
+}
+
+.pageTitle {
+  font-family: $font-second;
+  font-size: 22px;
+  font-weight: 700;
+  color: $white;
+  margin: 0 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  @include respond-to("md") {
+    font-size: 28px;
+    margin-bottom: 32px;
+  }
+}
+
+.titleIcon {
+  color: $violet;
+  filter: drop-shadow(0 0 6px rgba(124, 124, 255, 0.5));
+}
+
+.contentGrid {
+  max-width: 760px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: $border-radius-primary;
+  @include glass-panel(8px, rgba($white, 0.03), rgba($white, 0.07));
+  width: fit-content;
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 8px 16px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  color: rgba($white, 0.45);
+  font-family: $font-second;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s ease;
+
+  &:hover:not(.tabActive) {
+    background: rgba($white, 0.06);
+    color: rgba($white, 0.7);
+  }
+
+  &.tabActive {
+    background: $gradient-primary;
+    color: $white;
+    @include shadow-violet-glow-soft;
+  }
+}
+
+// ─── Open Rooms ───────────────────────────────────────────────
+
+.pendingList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.sectionTitle {
+  font-family: $font-second;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba($white, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.roomCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: $border-radius-primary;
+  @include glass-panel(8px, rgba($white, 0.03), rgba($white, 0.07));
+  gap: 12px;
+
+  &:hover { background: rgba($white, 0.05); }
+}
+
+.roomCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.roomCreatorName {
+  font-family: $font-second;
+  font-size: 13px;
+  font-weight: 600;
+  color: $white;
+  margin: 0;
+}
+
+.roomCreatorLevel {
+  font-size: 11px;
+  color: rgba($white, 0.4);
+  margin: 0;
+}
+
+// ─── Player Avatars ───────────────────────────────────────────
+
+.playerAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.playerAvatarFallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba($violet, 0.2);
+  border: 1px solid rgba($violet, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-second;
+  font-size: 13px;
+  font-weight: 700;
+  color: $violet;
+  flex-shrink: 0;
+}
+
+// ─── Active Match Panel ────────────────────────────────────────
+
+.matchPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  border-radius: $border-radius-secondary;
+  @include glass-panel(12px, rgba($white, 0.04), rgba($violet, 0.15));
+}
+
+.matchPlayers {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.matchPlayer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.matchPlayerName {
+  font-family: $font-second;
+  font-size: 12px;
+  font-weight: 600;
+  color: $white;
+  text-align: center;
+  @include truncate;
+  max-width: 80px;
+}
+
+.vsLabel {
+  font-family: $font-second;
+  font-size: 16px;
+  font-weight: 800;
+  color: $violet;
+  filter: drop-shadow(0 0 6px rgba(124, 124, 255, 0.5));
+  flex-shrink: 0;
+}
+
+.waitingLabel {
+  font-size: 12px;
+  color: rgba($white, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// ─── Riddle Box ───────────────────────────────────────────────
+
+.riddleBox {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: $border-radius-primary;
+  background: rgba($white, 0.03);
+  border: 1px solid rgba($white, 0.08);
+}
+
+.riddleImage {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 12px;
+  object-fit: cover;
+  margin: 0 auto;
+}
+
+.riddleContent {
+  font-size: 14px;
+  color: rgba($white, 0.85);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.guessRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.guessInput {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 14px;
+  border-radius: $border-radius-primary;
+  border: 1px solid rgba($white, 0.12);
+  background: rgba($white, 0.05);
+  color: $white;
+  font-size: 13px;
+  font-family: $font-main;
+  outline: none;
+  transition: border-color 0.2s ease;
+
+  &::placeholder { color: rgba($white, 0.3); }
+  &:focus { border-color: rgba($violet, 0.5); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ─── Match Result Banner ──────────────────────────────────────
+
+.resultBanner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: $border-radius-primary;
+  flex-wrap: wrap;
+
+  &.resultWin {
+    background: rgba($success, 0.1);
+    border: 1px solid rgba($success, 0.3);
+    color: $success;
+  }
+
+  &.resultLoss {
+    background: rgba($error, 0.08);
+    border: 1px solid rgba($error, 0.25);
+    color: $error;
+  }
+}
+
+.resultTitle {
+  font-family: $font-second;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.resultXp {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 2px 0 0;
+  color: $success;
+}
+
+.resultSub {
+  font-size: 12px;
+  margin: 2px 0 0;
+  opacity: 0.7;
+}
+
+// ─── Waiting Panel ────────────────────────────────────────────
+
+.waitingPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 24px;
+  text-align: center;
+  color: rgba($white, 0.55);
+  font-size: 14px;
+}
+
+// ─── Community Challenge ──────────────────────────────────────
+
+.challengeCard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: $border-radius-secondary;
+  @include glass-panel(12px, rgba($white, 0.04), rgba($violet, 0.12));
+}
+
+.challengeHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.challengeTitle {
+  font-family: $font-second;
+  font-size: 16px;
+  font-weight: 700;
+  color: $white;
+  margin: 0 0 4px;
+}
+
+.challengeDesc {
+  font-size: 13px;
+  color: rgba($white, 0.55);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.xpBadge {
+  display: inline-flex;
+  align-items: center;
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 700;
+  color: $violet;
+  background: rgba($violet, 0.15);
+  border: 1px solid rgba($violet, 0.3);
+  border-radius: 100px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.challengeMeta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: rgba($white, 0.4);
+}
+
+.solvedBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: $border-radius-primary;
+  background: rgba($success, 0.1);
+  border: 1px solid rgba($success, 0.3);
+  color: $success;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+// ─── Match History ─────────────────────────────────────────────
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.historyRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: $border-radius-primary;
+  @include glass-panel(8px, rgba($white, 0.03), rgba($white, 0.07));
+
+  &.historyWin {
+    border-color: rgba($success, 0.2);
+    background: rgba($success, 0.05);
+  }
+
+  &.historyLoss {
+    border-color: rgba($error, 0.15);
+    background: rgba($error, 0.04);
+  }
+}
+
+.historyBadge {
+  font-family: $font-second;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 100px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+
+  &.badgeWin { background: rgba($success, 0.15); color: $success; border: 1px solid rgba($success, 0.3); }
+  &.badgeLoss { background: rgba($error, 0.12); color: $error; border: 1px solid rgba($error, 0.25); }
+  &.badgeCancelled { background: rgba($white, 0.06); color: rgba($white, 0.4); border: 1px solid rgba($white, 0.1); }
+}
+
+.historyOpponent {
+  flex: 1;
+  min-width: 0;
+}
+
+.opponentLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: $white;
+  font-size: 13px;
+  font-weight: 500;
+
+  &:hover { color: $violet; }
+}
+
+.opponentUnknown {
+  font-size: 13px;
+  color: rgba($white, 0.35);
+}
+
+.historyDate {
+  font-size: 11px;
+  color: rgba($white, 0.3);
+  white-space: nowrap;
+}
+
+// ─── Skeleton / Empty ─────────────────────────────────────────
+
+.challengeSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border-radius: $border-radius-secondary;
+  @include glass-panel(12px, rgba($white, 0.03), rgba($white, 0.06));
+}
+
+.skeletonLine {
+  height: 14px;
+  border-radius: 8px;
+  background: rgba($white, 0.06);
+  animation: pulse 1.6s ease-in-out infinite;
+
+  &:first-child { width: 60%; }
+  &:nth-child(2) { width: 90%; }
+  &:last-child { width: 40%; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  color: rgba($white, 0.35);
+  font-size: 14px;
+}
+
+.emptyIcon {
+  color: rgba($white, 0.2);
+}
+
+.emptyMsg {
+  font-size: 13px;
+  color: rgba($white, 0.35);
+  margin: 0;
+}
+
+.errorMsg {
+  font-size: 13px;
+  color: $error;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: rgba($error, 0.08);
+  border: 1px solid rgba($error, 0.2);
+  border-radius: $border-radius-primary;
+}
+
+// ─── Animations ───────────────────────────────────────────────
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// ─── Live Countdown ───────────────────────────────────────────
+
+.countdown {
+  color: $violet;
+  font-weight: 700;
+  filter: drop-shadow(0 0 4px rgba(124, 124, 255, 0.35));
+}
+
+.countdownUrgent {
+  color: $error;
+  filter: drop-shadow(0 0 4px rgba(255, 80, 80, 0.4));
+}
+
+// ─── Speedrunner Stack ────────────────────────────────────────
+
+.speedrunnerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.speedrunnerLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba($white, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.speedrunnerStack {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+
+.speedrunnerItem {
+  display: block;
+  border-radius: 50%;
+  margin-left: -7px;
+  position: relative;
+  transition: transform 0.15s ease, z-index 0s;
+  z-index: 1;
+  text-decoration: none;
+
+  &:first-child { margin-left: 0; }
+
+  &:hover {
+    transform: translateY(-4px);
+    z-index: 20;
+  }
+}
+
+.speedrunnerImg {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba($violet, 0.35);
+  object-fit: cover;
+  display: block;
+}
+
+.speedrunnerFallback {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba($violet, 0.2);
+  border: 2px solid rgba($violet, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $font-second;
+  font-size: 10px;
+  font-weight: 700;
+  color: $violet;
+}
+
+.speedrunnerMore {
+  margin-left: 8px;
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba($white, 0.4);
+  background: rgba($white, 0.06);
+  border: 1px solid rgba($white, 0.1);
+  border-radius: 100px;
+  padding: 2px 8px;
+}
+
+.noSolversYet {
+  font-size: 12px;
+  color: rgba($white, 0.35);
+  font-style: italic;
+}
+
+// ─── Battle Logs Sub-tabs ─────────────────────────────────────
+
+.subTabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: $border-radius-primary;
+  @include glass-panel(8px, rgba($white, 0.02), rgba($white, 0.05));
+  width: fit-content;
+  margin-bottom: 16px;
+}
+
+.subTab {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: rgba($white, 0.4);
+  font-family: $font-second;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(.subTabActive) {
+    background: rgba($white, 0.05);
+    color: rgba($white, 0.65);
+  }
+
+  &.subTabActive {
+    background: rgba($violet, 0.18);
+    color: $violet;
+    border: 1px solid rgba($violet, 0.28);
+  }
+}
+
+// ─── Duels History Meta Column ─────────────────────────────────
+
+.historyMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.historyXp {
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 700;
+  color: $success;
+}
+
+// ─── Puzzle History Row ────────────────────────────────────────
+
+.puzzleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: $border-radius-primary;
+  @include glass-panel(8px, rgba($white, 0.03), rgba($violet, 0.07));
+  border-color: rgba($violet, 0.12);
+}
+
+.puzzleRank {
+  font-family: $font-second;
+  font-size: 14px;
+  font-weight: 800;
+  color: $violet;
+  filter: drop-shadow(0 0 5px rgba(124, 124, 255, 0.45));
+  min-width: 36px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.puzzleInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.puzzleTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: $white;
+  @include truncate;
+}
+
+.puzzleDate {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba($white, 0.35);
+}
+
+.puzzleXp {
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 700;
+  color: $violet;
+  background: rgba($violet, 0.12);
+  border: 1px solid rgba($violet, 0.25);
+  border-radius: 100px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+// ─── Phase 3: Badges, Links, Profile Deep-linking ─────────────
+
+.challengeTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.riddleTypeBadge {
+  padding: 3px 8px;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+.peekRiddle {
+  font-size: 11px;
+  color: $violet;
+  text-decoration: none;
+  opacity: 0.65;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+
+  &:hover { opacity: 1; text-decoration: underline; }
+}
+
+.creatorLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover .roomCreatorName { color: $violet; }
+}
+
+.matchPlayerLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover .matchPlayerName { color: $violet; }
+}

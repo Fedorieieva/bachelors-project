@@ -13,6 +13,7 @@ if (!dbUrl) {
   process.exit(1);
 }
 
+// Конфігуруємо підключення для Prisma 7 з PostgreSQL адаптером
 const pool = new Pool({ connectionString: dbUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -20,30 +21,26 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('--- Старт заповнення даних для Weekly Sprint ---');
 
+  // 1. Отримуємо список усіх наявних користувачів у базі даних
   const existingUsers = await prisma.user.findMany({
-    take: 5,
+    take: 5, // Беремо перших 5 існуючих користувачів для лідерборду
   });
 
   if (existingUsers.length === 0) {
-    console.log('Помилка: У базі даних немає жодного користувача. Спочатку зареєструйтеся через інтерфейс.');
+    console.log('Помилка: У базі даних немає користувачів. Перевірте таблицю "users".');
     return;
   }
 
   console.log(`Знайдено ${existingUsers.length} існуючих користувачів для симуляції спринту.`);
 
+  // 2. Очищаємо попередні записи про розв'язані загадки за точним полем user_id
   await prisma.solvedRiddle.deleteMany({
     where: {
       user_id: { in: existingUsers.map((u) => u.id) },
     },
   });
 
-  const now = new Date();
-  const getPastDateInThisWeek = (daysAgo: number) => {
-    const date = new Date(now);
-    date.setDate(now.getDate() - daysAgo);
-    return date;
-  };
-
+  // Шаблони переглядів для ігрової історії
   const riddlePreviews = [
     'Про давній замок та скляний трон...',
     'Математична головоломка з цифрами 4 та 7',
@@ -52,18 +49,25 @@ async function main() {
     'Класична загадка про час та стрілки',
   ];
 
+  // Масив балів для розподілу місць на лідерборді
   const xpDistribution = [40, 20, 60, 80, 100];
 
+  // 3. Наповнюємо таблицю solved_riddles для кожного існуючого юзера за схемою бази
   for (let i = 0; i < existingUsers.length; i++) {
     const user = existingUsers[i];
 
+    // Кожному користувачу додамо від 1 до 2 розв'язаних загадок за поточний тиждень
     const itemsToCreate = Math.min(2, i + 1);
 
     for (let j = 0; j < itemsToCreate; j++) {
       const xpEarned = xpDistribution[(i + j) % xpDistribution.length];
       const preview = riddlePreviews[(i + j) % riddlePreviews.length];
-      const dateAt = getPastDateInThisWeek(j + 1);
 
+      // Створюємо нову дату без мутації, щоб гарантовано лишатися в межах поточного тижня травня 2026
+      const dateAt = new Date();
+      dateAt.setDate(dateAt.getDate() - (j + 1));
+
+      // Використовуємо аргументи, які вимагає твій Prisma Client: user_id, content_preview, xp_earned
       await prisma.solvedRiddle.create({
         data: {
           user_id: user.id,
@@ -87,5 +91,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-    await pool.end();
+    await pool.end(); // Чисто закриваємо пул, щоб завершити Node-процес
   });

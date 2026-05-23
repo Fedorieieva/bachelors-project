@@ -30,7 +30,10 @@
       "Bash(node *)",
       "Bash(node_modules/.bin/prisma generate *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\client\\\\src\" -Recurse -Directory)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\src\" -Recurse -Filter \"*.ts\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Recurse -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\" -Directory)"
     ]
   }
 }

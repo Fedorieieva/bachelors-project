@@ -21,6 +21,8 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { StreakModule } from './streaks/streak.module';
 import { QuestsModule } from './quests/quests.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
+import { PvpModule } from './pvp/pvp.module';
+import { ChallengesModule } from './challenges/challenges.module';
 
 @Module({
   imports: [
@@ -42,6 +44,8 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
     StreakModule,
     QuestsModule,
     LeaderboardModule,
+    PvpModule,
+    ChallengesModule,
   ],
   controllers: [AppController],
   providers: [

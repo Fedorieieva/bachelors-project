@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Typography } from '@/components/atoms/Typography/Typography';
 import styles from './Badge.module.scss';
 
-export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info';
+export type BadgeVariant = 'default' | 'success' | 'warning' | 'error' | 'info' | 'pink';
 
 interface BadgeProps {
   children: React.ReactNode;

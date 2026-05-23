@@ -45,6 +45,7 @@ export class RiddlesService {
   async generateRiddle(
     dto: RiddleDto,
     aiAnalysis?: RiddleIntentAnalysis,
+    rawUserMessage?: string,
   ): Promise<{ content: string; answer: string; prompt_context: RiddleMetadata; model_used: string; is_error?: boolean; image_url?: string }> {
     let attempts = 0;
     let lastResult: AiRiddleResponse | null = null;
@@ -95,6 +96,10 @@ export class RiddlesService {
       mainPrompt += `\n\nVISUAL SYNERGY INSTRUCTION:
         The generated riddle text content should implicitly guide the user to inspect the accompanying visual illustration closely.
         Prompt them to seek out a visual anomaly, clever logical contradiction, paradox, or hidden clue embedded directly within the scenery.`;
+    }
+
+    if (rawUserMessage) {
+      mainPrompt += `\n\nCRITICAL LANGUAGE OVERRIDE: You MUST write the riddle text, the "content" field, and the "answer" field strictly in the same natural language as the user's message: "${rawUserMessage}". Do NOT switch to English or any other language regardless of the topic wording.`;
     }
 
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
@@ -450,6 +455,7 @@ export class RiddlesService {
     const newRiddle = await this.generateRiddle(
       { topic: analysis.topic || userMessage, settings: effectiveSettings },
       analysis,
+      userMessage,
     );
 
     if (newRiddle.is_error) {

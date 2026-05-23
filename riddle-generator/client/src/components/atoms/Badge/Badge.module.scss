@@ -39,6 +39,13 @@
     border-color: rgba($violet, 0.3);
   }
 
+  &.pink {
+    color: $pink;
+    background: rgba($pink, 0.1);
+    border-color: rgba($pink, 0.3);
+    &.glow { box-shadow: $shadow-pink-glow; }
+  }
+
   svg {
     flex-shrink: 0;
     width: 14px;

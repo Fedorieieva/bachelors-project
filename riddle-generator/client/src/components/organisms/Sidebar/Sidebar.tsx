@@ -4,7 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Typography } from '@/components/atoms/Typography';
 import { Button } from '@/components/atoms/Button/Button';
-import { Share2, Plus, Trash2, Trophy } from 'lucide-react';
+import { Share2, Plus, Trash2, Trophy, Swords } from 'lucide-react';
 import { Logo } from '@/components/atoms/Logo/Logo';
 import styles from './Sidebar.module.scss';
 import { usePathname, useRouter } from 'next/navigation';
@@ -54,6 +54,9 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           </Button>
           <Button variant="primary" href="/leaderboard" leftIcon={<Trophy size={20} />}>
             {t('leaderboard')}
+          </Button>
+          <Button variant="primary" href="/pvp" leftIcon={<Swords size={20} />}>
+            {t('pvp')}
           </Button>
         </div>
 

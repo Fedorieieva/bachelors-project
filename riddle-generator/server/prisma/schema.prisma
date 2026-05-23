@@ -50,6 +50,10 @@ model User {
   notifications    Notification[]  @relation("NotificationRecipient")
   triggered_notifs Notification[]  @relation("NotificationActor")
   user_quests      UserQuest[]
+  pvp_created      PvpMatch[]      @relation("PvpCreator")
+  pvp_opposed      PvpMatch[]      @relation("PvpOpponent")
+  pvp_won          PvpMatch[]      @relation("PvpWinner")
+  challenge_solvers ChallengeSolver[]
 
   @@map("users")
 }
@@ -97,6 +101,17 @@ enum NotificationType {
   QUEST_COMPLETED
   STREAK_INCREMENTED
   LEADERBOARD_RANK_UP
+  PVP_CHALLENGE_RECEIVED
+  PVP_MATCH_WON
+  PVP_MATCH_LOST
+  COMMUNITY_CHALLENGE_COMPLETED
+}
+
+enum PvpStatus {
+  PENDING
+  ACTIVE
+  FINISHED
+  CANCELLED
 }
 
 enum QuestType {
@@ -144,6 +159,7 @@ model Riddles {
   likes          Like[]
   RiddleAttempt  RiddleAttempt[]
   source_message Message[]
+  pvp_matches    PvpMatch[]
 
   @@map("riddles")
 }
@@ -308,4 +324,65 @@ model UserQuest {
 
   @@unique([user_id, quest_id])
   @@map("user_quests")
+}
+
+// ─── PvP ──────────────────────────────────────────────────────
+
+model PvpMatch {
+  id     String    @id @default(uuid())
+  status PvpStatus @default(PENDING)
+
+  creator    User   @relation("PvpCreator", fields: [creator_id], references: [id], onDelete: Cascade)
+  creator_id String
+
+  opponent    User?   @relation("PvpOpponent", fields: [opponent_id], references: [id], onDelete: SetNull)
+  opponent_id String?
+
+  winner    User?   @relation("PvpWinner", fields: [winner_id], references: [id], onDelete: SetNull)
+  winner_id String?
+
+  riddle    Riddles? @relation(fields: [riddle_id], references: [id], onDelete: SetNull)
+  riddle_id String?
+
+  created_at  DateTime  @default(now())
+  started_at  DateTime?
+  finished_at DateTime?
+
+  @@index([creator_id])
+  @@index([opponent_id])
+  @@map("pvp_matches")
+}
+
+// ─── Community Challenges ─────────────────────────────────────
+
+model CommunityChallenge {
+  id                String   @id @default(uuid())
+  title             String   @db.Text
+  description       String   @db.Text
+  riddle_content    String   @db.Text
+  riddle_answer     String   @db.Text
+  riddle_type       String   @default("LOGIC")
+  riddle_complexity Int      @default(5)
+  xp_reward         Int
+  starts_at         DateTime
+  ends_at           DateTime
+  is_active         Boolean  @default(true)
+  created_at        DateTime @default(now())
+
+  solvers ChallengeSolver[]
+
+  @@map("community_challenges")
+}
+
+model ChallengeSolver {
+  id        String   @id @default(uuid())
+  solved_at DateTime @default(now())
+
+  user         User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id      String
+  challenge    CommunityChallenge @relation(fields: [challenge_id], references: [id], onDelete: Cascade)
+  challenge_id String
+
+  @@unique([user_id, challenge_id])
+  @@map("challenge_solvers")
 }
