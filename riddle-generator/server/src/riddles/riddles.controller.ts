@@ -195,4 +195,14 @@ export class RiddlesController {
       };
     });
   }
+
+  // Must be last among @Get routes — literal routes above take priority over this param route
+  @Public()
+  @Get(':id')
+  async getRiddleById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: PrismaModels.User,
+  ) {
+    return this.riddlesService.getRiddleById(id, user.id);
+  }
 }

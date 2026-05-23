@@ -5,6 +5,15 @@ export enum RiddleType {
   MATH = 'MATH',
 }
 
+export interface RiddleDetail {
+  id: string;
+  content: string;
+  answer: string;
+  type: RiddleType;
+  complexity: number;
+  image_url?: string | null;
+}
+
 export const IMAGE_GENERATION_MODEL = 'pollinations-image' as const;
 
 export interface RiddleSettings {

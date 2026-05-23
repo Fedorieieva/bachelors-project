@@ -13,7 +13,7 @@ import { PromptsService } from './prompts/prompts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Content } from '@google/generative-ai';
-import { QuestType, RiddleType, NotificationType } from '@prisma/client';
+import { QuestType, RiddleType, NotificationType, PvpStatus } from '@prisma/client';
 import { AiRiddleResponse, EvaluationResult, RiddleIntentAnalysis } from './ai/ai-responses.dto';
 import { RiddleMetadata, ToggleSaveResponse } from './dto/riddle-persistence.dto';
 import { ChatResponseDto, ChatResponseType } from './dto/chat-response.dto';
@@ -998,5 +998,40 @@ export class RiddlesService {
     return this.prisma.riddles.delete({
       where: { id },
     });
+  }
+
+  async getRiddleById(id: string, userId: string) {
+    const riddle = await this.prisma.riddles.findUnique({ where: { id } });
+    if (!riddle) throw new NotFoundException('Riddle not found');
+
+    if (!riddle.is_public) {
+      const isAuthor = riddle.author_id === userId;
+      if (!isAuthor) {
+        const pvpMatch = await this.prisma.pvpMatch.findFirst({
+          where: {
+            riddle_id: id,
+            OR: [{ creator_id: userId }, { opponent_id: userId }],
+          },
+          select: { id: true, status: true },
+        });
+
+        if (!pvpMatch) throw new ForbiddenException('Access denied');
+
+        // Anti-cheat gate: block answer exposure while a duel is still in progress
+        const concluded = pvpMatch.status === PvpStatus.FINISHED || pvpMatch.status === PvpStatus.CANCELLED;
+        if (!concluded) {
+          throw new ForbiddenException('Riddle answer is locked until the match concludes');
+        }
+      }
+    }
+
+    return {
+      id: riddle.id,
+      content: riddle.content,
+      answer: riddle.answer,
+      type: riddle.type,
+      complexity: riddle.complexity,
+      image_url: riddle.image_url,
+    };
   }
 }

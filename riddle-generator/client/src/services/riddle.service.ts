@@ -6,7 +6,8 @@ import {
   SolveResult,
   XpTransactionResponse,
   SavedRiddle,
-  ToggleResponse
+  ToggleResponse,
+  RiddleDetail,
 } from '@/types/riddle';
 import { PaginatedPage } from '@/hooks/infinite-scroll/useInfiniteScroll';
 
@@ -89,5 +90,10 @@ export const RiddleService = {
   async toggleSave(riddleId: string): Promise<ToggleResponse> {
     const { data } = await apiClient.post<ToggleResponse>(`/riddles/${riddleId}/save`);
     return data;
-  }
+  },
+
+  async getRiddleById(riddleId: string): Promise<RiddleDetail> {
+    const { data } = await apiClient.get<RiddleDetail>(`/riddles/${riddleId}`);
+    return data;
+  },
 };
