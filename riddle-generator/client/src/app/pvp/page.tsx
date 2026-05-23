@@ -83,7 +83,7 @@ function SpeedrunnerAvatar({ solver, index }: { solver: ChallengeTopSolver; inde
         />
       ) : (
         <div className={styles.speedrunnerFallback}>
-          {(solver.user.name ?? '?')[0].toUpperCase()}
+          {(solver.user.name || '?').charAt(0).toUpperCase()}
         </div>
       )}
     </Link>
@@ -131,7 +131,7 @@ function PlayerAvatar({
   }
   return (
     <div className={styles.playerAvatarFallback} style={{ width: size, height: size }}>
-      {(name ?? '?')[0].toUpperCase()}
+      {(name || '?').charAt(0).toUpperCase()}
     </div>
   );
 }

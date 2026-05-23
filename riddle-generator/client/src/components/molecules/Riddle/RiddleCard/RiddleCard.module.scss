@@ -116,3 +116,28 @@
     @include drop-shadow-pink-glow;
   }
 }
+
+.crosswordPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: rgba($violet, 0.06);
+  border: 1px solid rgba($violet, 0.18);
+  border-radius: 12px;
+  margin-bottom: 15px;
+}
+
+.crosswordPreviewTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: $violet;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.crosswordPreviewMeta {
+  font-size: 0.78rem;
+  color: rgba($white, 0.55);
+  line-height: 1.4;
+}

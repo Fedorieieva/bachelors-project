@@ -128,6 +128,7 @@ enum RiddleType {
   CLASSIC
   LOGIC
   MATH
+  CROSSWORD
 }
 
 model Riddles {
@@ -155,11 +156,12 @@ model Riddles {
 
   saved_by SavedRiddles[]
 
-  comments       Comment[]
-  likes          Like[]
-  RiddleAttempt  RiddleAttempt[]
-  source_message Message[]
-  pvp_matches    PvpMatch[]
+  comments           Comment[]
+  likes              Like[]
+  RiddleAttempt      RiddleAttempt[]
+  source_message     Message[]
+  pvp_matches        PvpMatch[]
+  crossword_progress CrosswordProgress?
 
   @@map("riddles")
 }
@@ -351,6 +353,22 @@ model PvpMatch {
   @@index([creator_id])
   @@index([opponent_id])
   @@map("pvp_matches")
+}
+
+// ─── Crossword Progress ───────────────────────────────────────
+
+model CrosswordProgress {
+  id        String    @id @default(uuid())
+  riddle_id String    @unique
+  riddle    Riddles   @relation(fields: [riddle_id], references: [id], onDelete: Cascade)
+  progress  Json?
+  is_solved Boolean   @default(false)
+  solved_at DateTime?
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("crossword_progress")
 }
 
 // ─── Community Challenges ─────────────────────────────────────

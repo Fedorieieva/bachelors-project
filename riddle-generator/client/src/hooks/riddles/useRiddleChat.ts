@@ -40,15 +40,19 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
   }, [chatId]);
 
   const extractErrorToast = (error: Error): { message: string; type: 'error' | 'warning' } => {
-    const axiosErr = error as AxiosError<{ message?: string }>;
+    const axiosErr = error as AxiosError<{ message?: string | string[] }>;
     const status = axiosErr.response?.status;
-    const backendMsg = axiosErr.response?.data?.message;
+    // NestJS validation errors send message as string[]; coerce to a single string
+    const rawMsg = axiosErr.response?.data?.message;
+    const backendMsg: string | undefined = Array.isArray(rawMsg)
+      ? rawMsg.join('; ')
+      : (typeof rawMsg === 'string' ? rawMsg : undefined);
 
     if (status === 429) return { message: t('quotaExhausted'), type: 'error' };
     if (status === 503) return { message: t('serviceOverloaded'), type: 'error' };
-    if (status === 500) return { message: backendMsg || t('aiError'), type: 'error' };
+    if (status === 500) return { message: backendMsg ?? t('aiError'), type: 'error' };
     if (!axiosErr.response) return { message: t('connectionFailed'), type: 'error' };
-    return { message: backendMsg || error.message || t('sendFailed'), type: 'error' };
+    return { message: backendMsg ?? error.message ?? t('sendFailed'), type: 'error' };
   };
 
   const historyQuery = useInfiniteQuery<

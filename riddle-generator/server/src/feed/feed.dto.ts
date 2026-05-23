@@ -45,6 +45,7 @@ export interface FeedRiddleItem {
   type: string;
   is_public: boolean;
   created_at: Date;
+  prompt_context: Record<string, unknown> | null;
   author: {
     id: string;
     name: string | null;

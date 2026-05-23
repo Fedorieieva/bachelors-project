@@ -24,7 +24,12 @@
     "category": "Категорія",
     "generationLanguage": "Мова генерації",
     "difficulty": "Складність",
-    "gameMode": "Ігровий режим"
+    "gameMode": "Ігровий режим",
+    "crosswordTheme": "Тема кросворду",
+    "crosswordThemePlaceholder": "напр. Дослідження космосу",
+    "crosswordWords": "Конкретні слова (необов'язково)",
+    "crosswordWordsPlaceholder": "Введіть слово та натисніть Enter",
+    "crosswordGenerate": "Згенерувати кросворд"
   },
   "chatPage": {
     "riddleCollection": "Колекція загадок",

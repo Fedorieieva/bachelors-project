@@ -1,11 +1,12 @@
-import { Controller, Post, Body, Param, Get, Put, Delete, ParseUUIDPipe, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Put, Delete, Patch, ParseUUIDPipe, NotFoundException } from '@nestjs/common';
 import { RiddlesService } from './riddles.service';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
-import { RiddleDto, RiddleSettingsDto } from './dto/riddle-settings.dto';
+import { CrosswordGenerateDto, CrosswordProgressDto, CrosswordSaveDto, RiddleDto, RiddleSettingsDto } from './dto/riddle-settings.dto';
 import { Public } from '../utils/decorators/public.decorator';
 import { ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
+import { CrosswordLayout } from './ai/ai-responses.dto';
 
 @Controller('riddles')
 export class RiddlesController {
@@ -24,6 +25,44 @@ export class RiddlesController {
   @Post('generate')
   async createGeneratedRiddle(@Body() dto: RiddleDto) {
     return this.riddlesService.generateRiddle(dto);
+  }
+
+  @ApiOperation({ summary: 'Generate Crossword', description: 'Produce an AI-compiled crossword layout for a given theme and optional seed words.' })
+  @ApiResponse({ status: 201, description: 'Crossword layout returned.' })
+  @Public()
+  @Post('crossword/generate')
+  async generateCrossword(@Body() dto: CrosswordGenerateDto): Promise<CrosswordLayout> {
+    return this.riddlesService.generateCrossword(dto.theme, dto.customWords, dto.language);
+  }
+
+  @Post('crossword/save')
+  async saveCrossword(
+    @CurrentUser() user: PrismaModels.User,
+    @Body() dto: CrosswordSaveDto,
+  ): Promise<{ chatId: string; riddleId: string }> {
+    return this.riddlesService.saveCrosswordSession(
+      user.id,
+      dto.layout as unknown as CrosswordLayout,
+      dto.theme,
+      dto.language,
+    );
+  }
+
+  @Patch('crossword/:riddleId/progress')
+  async saveCrosswordProgress(
+    @Param('riddleId', ParseUUIDPipe) riddleId: string,
+    @CurrentUser() user: PrismaModels.User,
+    @Body() dto: CrosswordProgressDto,
+  ): Promise<void> {
+    await this.riddlesService.saveCrosswordProgress(user.id, riddleId, dto.progress);
+  }
+
+  @Post('crossword/:riddleId/complete')
+  async completeCrossword(
+    @Param('riddleId', ParseUUIDPipe) riddleId: string,
+    @CurrentUser() user: PrismaModels.User,
+  ): Promise<{ xp_earned: number }> {
+    return this.riddlesService.completeCrossword(user.id, riddleId);
   }
 
   @Public()

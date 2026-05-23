@@ -1,6 +1,8 @@
 import { apiClient } from '@/lib/api-client';
 import {
   ChatResponse,
+  CrosswordGenerateRequest,
+  CrosswordLayout,
   RiddleSettings,
   Message,
   SolveResult,
@@ -94,6 +96,30 @@ export const RiddleService = {
 
   async getRiddleById(riddleId: string): Promise<RiddleDetail> {
     const { data } = await apiClient.get<RiddleDetail>(`/riddles/${riddleId}`);
+    return data;
+  },
+
+  async generateCrossword(req: CrosswordGenerateRequest): Promise<CrosswordLayout> {
+    const { data } = await apiClient.post<CrosswordLayout>('/riddles/crossword/generate', req);
+    return data;
+  },
+
+  async saveCrossword(req: { layout: CrosswordLayout; theme: string; language?: string }): Promise<{ chatId: string; riddleId: string }> {
+    const { data } = await apiClient.post<{ chatId: string; riddleId: string }>('/riddles/crossword/save', req);
+    return data;
+  },
+
+  async awardCrosswordXp(): Promise<{ xp_earned: number }> {
+    const { data } = await apiClient.post<{ xp_earned: number }>('/experience/crossword');
+    return data;
+  },
+
+  async saveProgress(riddleId: string, progress: Record<string, string>): Promise<void> {
+    await apiClient.patch(`/riddles/crossword/${riddleId}/progress`, { progress });
+  },
+
+  async completeCrossword(riddleId: string): Promise<{ xp_earned: number }> {
+    const { data } = await apiClient.post<{ xp_earned: number }>(`/riddles/crossword/${riddleId}/complete`);
     return data;
   },
 };

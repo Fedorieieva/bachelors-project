@@ -55,7 +55,7 @@ export const UserHeader: React.FC<UserHeaderProps> = ({
           />
         ) : (
           <div className={cn(styles.avatar, styles.placeholder)}>
-            {userName.charAt(0).toUpperCase()}
+            {(userName || '?').charAt(0).toUpperCase()}
           </div>
         )}
       </div>

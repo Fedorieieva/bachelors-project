@@ -24,7 +24,12 @@
     "category": "Category",
     "generationLanguage": "Generation Language",
     "difficulty": "Difficulty",
-    "gameMode": "Game Mode"
+    "gameMode": "Game Mode",
+    "crosswordTheme": "Crossword Theme",
+    "crosswordThemePlaceholder": "e.g. Space exploration",
+    "crosswordWords": "Specific Words (optional)",
+    "crosswordWordsPlaceholder": "Type a word and press Enter",
+    "crosswordGenerate": "Generate Crossword"
   },
   "chatPage": {
     "riddleCollection": "Riddle Collection",

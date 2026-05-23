@@ -45,6 +45,7 @@ export const FeedList: React.FC<FeedListProps> = ({ type, userId }) => {
           content={riddle.content}
           complexity={riddle.complexity}
           type={riddle.type}
+          promptContext={riddle.prompt_context}
           likesCount={riddle.likes_count}
           commentsCount={riddle.comments_count}
           isLiked={riddle.is_liked}

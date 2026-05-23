@@ -1,7 +1,7 @@
 import { Injectable, InternalServerErrorException, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, Content } from '@google/generative-ai';
-import { AiHintResponse, AiImageRiddleResult, AiRiddleResponse, RiddleIntentAnalysis } from './ai-responses.dto';
+import { AiHintResponse, AiImageRiddleResult, AiRiddleResponse, CrosswordLayout, RiddleIntentAnalysis } from './ai-responses.dto';
 import { RiddleType } from '@prisma/client';
 
 @Injectable()
@@ -335,6 +335,47 @@ export class AiService {
 
     const result = await modelInstance.generateContent(rebusInstruction);
     return result.response.text().trim();
+  }
+
+  async generateCrossword(
+    theme: string,
+    customWords: string[] = [],
+    language = 'english',
+  ): Promise<CrosswordLayout> {
+    const requiredBlock =
+      customWords.length > 0
+        ? `\nREQUIRED WORDS — you MUST include every one of these in the puzzle: ${customWords.map((w) => w.toUpperCase()).join(', ')}.`
+        : '';
+
+    const prompt = `You are a master crossword puzzle compiler. Produce a geometrically valid, fully interlocked crossword puzzle.
+
+THEME: "${theme}"${requiredBlock}
+OUTPUT LANGUAGE: Every "word" value and every "clue" value MUST be written strictly in ${language}. Capitalize all words (UPPERCASE).
+
+CONSTRUCTION RULES — follow precisely:
+1. Choose 8–12 thematic words, each 4–10 letters long.${customWords.length > 0 ? ' Include ALL required words listed above.' : ''}
+2. Arrange words on a 2D grid using ACROSS (left-to-right) and DOWN (top-to-bottom) directions.
+3. Coordinate system: x = column index (0-based, left→right), y = row index (0-based, top→bottom).
+4. A word at (x, y, direction="across") occupies cells (x+0,y),(x+1,y),…,(x+len-1,y).
+5. A word at (x, y, direction="down") occupies cells (x,y+0),(x,y+1),…,(x,y+len-1).
+6. INTERSECTION RULE: every crossing pair of words must share exactly one letter at their crossing cell — that letter must match identically in both words.
+7. No two non-crossing words may share a cell.
+8. The entire puzzle must form one connected component (no isolated words).
+9. Place words near the origin — minimize empty border padding.
+10. gridSize must be the tight bounding box of all placed cells (rows = max occupied row + 1, cols = max occupied col + 1).
+11. Number starting cells sequentially: 1, 2, 3… ordered top-to-bottom then left-to-right.
+12. Write a concise, accurate clue for each word in ${language}.
+
+RETURN ONLY this JSON, no markdown fences or extra keys:
+{
+  "gridSize": { "rows": <int>, "cols": <int> },
+  "words": [
+    { "word": "UPPERCASE_WORD", "clue": "clue text", "x": <int>, "y": <int>, "direction": "across"|"down", "number": <int> }
+  ]
+}`;
+
+    this.logger.log(`[AI Crossword] Generating crossword — theme: "${theme}", requiredWords: ${customWords.length}, lang: ${language}`);
+    return this.askGemini<CrosswordLayout>(prompt, 3);
   }
 
   async generateImageRiddle(riddleContent: string): Promise<AiImageRiddleResult> {

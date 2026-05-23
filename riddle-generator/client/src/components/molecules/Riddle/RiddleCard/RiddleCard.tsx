@@ -35,7 +35,9 @@ import { useTranslations } from 'next-intl';
 import { ConfirmModal } from '@/components/organisms/Modals/ConfirmModal/ConfirmModal';
 import { useRiddleVisibility } from '@/hooks/social-actions/useRiddleVisibility';
 import { VisibilityToggle } from '../../VisibilityToggle/VisibilityToggle';
-import { SolveResult } from '@/types/riddle';
+import { CrosswordLayout, SolveResult } from '@/types/riddle';
+import { RiddleService } from '@/services/riddle.service';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface RiddleCardProps {
   id: string;
@@ -45,6 +47,7 @@ interface RiddleCardProps {
   content: string;
   complexity: number;
   type: string;
+  promptContext?: Record<string, unknown> | null;
   likesCount?: number;
   commentsCount?: number;
   isLiked?: boolean;
@@ -54,6 +57,21 @@ interface RiddleCardProps {
   canAttempt?: boolean;
   imageUrl?: string | null;
   className?: string;
+}
+
+function parseCrosswordContent(content: string): CrosswordLayout | null {
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    if (
+      parsed &&
+      parsed.gridSize &&
+      typeof (parsed.gridSize as Record<string, unknown>).rows === 'number' &&
+      Array.isArray(parsed.words)
+    ) {
+      return parsed as unknown as CrosswordLayout;
+    }
+  } catch {}
+  return null;
 }
 
 const getComplexityConfig = (level: number): { variant: BadgeVariant; icon: React.ReactNode } => {
@@ -70,6 +88,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   content,
   complexity,
   type,
+  promptContext,
   likesCount: initialLikesCount = 0,
   commentsCount: initialCommentsCount = 0,
   isLiked: initialIsLiked = false,
@@ -82,6 +101,15 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 }) => {
   const t = useTranslations('riddleCard');
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const queryClient = useQueryClient();
+
+  const crosswordLayout = React.useMemo(() => parseCrosswordContent(content), [content]);
+  // Prefer explicit enum value; fall back to content-parse for legacy LOGIC records
+  const isCrossword = type === 'CROSSWORD' || crosswordLayout !== null;
+  const displayType = isCrossword ? 'CROSSWORD' : type;
+  const crosswordTheme = isCrossword
+    ? (promptContext?.theme as string | undefined) ?? undefined
+    : undefined;
 
   const { mutate: toggleVisibility, isPending: isChangingVisibility } = useRiddleVisibility(id);
   const { toggleLike } = useLikes();
@@ -258,6 +286,18 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     }
   };
 
+  const handleCrosswordComplete = React.useCallback(async () => {
+    try {
+      const result = await RiddleService.completeCrossword(id);
+      if (result.xp_earned > 0) {
+        showGlobalToast(`+${result.xp_earned} XP — crossword solved!`, 'success');
+      }
+      void queryClient.invalidateQueries({ queryKey: ['user-stats'] });
+      setSolved(true);
+      setIsGuessModalOpen(false);
+    } catch {}
+  }, [id, showGlobalToast, queryClient]);
+
   const handleToggleComments = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowComments(!showComments);
@@ -276,7 +316,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
 
           <div className={styles.badgeContainer}>
             <Badge variant="info">
-              {type}
+              {displayType}
             </Badge>
             <Badge
               variant={complexityConfig.variant}
@@ -327,7 +367,20 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
           </div>
         )}
 
-        <RiddleBody content={content} className={styles.riddleBody} />
+        {isCrossword ? (
+          <div className={styles.crosswordPreview}>
+            <span className={styles.crosswordPreviewTitle}>
+              {crosswordTheme ? `Theme: ${crosswordTheme}` : 'Crossword'}
+            </span>
+            {crosswordLayout && (
+              <span className={styles.crosswordPreviewMeta}>
+                {crosswordLayout.words.length} words &middot; {crosswordLayout.gridSize.cols}&times;{crosswordLayout.gridSize.rows} grid
+              </span>
+            )}
+          </div>
+        ) : (
+          <RiddleBody content={content} className={styles.riddleBody} />
+        )}
 
         <div className={styles.footer}>
           <div className={styles.actions}>
@@ -401,6 +454,9 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
         onClose={() => setIsGuessModalOpen(false)}
         onGuess={handleGuessSubmit}
         isLoading={isSolving}
+        crosswordLayout={crosswordLayout ?? undefined}
+        riddleId={isCrossword ? id : undefined}
+        onCrosswordComplete={() => void handleCrosswordComplete()}
       />
 
       <RiddleStatusModal

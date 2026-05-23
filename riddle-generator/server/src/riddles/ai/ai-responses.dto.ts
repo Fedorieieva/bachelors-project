@@ -1,5 +1,18 @@
 import { RiddleType } from '@prisma/client';
 
+export interface CrosswordWord {
+  word: string;
+  clue: string;
+  x: number;
+  y: number;
+  direction: 'across' | 'down';
+  number: number;
+}
+
+export interface CrosswordLayout {
+  gridSize: { rows: number; cols: number };
+  words: CrosswordWord[];
+}
 
 export interface AiRiddleResponse {
   reasoning: string;

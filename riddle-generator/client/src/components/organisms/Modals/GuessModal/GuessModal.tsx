@@ -5,6 +5,8 @@ import { Modal } from '@/components/atoms/Modal/Modal';
 import { Input } from '@/components/atoms/Input/Input';
 import { Button } from '@/components/atoms/Button/Button';
 import { useTranslations } from 'next-intl';
+import { CrosswordResult } from '@/components/organisms/Chat/CrosswordResult/CrosswordResult';
+import { CrosswordLayout } from '@/types/riddle';
 import styles from './GuessModal.module.scss';
 
 interface GuessModalProps {
@@ -12,13 +14,19 @@ interface GuessModalProps {
   onClose: () => void;
   onGuess: (answer: string) => void;
   isLoading?: boolean;
+  crosswordLayout?: CrosswordLayout;
+  riddleId?: string;
+  onCrosswordComplete?: () => void;
 }
 
 export const GuessModal: React.FC<GuessModalProps> = ({
   isOpen,
   onClose,
   onGuess,
-  isLoading
+  isLoading,
+  crosswordLayout,
+  riddleId,
+  onCrosswordComplete,
 }) => {
   const t = useTranslations('guessModal');
   const [answer, setAnswer] = React.useState('');
@@ -28,6 +36,21 @@ export const GuessModal: React.FC<GuessModalProps> = ({
   }, [isOpen]);
 
   const isButtonDisabled = !answer.trim() || isLoading;
+
+  if (crosswordLayout) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} className={styles.crosswordModal}>
+        <div className={styles.crosswordContainer}>
+          <CrosswordResult
+            layout={crosswordLayout}
+            riddleId={riddleId}
+            onReset={onClose}
+            onComplete={onCrosswordComplete}
+          />
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('title')}>

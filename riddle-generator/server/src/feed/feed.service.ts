@@ -46,6 +46,7 @@ export class FeedService {
       created_at: riddle.created_at,
       complexity: riddle.complexity,
       type: riddle.type,
+      prompt_context: (riddle.prompt_context as Record<string, unknown>) ?? null,
       author: {
         id: riddle.author.id,
         name: riddle.author.name,

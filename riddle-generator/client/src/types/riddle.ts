@@ -3,6 +3,27 @@ export enum RiddleType {
   CLASSIC = 'CLASSIC',
   LOGIC = 'LOGIC',
   MATH = 'MATH',
+  CROSSWORD = 'CROSSWORD',
+}
+
+export interface CrosswordWord {
+  word: string;
+  clue: string;
+  x: number;
+  y: number;
+  direction: 'across' | 'down';
+  number: number;
+}
+
+export interface CrosswordLayout {
+  gridSize: { rows: number; cols: number };
+  words: CrosswordWord[];
+}
+
+export interface CrosswordGenerateRequest {
+  theme: string;
+  customWords?: string[];
+  language?: string;
 }
 
 export interface RiddleDetail {
@@ -12,6 +33,9 @@ export interface RiddleDetail {
   type: RiddleType;
   complexity: number;
   image_url?: string | null;
+  prompt_context?: Record<string, unknown> | null;
+  is_solved?: boolean;
+  crossword_progress?: Record<string, string> | null;
 }
 
 export const IMAGE_GENERATION_MODEL = 'pollinations-image' as const;
@@ -23,6 +47,9 @@ export interface RiddleSettings {
   is_interactive?: boolean;
   model?: string;
   generate_image?: boolean;
+  // Crossword-specific — only relevant when type === CROSSWORD
+  crosswordTheme?: string;
+  crosswordCustomWords?: string[];
 }
 
 export const GEMINI_MODELS = [

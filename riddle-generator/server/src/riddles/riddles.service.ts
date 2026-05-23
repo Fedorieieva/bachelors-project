@@ -14,7 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { Content } from '@google/generative-ai';
 import { QuestType, RiddleType, NotificationType, PvpStatus } from '@prisma/client';
-import { AiRiddleResponse, EvaluationResult, RiddleIntentAnalysis } from './ai/ai-responses.dto';
+import { AiRiddleResponse, CrosswordLayout, EvaluationResult, RiddleIntentAnalysis } from './ai/ai-responses.dto';
 import { RiddleMetadata, ToggleSaveResponse } from './dto/riddle-persistence.dto';
 import { ChatResponseDto, ChatResponseType } from './dto/chat-response.dto';
 import { ExperienceService } from '../experience/experience.service';
@@ -1000,8 +1000,74 @@ export class RiddlesService {
     });
   }
 
+  async generateCrossword(
+    theme: string,
+    customWords: string[] = [],
+    language = 'english',
+  ): Promise<CrosswordLayout> {
+    this.logger.log(`[RiddlesService] Crossword generation — theme: "${theme}", words: ${customWords.length}, lang: ${language}`);
+    return this.aiService.generateCrossword(theme, customWords, language);
+  }
+
+  async saveCrosswordSession(
+    userId: string,
+    layout: CrosswordLayout,
+    theme: string,
+    language = 'english',
+  ): Promise<{ chatId: string; riddleId: string }> {
+    return this.prisma.$transaction(async (tx) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const txAny = tx as any;
+      const chat = await tx.chat.create({
+        data: {
+          user_id: userId,
+          type: 'CROSSWORD' as RiddleType,
+          is_interactive: false,
+          complexity: 3,
+          language,
+        },
+      });
+
+      const riddle = await tx.riddles.create({
+        data: {
+          author_id: userId,
+          type: 'CROSSWORD' as RiddleType,
+          complexity: 3,
+          content: JSON.stringify(layout),
+          answer: layout.words.map((w) => w.word).join(','),
+          prompt_context: { theme, word_count: layout.words.length },
+        },
+      });
+
+      await txAny.crosswordProgress.create({
+        data: { riddle_id: riddle.id },
+      });
+
+      await tx.message.create({
+        data: { chat_id: chat.id, role: 'user', content: theme, is_initial: true },
+      });
+
+      await tx.message.create({
+        data: {
+          chat_id: chat.id,
+          role: 'model',
+          content: JSON.stringify({ type: 'CROSSWORD_LAYOUT', layout, theme, riddle_id: riddle.id }),
+          is_initial: true,
+          saved_riddle_id: riddle.id,
+        },
+      });
+
+      return { chatId: chat.id, riddleId: riddle.id };
+    });
+  }
+
   async getRiddleById(id: string, userId: string) {
-    const riddle = await this.prisma.riddles.findUnique({ where: { id } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const riddle = await (this.prisma as any).riddles.findUnique({
+      where: { id },
+      include: { crossword_progress: true },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
     if (!riddle) throw new NotFoundException('Riddle not found');
 
     if (!riddle.is_public) {
@@ -1025,13 +1091,73 @@ export class RiddlesService {
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cp = riddle.crossword_progress as { is_solved: boolean; progress: Record<string, string> | null } | null;
     return {
-      id: riddle.id,
-      content: riddle.content,
-      answer: riddle.answer,
-      type: riddle.type,
-      complexity: riddle.complexity,
-      image_url: riddle.image_url,
+      id: riddle.id as string,
+      content: riddle.content as string,
+      answer: riddle.answer as string,
+      type: riddle.type as RiddleType,
+      complexity: riddle.complexity as number,
+      image_url: riddle.image_url as string | null,
+      prompt_context: riddle.prompt_context as Record<string, unknown> | null,
+      is_solved: cp?.is_solved ?? false,
+      crossword_progress: cp?.progress ?? null,
     };
+  }
+
+  async saveCrosswordProgress(
+    userId: string,
+    riddleId: string,
+    progress: Record<string, string>,
+  ): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = this.prisma as any;
+    const riddle = await db.riddles.findFirst({
+      where: { id: riddleId, author_id: userId },
+      include: { crossword_progress: { select: { is_solved: true } } },
+    });
+    if (!riddle) throw new NotFoundException('Crossword not found');
+    if (riddle.crossword_progress?.is_solved) return;
+
+    await db.crosswordProgress.upsert({
+      where: { riddle_id: riddleId },
+      create: { riddle_id: riddleId, progress },
+      update: { progress },
+    });
+  }
+
+  async completeCrossword(
+    userId: string,
+    riddleId: string,
+  ): Promise<{ xp_earned: number }> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = this.prisma as any;
+    const riddle = await db.riddles.findFirst({
+      where: { id: riddleId, author_id: userId },
+      include: { crossword_progress: { select: { is_solved: true } } },
+    });
+    if (!riddle) throw new NotFoundException('Crossword not found');
+
+    if (riddle.crossword_progress?.is_solved === true) {
+      return { xp_earned: 0 };
+    }
+
+    const now = new Date();
+    await db.crosswordProgress.upsert({
+      where: { riddle_id: riddleId },
+      create: { riddle_id: riddleId, progress: {}, is_solved: true, solved_at: now },
+      update: { progress: {}, is_solved: true, solved_at: now },
+    });
+
+    // Mirror solve in RiddleAttempt so feed cards show the solved badge after refresh
+    await this.prisma.riddleAttempt.upsert({
+      where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
+      create: { user_id: userId, riddle_id: riddleId, attempts: -1 },
+      update: { attempts: -1 },
+    });
+
+    const xpEarned = await this.experienceService.awardXpForSolving(userId, 'crossword', 50);
+    return { xp_earned: xpEarned };
   }
 }

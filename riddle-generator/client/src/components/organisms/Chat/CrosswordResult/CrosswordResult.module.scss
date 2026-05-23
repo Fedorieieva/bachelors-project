@@ -1,0 +1,196 @@
+@use "../../../../styles/abstracts/variables" as *;
+
+.container {
+  width: 100%;
+  padding: 40px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 20px;
+  background: rgba($success, 0.08);
+  border: 1px solid rgba($success, 0.25);
+  border-radius: 12px;
+}
+
+.successText {
+  color: $success;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.body {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* ── Grid ── */
+
+.grid {
+  display: grid;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.whiteCell {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  background: rgba($white, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+
+  &.cellCorrect {
+    background: rgba($success, 0.85);
+    box-shadow: 0 0 6px rgba($success, 0.45);
+  }
+
+  &.cellWrong {
+    background: rgba($error, 0.72);
+    box-shadow: 0 0 6px rgba($error, 0.35);
+  }
+}
+
+.blackCell {
+  width: 36px;
+  height: 36px;
+  background: rgba($white, 0.05);
+  border-radius: 2px;
+}
+
+.cellNum {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.5rem;
+  color: rgba($dark-blue, 0.65);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.cellLetter {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: $dark-blue;
+  text-transform: uppercase;
+  user-select: none;
+  line-height: 1;
+
+  .cellWrong & {
+    color: $white;
+  }
+}
+
+/* ── Clue input list ── */
+
+.clueInputList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 260px;
+  max-width: 640px;
+}
+
+.clueRow {
+  display: grid;
+  grid-template-columns: 30px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba($white, 0.07);
+  background: rgba($white, 0.03);
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  &.clueCorrect {
+    border-color: rgba($success, 0.35);
+    background: rgba($success, 0.05);
+  }
+
+  &.clueWrong {
+    border-color: rgba($error, 0.35);
+    background: rgba($error, 0.04);
+  }
+}
+
+.clueLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: $violet;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.clueText {
+  font-size: 0.82rem;
+  color: rgba($white, 0.72);
+  line-height: 1.4;
+}
+
+.clueInput {
+  width: 128px;
+  background: rgba($white, 0.05);
+  border: 1px solid rgba($white, 0.12);
+  border-radius: 8px;
+  color: $white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+
+  &::placeholder {
+    color: rgba($white, 0.22);
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  &:focus:not(:disabled) {
+    border-color: rgba($violet, 0.5);
+    background: rgba($violet, 0.06);
+  }
+
+  &.inputCorrect {
+    border-color: rgba($success, 0.55);
+    background: rgba($success, 0.08);
+    color: $success;
+  }
+
+  &.inputWrong {
+    border-color: rgba($error, 0.55);
+    background: rgba($error, 0.06);
+    color: $error;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+}

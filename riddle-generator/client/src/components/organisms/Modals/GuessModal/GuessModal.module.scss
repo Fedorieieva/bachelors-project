@@ -24,3 +24,15 @@
   margin-top: 40px;
   width: 100%;
 }
+
+.crosswordModal {
+  max-width: min(92vw, 960px);
+  width: 100%;
+}
+
+.crosswordContainer {
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+}
