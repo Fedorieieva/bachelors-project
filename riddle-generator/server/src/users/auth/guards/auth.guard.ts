@@ -32,10 +32,20 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthRequest>();
     const response = context.switchToHttp().getResponse<Response>();
 
-    const token = request.cookies?.access_token || request.headers['authorization']?.split(' ')[1];
+    const cookieToken = request.cookies?.access_token;
+    const headerToken = request.headers['authorization']?.split(' ')[1];
+    const token = cookieToken || headerToken;
     const refreshToken = request.cookies?.refresh_token;
 
+    this.logger.debug(
+      `[AuthGuard] ${request.method} ${request.url} | cookie=${!!cookieToken} header=${!!headerToken} refresh=${!!refreshToken}`,
+    );
+
     if (!token) {
+      this.logger.warn(
+        `[AuthGuard] No token found — issuing anonymous guest. origin=${request.headers['origin'] ?? 'none'} method=${request.method} url=${request.url}`,
+      );
+
       const guest = await this.authService.createAnonymousUser();
 
       setAuthCookies(response, {

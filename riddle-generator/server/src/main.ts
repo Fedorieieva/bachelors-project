@@ -17,13 +17,20 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(express.json());
 
+  const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : [
+        'https://riddle-generator.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:3001',
+      ];
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') ?? [
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://localhost:3001',
-    ],
+    origin: allowedOrigins,
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
   const config = new DocumentBuilder()
