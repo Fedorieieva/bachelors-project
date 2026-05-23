@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:player2": "next dev --turbopack --port 3001",
     "dev:fresh": "node -e \"const{execSync}=require('child_process');try{const r=execSync('netstat -ano | findstr :3000',{encoding:'utf8'});const m=r.match(/LISTENING\\s+(\\d+)/);if(m)execSync('taskkill /PID '+m[1]+' /F',{stdio:'inherit'})}catch(e){}\" && next dev --turbopack",
     "kill-port": "node -e \"const{execSync}=require('child_process');try{const r=execSync('netstat -ano | findstr :3000',{encoding:'utf8'});const m=r.match(/LISTENING\\s+(\\d+)/);if(m){execSync('taskkill /PID '+m[1]+' /F',{stdio:'inherit'});console.log('Killed PID '+m[1])}else{console.log('Port 3000 is free')}}catch(e){console.log('Port 3000 is free')}\"",
     "build": "next build",

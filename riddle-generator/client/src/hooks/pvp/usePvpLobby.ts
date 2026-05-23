@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PvpService } from '@/services/pvp.service';
-import { PvpMatch, PvpStatus, GuessResult, PendingRoom } from '@/types/pvp';
+import { PvpMatch, GuessResult, PendingRoom } from '@/types/pvp';
 
 type LobbyPhase = 'idle' | 'waiting' | 'active' | 'finished';
 
@@ -16,6 +16,7 @@ interface LobbyState {
 
 const POLL_WAITING_MS = 3000;
 const POLL_ACTIVE_MS = 2000;
+const POLL_PENDING_MS = 10_000;
 
 export function usePvpLobby() {
   const [state, setState] = useState<LobbyState>({
@@ -27,60 +28,125 @@ export function usePvpLobby() {
   });
   const [pendingRooms, setPendingRooms] = useState<PendingRoom[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // mountedRef guards all setState calls that arrive after unmount.
+  // Set back to true on every (re)mount so React 18 Strict Mode double-fire
+  // doesn't leave it permanently false.
+  const mountedRef = useRef(true);
+
+  // isPollingRef acts as a cancellation flag for the recursive match-poll loop.
+  // Flipping it false mid-flight prevents the in-flight tick from scheduling a
+  // successor without requiring AbortController plumbing.
+  const isPollingRef = useRef(false);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Lifecycle cleanup ──────────────────────────────────────────
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      isPollingRef.current = false;
+      if (pollTimerRef.current !== null) {
+        clearTimeout(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // ── Polling control ────────────────────────────────────────────
   const clearPoll = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
+    isPollingRef.current = false;
+    if (pollTimerRef.current !== null) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
     }
   }, []);
 
+  // ── Pending rooms — recursive setTimeout, no request stacking ──
   const fetchPending = useCallback(async () => {
     try {
       const rooms = await PvpService.getPending();
-      setPendingRooms(rooms);
+      if (mountedRef.current) setPendingRooms(rooms);
     } catch {
-      // silent
+      // silent — network blip
     }
   }, []);
 
   useEffect(() => {
-    void fetchPending();
-    const id = setInterval(fetchPending, 10_000);
-    return () => clearInterval(id);
+    let cancelled = false;
+    let timerId: ReturnType<typeof setTimeout> | null = null;
+
+    const run = async () => {
+      await fetchPending();
+      if (!cancelled) {
+        timerId = setTimeout(() => void run(), POLL_PENDING_MS);
+      }
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+      if (timerId !== null) clearTimeout(timerId);
+    };
   }, [fetchPending]);
 
-  const pollMatch = useCallback(async (matchId: string) => {
-    try {
-      const match = await PvpService.getMatch(matchId);
-      const nextPhase: LobbyPhase =
-        match.status === 'ACTIVE' ? 'active'
-        : match.status === 'FINISHED' || match.status === 'CANCELLED' ? 'finished'
-        : 'waiting';
+  // ── Match state — recursive setTimeout, next tick fires only after
+  //    the previous network round-trip fully settles ───────────────
+  const startPoll = useCallback(
+    (matchId: string, interval: number) => {
+      clearPoll();
+      isPollingRef.current = true;
 
-      setState((prev) => ({ ...prev, match, phase: nextPhase }));
+      const tick = async () => {
+        // Abort if clearPoll() was called or the component unmounted
+        if (!isPollingRef.current || !mountedRef.current) return;
 
-      if (nextPhase === 'finished') clearPoll();
-    } catch {
-      // network blip — keep polling
-    }
-  }, [clearPoll]);
+        try {
+          const match = await PvpService.getMatch(matchId);
 
-  const startPolling = useCallback((matchId: string, interval: number) => {
-    clearPoll();
-    pollRef.current = setInterval(() => void pollMatch(matchId), interval);
-  }, [clearPoll, pollMatch]);
+          // Re-check after the await — phase may have changed while in-flight
+          if (!isPollingRef.current || !mountedRef.current) return;
 
+          const nextPhase: LobbyPhase =
+            match.status === 'ACTIVE'
+              ? 'active'
+              : match.status === 'FINISHED' || match.status === 'CANCELLED'
+                ? 'finished'
+                : 'waiting';
+
+          setState((prev) => ({ ...prev, match, phase: nextPhase }));
+
+          if (nextPhase === 'finished') {
+            isPollingRef.current = false;
+            return; // terminal state — no successor tick
+          }
+        } catch {
+          // Transient network error — keep polling
+        }
+
+        // Schedule successor only after the current round-trip has settled
+        if (isPollingRef.current && mountedRef.current) {
+          pollTimerRef.current = setTimeout(tick, interval);
+        }
+      };
+
+      pollTimerRef.current = setTimeout(tick, interval);
+    },
+    [clearPoll],
+  );
+
+  // Respond to phase transitions with the appropriate polling cadence
   useEffect(() => {
     if (!state.matchId) return;
-    if (state.phase === 'waiting') startPolling(state.matchId, POLL_WAITING_MS);
-    else if (state.phase === 'active') startPolling(state.matchId, POLL_ACTIVE_MS);
+    if (state.phase === 'waiting') startPoll(state.matchId, POLL_WAITING_MS);
+    else if (state.phase === 'active') startPoll(state.matchId, POLL_ACTIVE_MS);
     else clearPoll();
 
     return clearPoll;
-  }, [state.phase, state.matchId, startPolling, clearPoll]);
+  }, [state.phase, state.matchId, startPoll, clearPoll]);
 
+  // ── Public actions ─────────────────────────────────────────────
   const createRoom = useCallback(async () => {
     setIsLoading(true);
     setState((prev) => ({ ...prev, error: null }));
@@ -95,42 +161,53 @@ export function usePvpLobby() {
     }
   }, [fetchPending]);
 
-  const joinRoom = useCallback(async (matchId: string) => {
-    setIsLoading(true);
-    setState((prev) => ({ ...prev, error: null }));
-    try {
-      const match = await PvpService.joinRoom(matchId);
-      const phase: LobbyPhase = match.status === 'ACTIVE' ? 'active' : 'waiting';
-      setState((prev) => ({ ...prev, phase, matchId: match.id, match }));
-      await fetchPending();
-    } catch (err) {
-      setState((prev) => ({ ...prev, error: (err as Error).message }));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchPending]);
-
-  const submitGuess = useCallback(async (guess: string): Promise<GuessResult | null> => {
-    if (!state.matchId) return null;
-    try {
-      const result = await PvpService.submitGuess(state.matchId, guess);
-      if (result.correct) {
-        setState((prev) => ({ ...prev, phase: 'finished', guessResult: result }));
-        clearPoll();
+  const joinRoom = useCallback(
+    async (matchId: string) => {
+      setIsLoading(true);
+      setState((prev) => ({ ...prev, error: null }));
+      try {
+        const match = await PvpService.joinRoom(matchId);
+        const phase: LobbyPhase = match.status === 'ACTIVE' ? 'active' : 'waiting';
+        setState((prev) => ({ ...prev, phase, matchId: match.id, match }));
+        await fetchPending();
+      } catch (err) {
+        const httpStatus = (err as { response?: { status?: number } }).response?.status;
+        const message =
+          httpStatus === 403
+            ? 'This arena room is already full or has been closed by the creator.'
+            : ((err as Error).message ?? 'Failed to join the room. Please try again.');
+        setState((prev) => ({ ...prev, error: message }));
+      } finally {
+        setIsLoading(false);
       }
-      return result;
-    } catch (err) {
-      setState((prev) => ({ ...prev, error: (err as Error).message }));
-      return null;
-    }
-  }, [state.matchId, clearPoll]);
+    },
+    [fetchPending],
+  );
+
+  const submitGuess = useCallback(
+    async (guess: string): Promise<GuessResult | null> => {
+      if (!state.matchId) return null;
+      try {
+        const result = await PvpService.submitGuess(state.matchId, guess);
+        if (result.correct) {
+          setState((prev) => ({ ...prev, phase: 'finished', guessResult: result }));
+          clearPoll();
+        }
+        return result;
+      } catch (err) {
+        setState((prev) => ({ ...prev, error: (err as Error).message }));
+        return null;
+      }
+    },
+    [state.matchId, clearPoll],
+  );
 
   const cancelRoom = useCallback(async () => {
     if (!state.matchId) return;
     try {
       await PvpService.cancelMatch(state.matchId);
     } catch {
-      // silent — already removed or not creator
+      // silent — already removed or not the creator
     } finally {
       clearPoll();
       setState({ phase: 'idle', matchId: null, match: null, guessResult: null, error: null });

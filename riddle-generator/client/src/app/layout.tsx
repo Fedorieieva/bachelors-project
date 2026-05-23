@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang={locale} className={`${inter.variable} ${poppins.variable}`}>
-      <body className="antialiased" nonce={nonce}>
+      <body className="antialiased" nonce={nonce} suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <StoreProvider>
             <QueryProvider>

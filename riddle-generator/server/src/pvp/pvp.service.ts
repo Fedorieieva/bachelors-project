@@ -5,7 +5,12 @@ import { StreakService } from '../streaks/streak.service';
 import { QuestsService } from '../quests/quests.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AiService } from '../riddles/ai/ai.service';
-import { PvpStatus, QuestType, NotificationType } from '@prisma/client';
+import { PvpStatus, QuestType, NotificationType, RiddleType } from '@prisma/client';
+import { AiRiddleResponse } from '../riddles/ai/ai-responses.dto';
+
+interface PvpAiRiddleResponse extends AiRiddleResponse {
+  type?: string;
+}
 
 const WINNER_BASE_XP = 100;
 const LOSER_CONSOLATION_XP = 20;
@@ -79,15 +84,92 @@ export class PvpService {
     if (match.status !== PvpStatus.PENDING) throw new ForbiddenException('Match is not joinable');
     if (match.creator_id === opponentId) throw new ForbiddenException('Cannot join your own match');
 
-    const count = await this.prisma.riddles.count({ where: { is_public: true, is_verified: true } });
-    if (count === 0) throw new ForbiddenException('No riddles available for match');
-    const skip = Math.floor(Math.random() * count);
-    const riddle = await this.prisma.riddles.findFirst({
-      where: { is_public: true, is_verified: true },
-      skip,
+    // ── Resolve creator's preferred language from their most recent chat ──
+    const creatorChat = await this.prisma.chat.findFirst({
+      where: { user_id: match.creator_id },
+      orderBy: { createdAt: 'desc' },
+      select: { language: true },
     });
-    if (!riddle) throw new ForbiddenException('No riddles available');
+    const riddleLanguage = creatorChat?.language ?? 'english';
 
+    // ── Random generation parameters ────────────────────────────
+    const randomComplexity = Math.floor(Math.random() * 5) + 1;
+    const pvpTopics = [
+      'ancient mysteries',
+      'cyberpunk paradoxes',
+      'abstract geometry',
+      'detective cold cases',
+      'everyday objects with a twist',
+      'space exploration',
+      'time paradoxes',
+      'natural phenomena',
+      'optical illusions',
+      'impossible machines',
+    ];
+    const randomTopic = pvpTopics[Math.floor(Math.random() * pvpTopics.length)];
+
+    // ── AI generation — type is self-classified by the model ─────
+    const generationPrompt = `Generate a riddle about the theme "${randomTopic}" at complexity level ${randomComplexity} out of 5.
+
+After generating the riddle, evaluate its content and classify it as exactly one of these types:
+- CLASSIC: traditional wordplay, metaphor, or poetic object-description riddle
+- MATH: requires arithmetic, counting, or explicit numerical reasoning
+- LOGIC: requires deductive or inductive reasoning beyond simple wordplay
+- DANETKI: a mystery scenario designed to be solved by asking yes/no questions
+
+CRITICAL LANGUAGE RULE: The "content" and "answer" field values MUST be generated strictly in the following language: "${riddleLanguage}". Do not default to English unless this is the explicitly requested language.
+
+RETURN JSON ONLY — no markdown, no extra text:
+{
+  "content": "the riddle text presented to the player",
+  "answer": "the single correct answer word or short phrase",
+  "type": "CLASSIC" | "MATH" | "LOGIC" | "DANETKI",
+  "reasoning": "brief internal note on how you constructed this riddle"
+}`;
+
+    let aiResult: PvpAiRiddleResponse;
+    try {
+      aiResult = await this.aiService.askGemini<PvpAiRiddleResponse>(generationPrompt, 3);
+    } catch (error) {
+      this.logger.warn(
+        `[PvP] AI generation failed for match ${matchId} — using fallback riddle. Error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      aiResult = {
+        content:
+          'I have cities, but no houses live there. Mountains, but no trees grow. Water, but no fish swim. Roads, but no cars drive. What am I?',
+        answer: 'A map',
+        type: 'LOGIC',
+        reasoning: 'Hardcoded fallback riddle used because AI generation was unavailable.',
+      };
+    }
+
+    const riddleType = this.resolveRiddleType(aiResult.type);
+    this.logger.log(
+      `[PvP] AI riddle for match ${matchId} — type: ${riddleType} (AI-classified), complexity: ${randomComplexity}, topic: "${randomTopic}"`,
+    );
+
+    // ── Persist the freshly generated riddle ─────────────────────
+    const riddle = await this.prisma.riddles.create({
+      data: {
+        content: aiResult.content,
+        answer: aiResult.answer,
+        prompt_context: {
+          source: 'pvp',
+          topic: randomTopic,
+          type: riddleType,
+          complexity: randomComplexity,
+          language: riddleLanguage,
+          reasoning: aiResult.reasoning,
+        },
+        complexity: randomComplexity,
+        type: riddleType,
+        is_public: false,
+        is_verified: true,
+        author_id: match.creator_id,
+      },
+    });
+
+    // ── Activate match with the new riddle atomically ─────────────
     const updated = await this.prisma.pvpMatch.update({
       where: { id: matchId },
       data: {
@@ -130,9 +212,26 @@ export class PvpService {
     }
     if (!match.riddle) throw new ForbiddenException('No riddle assigned to match');
 
-    // AI contextual validation — handles synonyms, phrasing variations, multilingual answers
-    const aiResult = await this.aiService.getContextualHint([], guess, match.riddle.answer);
-    if (!aiResult.is_solved) return { correct: false };
+    // ── Fast-path: local string normalisation (sub-millisecond) ──────
+    const answerText = match.riddle.answer ?? '';
+    let isSolvedLocally = false;
+
+    if (answerText) {
+      const normalizedGuess = this.normalizeAnswer(guess);
+      const normalizedAnswer = this.normalizeAnswer(answerText);
+      isSolvedLocally =
+        normalizedGuess === normalizedAnswer ||
+        normalizedAnswer.split(' ').includes(normalizedGuess);
+    }
+
+    if (!isSolvedLocally) {
+      // ── Semantic fallback: AI handles synonyms, phrasing variants, and multilingual answers ──
+      const riddleContext = [
+        { role: 'user' as const, parts: [{ text: match.riddle.content }] },
+      ];
+      const aiResult = await this.aiService.getContextualHint(riddleContext, guess, match.riddle.answer);
+      if (!aiResult.is_solved) return { correct: false };
+    }
 
     const loserId = match.creator_id === userId ? match.opponent_id! : match.creator_id;
 
@@ -188,6 +287,21 @@ export class PvpService {
 
     this.logger.log(`[PvP] Match ${matchId} finished — winner: ${userId}, loser: ${loserId}, xp: ${winnerXp}`);
     return { correct: true, winnerId: userId, loserId, xpEarned: winnerXp };
+  }
+
+  private resolveRiddleType(raw: string | undefined): RiddleType {
+    const normalized = (raw ?? '').toUpperCase().trim();
+    const valid = new Set(Object.values(RiddleType));
+    return valid.has(normalized as RiddleType) ? (normalized as RiddleType) : RiddleType.LOGIC;
+  }
+
+  private normalizeAnswer(s: string): string {
+    return s
+      .toLowerCase()
+      .trim()
+      .replace(/[^\p{L}\p{N}\s]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   async cancelMatch(matchId: string, userId: string) {
