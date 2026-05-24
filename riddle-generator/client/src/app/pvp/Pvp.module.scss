@@ -35,6 +35,11 @@
 
 .contentGrid {
   max-width: 760px;
+  width: 100%;
+}
+
+.fullWidthGrid {
+  max-width: 100% !important;
 }
 
 .main {
@@ -793,4 +798,70 @@
   color: inherit;
 
   &:hover .matchPlayerName { color: $violet; }
+}
+
+// ─── Crossword PvP Match Wrapper ──────────────────────────────
+
+.crosswordMatchWrap {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+  border-radius: $border-radius-primary;
+  border: 1px solid rgba($violet, 0.15);
+}
+
+// ─── Crossword metadata strip (active match + history) ────────
+
+.crosswordMatchMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba($violet, 0.1);
+  background: rgba($violet, 0.04);
+}
+
+.crosswordWordCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba($white, 0.55);
+  background: rgba($white, 0.05);
+  border: 1px solid rgba($white, 0.08);
+  border-radius: 100px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wordCountLabel {
+  color: rgba($white, 0.3);
+  font-weight: 600;
+}
+
+// ─── Complexity Dots (history) ────────────────────────────────
+
+.historyComplexity {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.complexityDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba($white, 0.13);
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+
+  &.complexityDotFilled {
+    background: $pink;
+    box-shadow: 0 0 4px rgba($pink, 0.45);
+  }
 }

@@ -12,6 +12,8 @@ export interface PvpRiddle {
   complexity: number;
   type?: string;
   image_url?: string | null;
+  /** Parsed when type === 'CROSSWORD' — content is JSON-serialised CrosswordLayout */
+  layout?: import('./riddle').CrosswordLayout;
 }
 
 export interface PvpMatch {

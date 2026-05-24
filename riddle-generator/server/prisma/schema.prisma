@@ -37,23 +37,24 @@ model User {
   last_active_at DateTime?
   xp_multiplier  Float     @default(1.0)
 
-  sessions         Session[]
-  riddles          Riddles[]
-  saved_riddles    SavedRiddles[]
-  comments         Comment[]
-  likes            Like[]
-  Chat             Chat[]
-  followers        Follow[]        @relation("following")
-  following        Follow[]        @relation("follower")
-  SolvedRiddle     SolvedRiddle[]
-  RiddleAttempt    RiddleAttempt[]
-  notifications    Notification[]  @relation("NotificationRecipient")
-  triggered_notifs Notification[]  @relation("NotificationActor")
-  user_quests      UserQuest[]
-  pvp_created      PvpMatch[]      @relation("PvpCreator")
-  pvp_opposed      PvpMatch[]      @relation("PvpOpponent")
-  pvp_won          PvpMatch[]      @relation("PvpWinner")
-  challenge_solvers ChallengeSolver[]
+  sessions           Session[]
+  riddles            Riddles[]
+  saved_riddles      SavedRiddles[]
+  comments           Comment[]
+  likes              Like[]
+  Chat               Chat[]
+  followers          Follow[]            @relation("following")
+  following          Follow[]            @relation("follower")
+  SolvedRiddle       SolvedRiddle[]
+  RiddleAttempt      RiddleAttempt[]
+  notifications      Notification[]      @relation("NotificationRecipient")
+  triggered_notifs   Notification[]      @relation("NotificationActor")
+  user_quests        UserQuest[]
+  pvp_created        PvpMatch[]          @relation("PvpCreator")
+  pvp_opposed        PvpMatch[]          @relation("PvpOpponent")
+  pvp_won            PvpMatch[]          @relation("PvpWinner")
+  challenge_solvers  ChallengeSolver[]
+  crossword_progress CrosswordProgress[]
 
   @@map("users")
 }
@@ -161,7 +162,7 @@ model Riddles {
   RiddleAttempt      RiddleAttempt[]
   source_message     Message[]
   pvp_matches        PvpMatch[]
-  crossword_progress CrosswordProgress?
+  crossword_progress CrosswordProgress[]
 
   @@map("riddles")
 }
@@ -328,8 +329,6 @@ model UserQuest {
   @@map("user_quests")
 }
 
-// ─── PvP ──────────────────────────────────────────────────────
-
 model PvpMatch {
   id     String    @id @default(uuid())
   status PvpStatus @default(PENDING)
@@ -355,11 +354,11 @@ model PvpMatch {
   @@map("pvp_matches")
 }
 
-// ─── Crossword Progress ───────────────────────────────────────
-
 model CrosswordProgress {
   id        String    @id @default(uuid())
-  riddle_id String    @unique
+  user_id   String
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  riddle_id String
   riddle    Riddles   @relation(fields: [riddle_id], references: [id], onDelete: Cascade)
   progress  Json?
   is_solved Boolean   @default(false)
@@ -368,10 +367,9 @@ model CrosswordProgress {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  @@unique([user_id, riddle_id])
   @@map("crossword_progress")
 }
-
-// ─── Community Challenges ─────────────────────────────────────
 
 model CommunityChallenge {
   id                String   @id @default(uuid())

@@ -6,7 +6,7 @@ import { QuestsService } from '../quests/quests.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AiService } from '../riddles/ai/ai.service';
 import { PvpStatus, QuestType, NotificationType, RiddleType } from '@prisma/client';
-import { AiRiddleResponse } from '../riddles/ai/ai-responses.dto';
+import { AiRiddleResponse, CrosswordLayout } from '../riddles/ai/ai-responses.dto';
 
 interface PvpAiRiddleResponse extends AiRiddleResponse {
   type?: string;
@@ -93,7 +93,6 @@ export class PvpService {
     const riddleLanguage = creatorChat?.language ?? 'english';
 
     // ── Random generation parameters ────────────────────────────
-    const randomComplexity = Math.floor(Math.random() * 5) + 1;
     const pvpTopics = [
       'ancient mysteries',
       'cyberpunk paradoxes',
@@ -108,8 +107,47 @@ export class PvpService {
     ];
     const randomTopic = pvpTopics[Math.floor(Math.random() * pvpTopics.length)];
 
-    // ── AI generation — type is self-classified by the model ─────
-    const generationPrompt = `Generate a riddle about the theme "${randomTopic}" at complexity level ${randomComplexity} out of 5.
+    // ── 50/50 dice: crossword vs text riddle ─────────────────────
+    const isCrosswordRound = Math.random() < 0.5;
+    // Complexity 3-5 for both paths — PvP is always a challenge
+    const randomComplexity = Math.floor(Math.random() * 3) + 3;
+    // Crossword word count: 9-20 words
+    const crosswordWordCount = Math.floor(Math.random() * 12) + 9;
+
+    // ── Persist the freshly generated riddle ─────────────────────
+    const riddle = await (async () => {
+      // ── Crossword path ──────────────────────────────────────────
+      if (isCrosswordRound) {
+        let layout: CrosswordLayout | null = null;
+        try {
+          layout = await this.aiService.generateCrossword(randomTopic, [], riddleLanguage, crosswordWordCount, randomComplexity);
+        } catch (err) {
+          this.logger.warn(
+            `[PvP] Crossword generation failed for match ${matchId}, falling back to text. ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+
+        if (layout) {
+          this.logger.log(
+            `[PvP] Crossword for match ${matchId} — complexity: ${randomComplexity}, words: ${crosswordWordCount}, topic: "${randomTopic}"`,
+          );
+          return this.prisma.riddles.create({
+            data: {
+              content: JSON.stringify(layout),
+              answer: 'CROSSWORD_COMPLETE',
+              prompt_context: { source: 'pvp', topic: randomTopic, type: 'CROSSWORD', complexity: randomComplexity, word_count: crosswordWordCount, language: riddleLanguage },
+              complexity: randomComplexity,
+              type: RiddleType.CROSSWORD,
+              is_public: false,
+              is_verified: true,
+              author_id: match.creator_id,
+            },
+          });
+        }
+      }
+
+      // ── Text riddle path (default or crossword fallback) ────────
+      const generationPrompt = `Generate a riddle about the theme "${randomTopic}" at complexity level ${randomComplexity} out of 5.
 
 After generating the riddle, evaluate its content and classify it as exactly one of these types:
 - CLASSIC: traditional wordplay, metaphor, or poetic object-description riddle
@@ -127,47 +165,39 @@ RETURN JSON ONLY — no markdown, no extra text:
   "reasoning": "brief internal note on how you constructed this riddle"
 }`;
 
-    let aiResult: PvpAiRiddleResponse;
-    try {
-      aiResult = await this.aiService.askGemini<PvpAiRiddleResponse>(generationPrompt, 3);
-    } catch (error) {
-      this.logger.warn(
-        `[PvP] AI generation failed for match ${matchId} — using fallback riddle. Error: ${error instanceof Error ? error.message : String(error)}`,
+      let aiResult: PvpAiRiddleResponse;
+      try {
+        aiResult = await this.aiService.askGemini<PvpAiRiddleResponse>(generationPrompt, 3);
+      } catch (error) {
+        this.logger.warn(
+          `[PvP] AI generation failed for match ${matchId} — using fallback riddle. Error: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        aiResult = {
+          content:
+            'I have cities, but no houses live there. Mountains, but no trees grow. Water, but no fish swim. Roads, but no cars drive. What am I?',
+          answer: 'A map',
+          type: 'LOGIC',
+          reasoning: 'Hardcoded fallback riddle used because AI generation was unavailable.',
+        };
+      }
+
+      const riddleType = this.resolveRiddleType(aiResult.type);
+      this.logger.log(
+        `[PvP] Text riddle for match ${matchId} — type: ${riddleType}, complexity: ${randomComplexity}, topic: "${randomTopic}"`,
       );
-      aiResult = {
-        content:
-          'I have cities, but no houses live there. Mountains, but no trees grow. Water, but no fish swim. Roads, but no cars drive. What am I?',
-        answer: 'A map',
-        type: 'LOGIC',
-        reasoning: 'Hardcoded fallback riddle used because AI generation was unavailable.',
-      };
-    }
-
-    const riddleType = this.resolveRiddleType(aiResult.type);
-    this.logger.log(
-      `[PvP] AI riddle for match ${matchId} — type: ${riddleType} (AI-classified), complexity: ${randomComplexity}, topic: "${randomTopic}"`,
-    );
-
-    // ── Persist the freshly generated riddle ─────────────────────
-    const riddle = await this.prisma.riddles.create({
-      data: {
-        content: aiResult.content,
-        answer: aiResult.answer,
-        prompt_context: {
-          source: 'pvp',
-          topic: randomTopic,
-          type: riddleType,
+      return this.prisma.riddles.create({
+        data: {
+          content: aiResult.content,
+          answer: aiResult.answer,
+          prompt_context: { source: 'pvp', topic: randomTopic, type: riddleType, complexity: randomComplexity, language: riddleLanguage, reasoning: aiResult.reasoning },
           complexity: randomComplexity,
-          language: riddleLanguage,
-          reasoning: aiResult.reasoning,
+          type: riddleType,
+          is_public: false,
+          is_verified: true,
+          author_id: match.creator_id,
         },
-        complexity: randomComplexity,
-        type: riddleType,
-        is_public: false,
-        is_verified: true,
-        author_id: match.creator_id,
-      },
-    });
+      });
+    })();
 
     // ── Activate match with the new riddle atomically ─────────────
     const updated = await this.prisma.pvpMatch.update({
@@ -199,6 +229,7 @@ RETURN JSON ONLY — no markdown, no extra text:
     matchId: string,
     userId: string,
     guess: string,
+    answers?: Record<string, string>,
   ): Promise<{ correct: boolean; winnerId?: string; loserId?: string; xpEarned?: number }> {
     const match = await this.prisma.pvpMatch.findUnique({
       where: { id: matchId },
@@ -212,25 +243,71 @@ RETURN JSON ONLY — no markdown, no extra text:
     }
     if (!match.riddle) throw new ForbiddenException('No riddle assigned to match');
 
-    // ── Fast-path: local string normalisation (sub-millisecond) ──────
-    const answerText = match.riddle.answer ?? '';
-    let isSolvedLocally = false;
+    // ── Crossword match: server validates DB progress against layout ──
+    if (match.riddle.type === RiddleType.CROSSWORD) {
+      if (guess !== 'CROSSWORD_COMPLETE') return { correct: false };
 
-    if (answerText) {
-      const normalizedGuess = this.normalizeAnswer(guess);
-      const normalizedAnswer = this.normalizeAnswer(answerText);
-      isSolvedLocally =
-        normalizedGuess === normalizedAnswer ||
-        normalizedAnswer.split(' ').includes(normalizedGuess);
-    }
+      // Parse the stored layout from riddle content
+      let layout: CrosswordLayout;
+      try {
+        layout = JSON.parse(match.riddle.content) as CrosswordLayout;
+      } catch {
+        this.logger.error(`[PvP] Could not parse crossword layout for match ${matchId}`);
+        return { correct: false };
+      }
 
-    if (!isSolvedLocally) {
-      // ── Semantic fallback: AI handles synonyms, phrasing variants, and multilingual answers ──
-      const riddleContext = [
-        { role: 'user' as const, parts: [{ text: match.riddle.content }] },
-      ];
-      const aiResult = await this.aiService.getContextualHint(riddleContext, guess, match.riddle.answer);
-      if (!aiResult.is_solved) return { correct: false };
+      const db = this.prisma as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+      // Atomic save: persist the final answers payload before validating
+      if (answers && Object.keys(answers).length > 0) {
+        await db.crosswordProgress.upsert({
+          where: { user_id_riddle_id: { user_id: userId, riddle_id: match.riddle.id } },
+          create: { user_id: userId, riddle_id: match.riddle.id, progress: answers },
+          update: { progress: answers },
+        });
+      }
+
+      // Read this player's persisted grid state from the DB
+      const cp = await db.crosswordProgress.findUnique({
+        where: { user_id_riddle_id: { user_id: userId, riddle_id: match.riddle.id } },
+        select: { progress: true },
+      });
+
+      if (!cp?.progress) return { correct: false };
+
+      const progress = cp.progress as Record<string, string>;
+
+      // Validate every word matches the solution using the same normaliser as the client
+      const allCorrect = layout.words.every((word) => {
+        const typed = progress[String(word.number)] ?? '';
+        return this.normalizeCrosswordAnswer(typed) === this.normalizeCrosswordAnswer(word.word);
+      });
+
+      if (!allCorrect) {
+        this.logger.warn(`[PvP] Crossword completion rejected for user ${userId} — grid not fully solved`);
+        return { correct: false };
+      }
+    } else {
+      // ── Fast-path: local string normalisation (sub-millisecond) ──
+      const answerText = match.riddle.answer ?? '';
+      let isSolvedLocally = false;
+
+      if (answerText) {
+        const normalizedGuess = this.normalizeAnswer(guess);
+        const normalizedAnswer = this.normalizeAnswer(answerText);
+        isSolvedLocally =
+          normalizedGuess === normalizedAnswer ||
+          normalizedAnswer.split(' ').includes(normalizedGuess);
+      }
+
+      if (!isSolvedLocally) {
+        // ── Semantic fallback: AI handles synonyms, phrasing variants, and multilingual answers ──
+        const riddleContext = [
+          { role: 'user' as const, parts: [{ text: match.riddle.content }] },
+        ];
+        const aiResult = await this.aiService.getContextualHint(riddleContext, guess, match.riddle.answer);
+        if (!aiResult.is_solved) return { correct: false };
+      }
     }
 
     const loserId = match.creator_id === userId ? match.opponent_id! : match.creator_id;
@@ -302,6 +379,11 @@ RETURN JSON ONLY — no markdown, no extra text:
       .replace(/[^\p{L}\p{N}\s]/gu, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  /** Mirrors the client-side CrosswordResult normaliser for server-side grid validation. */
+  private normalizeCrosswordAnswer(s: string): string {
+    return s.toUpperCase().replace(/[\s'\-]/g, '');
   }
 
   async cancelMatch(matchId: string, userId: string) {

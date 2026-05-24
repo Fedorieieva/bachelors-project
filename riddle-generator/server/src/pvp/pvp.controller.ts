@@ -36,9 +36,9 @@ export class PvpController {
   submitGuess(
     @Param('id') id: string,
     @CurrentUser() user: User,
-    @Body() body: { guess: string },
+    @Body() body: { guess: string; answers?: Record<string, string> },
   ) {
-    return this.pvpService.submitGuess(id, user.id, body.guess);
+    return this.pvpService.submitGuess(id, user.id, body.guess, body.answers);
   }
 
   @Delete('match/:id')

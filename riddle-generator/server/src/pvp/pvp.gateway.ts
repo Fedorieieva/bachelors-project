@@ -147,12 +147,12 @@ export class PvpGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('submit_guess')
   async handleSubmitGuess(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { matchId: string; guess: string },
+    @MessageBody() data: { matchId: string; guess: string; answers?: Record<string, string> },
   ) {
     const user = client.data.user;
     if (!user) throw new WsException('Unauthorized');
     try {
-      const result = await this.pvpService.submitGuess(data.matchId, user.id, data.guess);
+      const result = await this.pvpService.submitGuess(data.matchId, user.id, data.guess, data.answers);
       if (!result.correct) {
         client.emit('guess_result', { correct: false });
         return;

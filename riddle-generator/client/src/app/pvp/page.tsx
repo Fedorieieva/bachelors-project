@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Swords, Users, Trophy, Clock, CheckCircle2, XCircle,
@@ -15,6 +15,9 @@ import { useAppSelector } from '@/store/hooks';
 import { useGlobalToast } from '@/providers/ToastProvider';
 import { Button } from '@/components/atoms/Button/Button';
 import { Badge, BadgeVariant } from '@/components/atoms/Badge/Badge';
+import { CrosswordResult } from '@/components/organisms/Chat/CrosswordResult/CrosswordResult';
+import { CrosswordLayout } from '@/types/riddle';
+import { RiddleService } from '@/services/riddle.service';
 import { PvpMatch, PendingRoom, ChallengeTopSolver, SolvedChallengeRecord } from '@/types/pvp';
 import styles from './Pvp.module.scss';
 import { cn } from '@/lib/utils';
@@ -27,6 +30,7 @@ function riddleTypeToVariant(type?: string): BadgeVariant {
     case 'MATH': return 'warning';
     case 'LOGIC': return 'info';
     case 'DANETKI': return 'success';
+    case 'CROSSWORD': return 'pink';
     default: return 'default';
   }
 }
@@ -181,7 +185,7 @@ function ActiveMatchPanel({
 }: {
   match: PvpMatch;
   currentUserId: string;
-  onSubmit: (guess: string) => Promise<void>;
+  onSubmit: (guess: string, answers?: Record<string, string>) => Promise<void>;
   guessResult: { correct: boolean; winnerId?: string; xpEarned?: number } | null;
   onReset: () => void;
 }) {
@@ -191,6 +195,30 @@ function ActiveMatchPanel({
   const isFinished = match.status === 'FINISHED' || match.status === 'CANCELLED';
   const iWon = match.winner?.id === currentUserId;
   const opponent = match.creator.id === currentUserId ? match.opponent : match.creator;
+  const isCrossword = match.riddle?.type?.toUpperCase() === 'CROSSWORD';
+
+  const parsedLayout = useMemo<CrosswordLayout | null>(() => {
+    if (!match.riddle || !isCrossword) return null;
+    try {
+      return JSON.parse(match.riddle.content) as CrosswordLayout;
+    } catch {
+      return null;
+    }
+  }, [match.riddle, isCrossword]);
+
+  const progressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestAnswersRef = useRef<Record<number, string>>({});
+
+  const handleProgressChange = useCallback((answers: Record<number, string>) => {
+    latestAnswersRef.current = answers;
+    if (!match.riddle?.id) return;
+    const riddleId = match.riddle.id;
+    if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current);
+    progressDebounceRef.current = setTimeout(() => {
+      const asStrings = Object.fromEntries(Object.entries(answers)) as Record<string, string>;
+      void RiddleService.saveProgress(riddleId, asStrings);
+    }, 800);
+  }, [match.riddle?.id]);
 
   const handleSubmit = async () => {
     if (!guess.trim() || submitting) return;
@@ -199,6 +227,34 @@ function ActiveMatchPanel({
     setSubmitting(false);
     setGuess('');
   };
+
+  const riddleIdRef = useRef<string | null>(match.riddle?.id ?? null);
+  riddleIdRef.current = match.riddle?.id ?? null;
+
+  useEffect(() => {
+    return () => {
+      if (progressDebounceRef.current && riddleIdRef.current) {
+        clearTimeout(progressDebounceRef.current);
+        progressDebounceRef.current = null;
+        const asStrings = Object.fromEntries(
+          Object.entries(latestAnswersRef.current),
+        ) as Record<string, string>;
+        void RiddleService.saveProgress(riddleIdRef.current, asStrings);
+      }
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCrosswordComplete = useCallback(async () => {
+    if (!match.riddle?.id) return;
+    if (progressDebounceRef.current) {
+      clearTimeout(progressDebounceRef.current);
+      progressDebounceRef.current = null;
+    }
+    const asStrings = Object.fromEntries(Object.entries(latestAnswersRef.current)) as Record<string, string>;
+    setSubmitting(true);
+    await onSubmit('CROSSWORD_COMPLETE', asStrings);
+    setSubmitting(false);
+  }, [match.riddle?.id, onSubmit]);
 
   return (
     <div className={styles.matchPanel}>
@@ -225,7 +281,25 @@ function ActiveMatchPanel({
         </div>
       </div>
 
-      {match.riddle && !isFinished && (
+      {match.riddle && !isFinished && isCrossword && parsedLayout && (
+        <div className={styles.crosswordMatchWrap}>
+          <div className={styles.crosswordMatchMeta}>
+            <span className={styles.crosswordWordCount}>
+              <span className={styles.wordCountLabel}>Words:</span>
+              {parsedLayout.words.length}
+            </span>
+          </div>
+          <CrosswordResult
+            layout={parsedLayout}
+            onReset={() => {}}
+            onComplete={() => void handleCrosswordComplete()}
+            onProgressChange={handleProgressChange}
+            hideControls
+          />
+        </div>
+      )}
+
+      {match.riddle && !isFinished && !isCrossword && (
         <div className={styles.riddleBox}>
           {match.riddle.image_url && (
             <Image
@@ -445,6 +519,22 @@ function DuelsLog({ matches, userId }: { matches: PvpMatch[]; userId: string }) 
                 {m.riddle.type}
               </Badge>
             )}
+            {m.riddle?.complexity !== undefined && (
+              <div className={styles.historyComplexity}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <span
+                    key={i}
+                    className={cn(styles.complexityDot, { [styles.complexityDotFilled]: i <= m.riddle!.complexity })}
+                  />
+                ))}
+              </div>
+            )}
+            {m.riddle?.type?.toUpperCase() === 'CROSSWORD' && (() => {
+              try {
+                const layout = JSON.parse(m.riddle!.content) as CrosswordLayout;
+                return <span className={styles.crosswordWordCount}>{layout.words.length}w</span>;
+              } catch { return null; }
+            })()}
 
             <div className={styles.historyOpponent}>
               {opponent ? (
@@ -579,8 +669,8 @@ export default function PvpPage() {
     await lobby.joinRoom(matchId);
   };
 
-  const handleGuess = async (guess: string) => {
-    const result = await lobby.submitGuess(guess);
+  const handleGuess = async (guess: string, answers?: Record<string, string>) => {
+    const result = await lobby.submitGuess(guess, answers);
     if (result && !result.correct) {
       showGlobalToast('Wrong answer — try again!', 'warning');
     }
@@ -589,6 +679,10 @@ export default function PvpPage() {
   const inMatch =
     lobby.phase === 'waiting' || lobby.phase === 'active' || lobby.phase === 'finished';
 
+  const isActiveCrossword =
+    lobby.phase === 'active' &&
+    lobby.match?.riddle?.type?.toUpperCase() === 'CROSSWORD';
+
   return (
     <div className={styles.page}>
       <h1 className={styles.pageTitle}>
@@ -596,7 +690,7 @@ export default function PvpPage() {
         Competitive Arena
       </h1>
 
-      <div className={styles.contentGrid}>
+      <div className={cn(styles.contentGrid, isActiveCrossword && styles.fullWidthGrid)}>
         <div className={styles.main}>
           {/* Tab bar — hidden during an active match */}
           {!inMatch && (

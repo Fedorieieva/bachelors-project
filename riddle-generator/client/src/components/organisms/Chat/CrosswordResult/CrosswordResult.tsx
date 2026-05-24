@@ -27,6 +27,8 @@ interface CrosswordResultProps {
   isSolved?: boolean;
   /** Called whenever the user changes an answer so the parent can debounce-save progress */
   onProgressChange?: (answers: Record<number, string>) => void;
+  /** Hides the "New crossword" header button — use in PvP and read-only history contexts */
+  hideControls?: boolean;
 }
 
 type WordStatus = 'pending' | 'correct' | 'wrong';
@@ -83,6 +85,11 @@ function getCellStatus(cell: CellData, wordStatuses: Record<number, WordStatus>)
   return 'pending';
 }
 
+/** Stable fingerprint based on word content — survives reference churn across polls. */
+function layoutKey(layout: CrosswordLayout): string {
+  return layout.words.map((w) => `${w.number}:${w.word}`).join('|');
+}
+
 export const CrosswordResult: React.FC<CrosswordResultProps> = ({
   layout,
   riddleId,
@@ -98,6 +105,7 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
   initialAnswers,
   isSolved = false,
   onProgressChange,
+  hideControls = false,
 }) => {
   const solvedAnswers = useMemo<Record<number, string>>(
     () => Object.fromEntries(layout.words.map((w) => [w.number, w.word])),
@@ -107,7 +115,29 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>(
     () => (isSolved ? solvedAnswers : (initialAnswers ?? {})),
   );
+
+  // Word number whose input is currently held in browser focus.
+  // Used by the hydration gate to skip overwriting the cell being edited.
+  const [focusedWordNumber, setFocusedWordNumber] = useState<number | null>(null);
+
   const completedRef = useRef(false);
+
+  // Live mirror of the isSolved prop. Updated every render so that the
+  // 1200ms delayed-clear timer reads the current value at fire time, not
+  // the stale closure value from when the timer was scheduled. This prevents
+  // the clear from running after the puzzle is solved or the match ends.
+  const isSolvedRef = useRef(isSolved);
+  isSolvedRef.current = isSolved;
+
+  // Fingerprint of the last layout that triggered a full state reset.
+  // Guards against same-riddle re-renders (PvP polling, React Strict Mode)
+  // resetting userAnswers mid-session.
+  const layoutKeyRef = useRef<string>(layoutKey(layout));
+
+  // Per-word delayed-clear timers. One entry per word that is showing a
+  // wrong-answer highlight. Stored in a ref so they survive re-renders and
+  // are drained on unmount.
+  const clearTimersRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const cellMap = useMemo(() => buildCellMap(layout.words), [layout.words]);
   const { rows, cols } = layout.gridSize;
@@ -154,6 +184,7 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
     [layout.words, wordStatuses],
   );
 
+  // Fire onComplete exactly once per puzzle session when all words are solved.
   useEffect(() => {
     if (allCorrect && !completedRef.current && !isSolved) {
       completedRef.current = true;
@@ -161,27 +192,108 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
     }
   }, [allCorrect, onComplete, isSolved]);
 
+  // Unified layout-change + server-hydration effect.
+  //
+  // Branch A — layout fingerprint changed (new riddle):
+  //   Full state reset. All pending clears are cancelled and answers are
+  //   seeded from initialAnswers (or solvedAnswers if already solved).
+  //
+  // Branch B — same riddle, initialAnswers updated (background DB sync):
+  //   Selective hydration. Only words that are locally empty AND not currently
+  //   focused are eligible. This lets a returning player's saved progress load
+  //   without disturbing any cell they are actively editing.
   useEffect(() => {
-    completedRef.current = false;
-    setUserAnswers(isSolved ? solvedAnswers : (initialAnswers ?? {}));
-  }, [layout, isSolved, solvedAnswers, initialAnswers]);
+    const key = layoutKey(layout);
 
-  const handleChange = useCallback((wordNumber: number, value: string) => {
-    if (isSolved) return;
+    if (key !== layoutKeyRef.current) {
+      // ── Branch A: new riddle ─────────────────────────────────────
+      layoutKeyRef.current = key;
+      clearTimersRef.current.forEach((t) => clearTimeout(t));
+      clearTimersRef.current.clear();
+      completedRef.current = false;
+      setUserAnswers(isSolved ? solvedAnswers : (initialAnswers ?? {}));
+      return;
+    }
+
+    // ── Branch B: same riddle — partial hydration only ───────────
+    // Skip entirely when there is no server payload or puzzle is already solved.
+    if (!initialAnswers || isSolved) return;
+
     setUserAnswers((prev) => {
-      const next = { ...prev, [wordNumber]: value };
-      onProgressChange?.(next);
-      return next;
+      const next = { ...prev };
+      let changed = false;
+      for (const [rawNum, serverVal] of Object.entries(initialAnswers)) {
+        const num = Number(rawNum);
+        const localVal = prev[num] ?? '';
+        // Hydrate only if: the local cell is empty AND the word is not focused
+        if (serverVal && !localVal && num !== focusedWordNumber) {
+          next[num] = serverVal;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
     });
-  }, [isSolved, onProgressChange]);
+  }, [layout, isSolved, solvedAnswers, initialAnswers, focusedWordNumber]);
+
+  // Drain all pending delayed-clear timers when the component unmounts.
+  // This covers the PvP match-end path: ActiveMatchPanel unmounts CrosswordResult
+  // when isFinished becomes true, and this cleanup runs immediately.
+  useEffect(() => {
+    return () => {
+      clearTimersRef.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
+  const handleChange = useCallback(
+    (wordNumber: number, value: string) => {
+      if (isSolved) return;
+
+      // User resumed typing — cancel any in-flight delayed clear for this word
+      const pending = clearTimersRef.current.get(wordNumber);
+      if (pending) {
+        clearTimeout(pending);
+        clearTimersRef.current.delete(wordNumber);
+      }
+
+      setUserAnswers((prev) => {
+        const next = { ...prev, [wordNumber]: value };
+        onProgressChange?.(next);
+        return next;
+      });
+
+      // Schedule a delayed clear only when the word slot is fully filled and wrong.
+      // If the match ends or the puzzle is solved during the 1200ms window,
+      // isSolvedRef.current will be true and the clear is aborted — leaving
+      // letters intact for post-match grid inspection.
+      const word = layout.words.find((w) => w.number === wordNumber);
+      if (word && getWordStatus(value, word.word) === 'wrong') {
+        const timer = setTimeout(() => {
+          clearTimersRef.current.delete(wordNumber);
+          // Abort if the puzzle was solved or match terminated during the delay
+          if (isSolvedRef.current) return;
+          setUserAnswers((prev) => {
+            // Guard: skip if the user already changed the value since scheduling
+            if ((prev[wordNumber] ?? '') !== value) return prev;
+            const next = { ...prev, [wordNumber]: '' };
+            onProgressChange?.(next);
+            return next;
+          });
+        }, 1200);
+        clearTimersRef.current.set(wordNumber, timer);
+      }
+    },
+    [isSolved, onProgressChange, layout.words],
+  );
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <Typography variant="h2">Crossword</Typography>
-        <Button variant="grey-glass-link" onClick={onNewCrossword ?? onReset}>
-          New crossword
-        </Button>
+        {!hideControls && (
+          <Button variant="grey-glass-link" onClick={onNewCrossword ?? onReset}>
+            New crossword
+          </Button>
+        )}
       </div>
 
       {allCorrect && (
@@ -217,7 +329,6 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
       <div className={styles.body}>
         {/* Visual grid with chess-style column labels */}
         <div className={styles.gridWrapper}>
-          {/* Column header: A, B, C… */}
           <div
             className={styles.colLabels}
             style={{ gridTemplateColumns: `repeat(${cols}, 36px)` }}
@@ -288,6 +399,8 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
                   placeholder={`${normalizeWord(word.word).length} letters`}
                   value={userAnswers[word.number] ?? ''}
                   onChange={(e) => handleChange(word.number, e.target.value)}
+                  onFocus={() => setFocusedWordNumber(word.number)}
+                  onBlur={() => setFocusedWordNumber(null)}
                   disabled={isLocked}
                   aria-label={`${word.number} ${word.direction}`}
                   spellCheck={false}

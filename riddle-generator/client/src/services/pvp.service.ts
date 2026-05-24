@@ -27,8 +27,8 @@ export const PvpService = {
     return data;
   },
 
-  async submitGuess(matchId: string, guess: string): Promise<GuessResult> {
-    const { data } = await apiClient.post<GuessResult>(`/pvp/match/${matchId}/guess`, { guess });
+  async submitGuess(matchId: string, guess: string, answers?: Record<string, string>): Promise<GuessResult> {
+    const { data } = await apiClient.post<GuessResult>(`/pvp/match/${matchId}/guess`, { guess, answers });
     return data;
   },
 

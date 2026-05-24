@@ -36,7 +36,11 @@
       "Bash(Get-ChildItem -Recurse -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\" -Directory)",
       "Bash(npm info *)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('readme',''\\)[:3000]\\)\")",
-      "Bash(npm pack *)"
+      "Bash(npm pack *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Find-Content -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\src\\\\riddles\\\\riddles.service.ts\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -First 50)",
+      "PowerShell(Get-Item *)"
     ]
   }
 }

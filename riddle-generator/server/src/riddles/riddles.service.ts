@@ -1061,7 +1061,7 @@ export class RiddlesService {
       });
 
       await txAny.crosswordProgress.create({
-        data: { riddle_id: riddle.id },
+        data: { user_id: userId, riddle_id: riddle.id },
       });
 
       await tx.message.create({
@@ -1082,7 +1082,7 @@ export class RiddlesService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const riddle = await (this.prisma as any).riddles.findUnique({
       where: { id },
-      include: { crossword_progress: true },
+      include: { crossword_progress: { where: { user_id: userId }, take: 1 } },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
     if (!riddle) throw new NotFoundException('Riddle not found');
@@ -1109,7 +1109,7 @@ export class RiddlesService {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cp = riddle.crossword_progress as { is_solved: boolean; progress: Record<string, string> | null } | null;
+    const cp = ((riddle.crossword_progress as Array<{ is_solved: boolean; progress: Record<string, string> | null }>)[0]) ?? null;
     return {
       id: riddle.id as string,
       content: riddle.content as string,
@@ -1143,16 +1143,30 @@ export class RiddlesService {
   ): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = this.prisma as any;
+    // Allow both the riddle author AND active PvP participants to save progress
     const riddle = await db.riddles.findFirst({
-      where: { id: riddleId, author_id: userId },
-      include: { crossword_progress: { select: { is_solved: true } } },
+      where: {
+        id: riddleId,
+        OR: [
+          { author_id: userId },
+          {
+            pvp_matches: {
+              some: {
+                status: PvpStatus.ACTIVE,
+                OR: [{ creator_id: userId }, { opponent_id: userId }],
+              },
+            },
+          },
+        ],
+      },
+      include: { crossword_progress: { where: { user_id: userId }, select: { is_solved: true }, take: 1 } },
     });
     if (!riddle) throw new NotFoundException('Crossword not found');
-    if (riddle.crossword_progress?.is_solved) return;
+    if (riddle.crossword_progress[0]?.is_solved) return;
 
     await db.crosswordProgress.upsert({
-      where: { riddle_id: riddleId },
-      create: { riddle_id: riddleId, progress },
+      where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
+      create: { user_id: userId, riddle_id: riddleId, progress },
       update: { progress },
     });
   }
@@ -1165,18 +1179,18 @@ export class RiddlesService {
     const db = this.prisma as any;
     const riddle = await db.riddles.findFirst({
       where: { id: riddleId, author_id: userId },
-      include: { crossword_progress: { select: { is_solved: true } } },
+      include: { crossword_progress: { where: { user_id: userId }, select: { is_solved: true }, take: 1 } },
     });
     if (!riddle) throw new NotFoundException('Crossword not found');
 
-    if (riddle.crossword_progress?.is_solved === true) {
+    if (riddle.crossword_progress[0]?.is_solved === true) {
       return { xp_earned: 0 };
     }
 
     const now = new Date();
     await db.crosswordProgress.upsert({
-      where: { riddle_id: riddleId },
-      create: { riddle_id: riddleId, progress: {}, is_solved: true, solved_at: now },
+      where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
+      create: { user_id: userId, riddle_id: riddleId, progress: {}, is_solved: true, solved_at: now },
       update: { progress: {}, is_solved: true, solved_at: now },
     });
 

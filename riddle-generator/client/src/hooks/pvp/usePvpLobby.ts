@@ -185,10 +185,10 @@ export function usePvpLobby() {
   );
 
   const submitGuess = useCallback(
-    async (guess: string): Promise<GuessResult | null> => {
+    async (guess: string, answers?: Record<string, string>): Promise<GuessResult | null> => {
       if (!state.matchId) return null;
       try {
-        const result = await PvpService.submitGuess(state.matchId, guess);
+        const result = await PvpService.submitGuess(state.matchId, guess, answers);
         if (result.correct) {
           setState((prev) => ({ ...prev, phase: 'finished', guessResult: result }));
           clearPoll();
