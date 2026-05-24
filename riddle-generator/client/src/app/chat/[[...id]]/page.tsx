@@ -17,8 +17,10 @@ import { Button } from '@/components/atoms/Button/Button';
 import { useDeleteRiddle, useRiddleActions } from '@/hooks/riddles/useRiddleActions';
 import styles from './ChatPage.module.scss';
 import { RiddleCollectionModal } from '@/components/organisms/Modals/RiddlesCollectionModal/RiddlesCollectionModal';
+import { Modal } from '@/components/atoms/Modal/Modal';
 import { useRiddleMessages } from '@/hooks/riddles/useRiddleMessages';
 import { useTranslations } from 'next-intl';
+import { cn } from '@/lib/utils';
 
 const MODEL_STORAGE_KEY = 'genigma-model';
 const DEFAULT_MODEL = 'gemini-2.5-flash-lite';
@@ -122,14 +124,26 @@ export default function ChatPage() {
     }
   }, [crosswordChatId, chatId, router]);
 
-  const parsedCrossword = useMemo<ParsedCrossword | null>(() => {
+  const allParsedCrosswords = useMemo<ParsedCrossword[]>(() => {
+    const result: ParsedCrossword[] = [];
     for (const msg of messages) {
       if (msg.role !== 'model') continue;
       const parsed = parseCrosswordMessage(msg.content);
-      if (parsed) return parsed;
+      if (parsed) result.push(parsed);
     }
-    return null;
+    return result;
   }, [messages]);
+
+  const [crosswordIndex, setCrosswordIndex] = useState(0);
+
+  // Clamp index when older messages load additional crosswords
+  useEffect(() => {
+    if (allParsedCrosswords.length > 0 && crosswordIndex >= allParsedCrosswords.length) {
+      setCrosswordIndex(allParsedCrosswords.length - 1);
+    }
+  }, [allParsedCrosswords.length, crosswordIndex]);
+
+  const parsedCrossword = allParsedCrosswords[crosswordIndex] ?? null;
 
   const activeCrossword = parsedCrossword
     ?? (crosswordLayout ? { layout: crosswordLayout, theme: '', riddle_id: crosswordRiddleId ?? undefined } : null);
@@ -137,14 +151,22 @@ export default function ChatPage() {
 
   const [isShared, setIsShared] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isUnsharing, setIsUnsharing] = useState(false);
+  const [crosswordIsPublic, setCrosswordIsPublic] = useState(false);
   const [crosswordInitialAnswers, setCrosswordInitialAnswers] = useState<Record<number, string> | undefined>(undefined);
   const [crosswordIsSolved, setCrosswordIsSolved] = useState(false);
 
-  // Fetch persisted progress / solved state when we know the riddleId
+  // Fetch persisted progress / solved state / public state when riddleId is known
   useEffect(() => {
     if (!activeRiddleId) return;
+    // Reset session-local share state when switching crosswords
+    setIsShared(false);
+    setCrosswordIsPublic(false);
+    setCrosswordInitialAnswers(undefined);
+    setCrosswordIsSolved(false);
     RiddleService.getRiddleById(activeRiddleId)
       .then((detail) => {
+        setCrosswordIsPublic(detail.is_public ?? false);
         if (detail.is_solved) {
           setCrosswordIsSolved(true);
           setCrosswordInitialAnswers(undefined);
@@ -184,11 +206,26 @@ export default function ChatPage() {
     try {
       await RiddleService.togglePublic(activeRiddleId);
       setIsShared(true);
+      setCrosswordIsPublic(true);
       showGlobalToast('Crossword shared to the social feed!', 'success');
     } catch {
       showGlobalToast('Failed to share crossword', 'error');
     } finally {
       setIsSharing(false);
+    }
+  }, [activeRiddleId, showGlobalToast]);
+
+  const handleUnshare = useCallback(async () => {
+    if (!activeRiddleId) return;
+    setIsUnsharing(true);
+    try {
+      await RiddleService.unpublishCrossword(activeRiddleId);
+      setCrosswordIsPublic(false);
+      showGlobalToast('Crossword removed from the feed.', 'success');
+    } catch {
+      showGlobalToast('Failed to remove crossword from feed.', 'error');
+    } finally {
+      setIsUnsharing(false);
     }
   }, [activeRiddleId, showGlobalToast]);
 
@@ -209,6 +246,50 @@ export default function ChatPage() {
   const [currentSettings, setCurrentSettings] = useState<RiddleSettings>(getInitialSettings);
   const [optimisticMessage, setOptimisticMessage] = useState<string | null>(null);
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
+
+  // ── Inline "New Crossword" panel (session-bound, no redirect) ────────────────
+  const [isNewPanelOpen, setIsNewPanelOpen] = useState(false);
+  const [inlineTheme, setInlineTheme] = useState('');
+  const [inlineComplexity, setInlineComplexity] = useState(3);
+  const [inlineWordCount, setInlineWordCount] = useState(10);
+  const [isInlineGenerating, setIsInlineGenerating] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+
+  // Auto-advance paginator when messages reload with a newly appended crossword
+  const prevCrosswordCountRef = useRef(0);
+  useEffect(() => {
+    if (allParsedCrosswords.length > prevCrosswordCountRef.current && prevCrosswordCountRef.current > 0) {
+      setCrosswordIndex(allParsedCrosswords.length - 1);
+    }
+    prevCrosswordCountRef.current = allParsedCrosswords.length;
+  }, [allParsedCrosswords.length]);
+
+  const handleInlineGenerate = useCallback(async () => {
+    if (!inlineTheme.trim() || !chatId) return;
+    setIsInlineGenerating(true);
+    setInlineError(null);
+    try {
+      const layout = await RiddleService.generateCrossword({
+        theme: inlineTheme.trim(),
+        complexity: inlineComplexity,
+        wordCount: inlineWordCount,
+        language: currentSettings.language,
+      });
+      await RiddleService.saveCrossword({
+        layout,
+        theme: inlineTheme.trim(),
+        language: currentSettings.language,
+        chatId,
+      });
+      void queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
+      setIsNewPanelOpen(false);
+      setInlineTheme('');
+    } catch {
+      setInlineError(t('newCrosswordError'));
+    } finally {
+      setIsInlineGenerating(false);
+    }
+  }, [inlineTheme, inlineComplexity, inlineWordCount, chatId, currentSettings.language, queryClient, t]);
 
   useEffect(() => {
     if (currentSettings.model) {
@@ -250,8 +331,14 @@ export default function ChatPage() {
   }, [messages, optimisticMessage, isSending, scrollToBottom]);
 
   const handleWelcomeGenerate = useCallback((theme: string, customWords: string[]) => {
-    void generateCrossword({ theme, customWords, language: currentSettings.language });
-  }, [generateCrossword, currentSettings.language]);
+    void generateCrossword({
+      theme,
+      customWords,
+      language: currentSettings.language,
+      complexity: currentSettings.complexity,
+      wordCount: currentSettings.crosswordWordCount ?? 10,
+    });
+  }, [generateCrossword, currentSettings.language, currentSettings.complexity, currentSettings.crosswordWordCount]);
 
   const handleSend = useCallback(() => {
     if (!inputValue.trim() || isSending) return;
@@ -307,9 +394,33 @@ export default function ChatPage() {
     <div className={styles.chatPage}>
       {chatId && (
         <div className={styles.topActions}>
-          <Button variant="grey-glass-tab" size="auto" onClick={() => setIsCollectionModalOpen(true)}>
-            {t('riddleCollection')}
-          </Button>
+          {allParsedCrosswords.length > 1 ? (
+            <div className={styles.crosswordPaginator}>
+              <button
+                className={styles.paginatorBtn}
+                onClick={() => setCrosswordIndex(i => Math.max(0, i - 1))}
+                disabled={crosswordIndex === 0}
+                aria-label="Previous crossword"
+              >
+                ←
+              </button>
+              <span className={styles.paginatorCount}>
+                {crosswordIndex + 1}&thinsp;/&thinsp;{allParsedCrosswords.length}
+              </span>
+              <button
+                className={styles.paginatorBtn}
+                onClick={() => setCrosswordIndex(i => Math.min(allParsedCrosswords.length - 1, i + 1))}
+                disabled={crosswordIndex === allParsedCrosswords.length - 1}
+                aria-label="Next crossword"
+              >
+                →
+              </button>
+            </div>
+          ) : (
+            <Button variant="grey-glass-tab" size="auto" onClick={() => setIsCollectionModalOpen(true)}>
+              {t('riddleCollection')}
+            </Button>
+          )}
         </div>
       )}
 
@@ -327,10 +438,14 @@ export default function ChatPage() {
                 layout={activeCrossword.layout}
                 riddleId={activeRiddleId}
                 onReset={parsedCrossword ? () => router.push('/chat') : resetCrossword}
+                onNewCrossword={chatId ? () => setIsNewPanelOpen(true) : undefined}
                 onComplete={() => void handleCrosswordComplete()}
                 onShare={() => void handleShare()}
                 isSharing={isSharing}
                 isShared={isShared}
+                isPublic={crosswordIsPublic}
+                onUnshare={() => void handleUnshare()}
+                isUnsharing={isUnsharing}
                 initialAnswers={crosswordInitialAnswers}
                 isSolved={crosswordIsSolved}
                 onProgressChange={handleProgressChange}
@@ -444,6 +559,75 @@ export default function ChatPage() {
         isTogglingPublic={isTogglingPublic}
         isDeleting={isDeleting}
       />
+
+      {/* Inline "New Crossword" generation panel — no redirect, session-bound */}
+      <Modal
+        isOpen={isNewPanelOpen}
+        onClose={() => { setIsNewPanelOpen(false); setInlineError(null); }}
+        title={t('newCrosswordTitle')}
+      >
+        <div className={styles.inlinePanel}>
+          {/* Theme */}
+          <div className={styles.inlinePanelField}>
+            <span className={styles.inlinePanelLabel}>{t('newCrosswordTheme')}</span>
+            <input
+              className={styles.inlinePanelInput}
+              type="text"
+              placeholder={t('newCrosswordThemePlaceholder')}
+              value={inlineTheme}
+              onChange={(e) => setInlineTheme(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && inlineTheme.trim()) void handleInlineGenerate(); }}
+              autoFocus
+            />
+          </div>
+
+          {/* Complexity */}
+          <div className={styles.inlinePanelField}>
+            <span className={styles.inlinePanelLabel}>{t('newCrosswordComplexity')}</span>
+            <div className={styles.inlinePanelComplexity}>
+              {[1, 2, 3, 4, 5].map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  className={cn(styles.inlinePanelDot, { [styles.active]: inlineComplexity >= level })}
+                  onClick={() => setInlineComplexity(level)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Word count */}
+          <div className={styles.inlinePanelField}>
+            <span className={styles.inlinePanelLabel}>{t('newCrosswordWordCount')}</span>
+            <div className={styles.inlinePanelSliderRow}>
+              <span className={styles.inlinePanelSliderValue}>
+                {t('newCrosswordWordCountValue', { count: inlineWordCount })}
+              </span>
+              <input
+                type="range"
+                className={styles.inlinePanelSlider}
+                min={5}
+                max={20}
+                step={1}
+                value={inlineWordCount}
+                onChange={(e) => setInlineWordCount(Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          {inlineError && <p className={styles.inlinePanelError}>{inlineError}</p>}
+
+          <Button
+            variant="colored-glass"
+            fullWidth
+            onClick={() => void handleInlineGenerate()}
+            isLoading={isInlineGenerating}
+            disabled={!inlineTheme.trim()}
+          >
+            {t('newCrosswordGenerate')}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

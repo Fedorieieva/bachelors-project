@@ -11,10 +11,16 @@ interface CrosswordResultProps {
   layout: CrosswordLayout;
   riddleId?: string;
   onReset: () => void;
+  /** When provided, replaces onReset on the header button to open an in-session generation panel */
+  onNewCrossword?: () => void;
   onComplete?: () => void;
   onShare?: () => void;
   isSharing?: boolean;
   isShared?: boolean;
+  /** True when the riddle is already published to the social feed */
+  isPublic?: boolean;
+  onUnshare?: () => void;
+  isUnsharing?: boolean;
   /** Pre-loaded partial answers from the DB (word number → typed string) */
   initialAnswers?: Record<number, string>;
   /** True when the riddle was already solved in a previous session */
@@ -81,10 +87,14 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
   layout,
   riddleId,
   onReset,
+  onNewCrossword,
   onComplete,
   onShare,
   isSharing = false,
   isShared = false,
+  isPublic = false,
+  onUnshare,
+  isUnsharing = false,
   initialAnswers,
   isSolved = false,
   onProgressChange,
@@ -169,7 +179,7 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
     <div className={styles.container}>
       <div className={styles.header}>
         <Typography variant="h2">Crossword</Typography>
-        <Button variant="grey-glass-link" onClick={onReset}>
+        <Button variant="grey-glass-link" onClick={onNewCrossword ?? onReset}>
           New crossword
         </Button>
       </div>
@@ -177,54 +187,83 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
       {allCorrect && (
         <div className={styles.successBanner}>
           <span className={styles.successText}>Well done! You solved the crossword!</span>
-          {!isSolved && riddleId && onShare && (
-            <Button
-              variant="colored-glass"
-              size="auto"
-              onClick={onShare}
-              isLoading={isSharing}
-              disabled={isShared}
-            >
-              {isShared ? 'Shared!' : 'Share to Feed'}
-            </Button>
+          {riddleId && (
+            isPublic ? (
+              <Button
+                variant="grey-glass-tab"
+                size="auto"
+                onClick={onUnshare}
+                isLoading={isUnsharing}
+              >
+                Remove from Feed
+              </Button>
+            ) : (
+              onShare && (
+                <Button
+                  variant="colored-glass"
+                  size="auto"
+                  onClick={onShare}
+                  isLoading={isSharing}
+                  disabled={isShared}
+                >
+                  {isShared ? 'Shared!' : 'Share to Feed'}
+                </Button>
+              )
+            )
           )}
         </div>
       )}
 
       <div className={styles.body}>
-        {/* Visual grid */}
-        <div
-          className={styles.grid}
-          style={{ gridTemplateColumns: `repeat(${cols}, 36px)` }}
-        >
-          {Array.from({ length: rows }, (_, r) =>
-            Array.from({ length: cols }, (_, c) => {
-              const key = `${c},${r}`;
-              const cell = cellMap.get(key);
-              if (!cell) return <div key={key} className={styles.blackCell} />;
-              const status = getCellStatus(cell, wordStatuses);
-              const displayChar = displayLetters.get(key) ?? '';
-              return (
-                <div
-                  key={key}
-                  className={cn(styles.whiteCell, {
-                    [styles.cellCorrect]: status === 'correct',
-                    [styles.cellWrong]: status === 'wrong',
-                  })}
-                >
-                  {cell.number !== undefined && (
-                    <span className={styles.cellNum}>{cell.number}</span>
-                  )}
-                  <span className={styles.cellLetter}>{displayChar}</span>
-                </div>
-              );
-            }),
-          )}
+        {/* Visual grid with chess-style column labels */}
+        <div className={styles.gridWrapper}>
+          {/* Column header: A, B, C… */}
+          <div
+            className={styles.colLabels}
+            style={{ gridTemplateColumns: `repeat(${cols}, 36px)` }}
+          >
+            {Array.from({ length: cols }, (_, c) => (
+              <div key={c} className={styles.colLabelCell}>
+                {c < 26
+                  ? String.fromCharCode(65 + c)
+                  : `A${String.fromCharCode(65 + (c - 26))}`}
+              </div>
+            ))}
+          </div>
+
+          <div
+            className={styles.grid}
+            style={{ gridTemplateColumns: `repeat(${cols}, 36px)` }}
+          >
+            {Array.from({ length: rows }, (_, r) =>
+              Array.from({ length: cols }, (_, c) => {
+                const key = `${c},${r}`;
+                const cell = cellMap.get(key);
+                if (!cell) return <div key={key} className={styles.blackCell} />;
+                const status = getCellStatus(cell, wordStatuses);
+                const displayChar = displayLetters.get(key) ?? '';
+                return (
+                  <div
+                    key={key}
+                    className={cn(styles.whiteCell, {
+                      [styles.cellCorrect]: status === 'correct',
+                      [styles.cellWrong]: status === 'wrong',
+                    })}
+                  >
+                    {cell.number !== undefined && (
+                      <span className={styles.cellNum}>{cell.number}</span>
+                    )}
+                    <span className={styles.cellLetter}>{displayChar}</span>
+                  </div>
+                );
+              }),
+            )}
+          </div>
         </div>
 
         {/* Per-clue input list */}
         <div className={styles.clueInputList}>
-          {sortedWords.map((word) => {
+          {sortedWords.map((word, idx) => {
             const status = wordStatuses[word.number];
             const isLocked = status === 'correct' || isSolved;
             return (
@@ -236,7 +275,7 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
                 })}
               >
                 <span className={styles.clueLabel}>
-                  {word.number}&thinsp;{word.direction === 'across' ? 'A' : 'D'}
+                  {idx + 1}&thinsp;{word.direction === 'across' ? 'A' : 'D'}
                 </span>
                 <span className={styles.clueText}>{word.clue}</span>
                 <input

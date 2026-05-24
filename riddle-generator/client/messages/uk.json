@@ -29,11 +29,22 @@
     "crosswordThemePlaceholder": "напр. Дослідження космосу",
     "crosswordWords": "Конкретні слова (необов'язково)",
     "crosswordWordsPlaceholder": "Введіть слово та натисніть Enter",
+    "crosswordComplexity": "Складність",
+    "crosswordWordCount": "Кількість слів",
+    "crosswordWordCountValue": "{count} слів",
     "crosswordGenerate": "Згенерувати кросворд"
   },
   "chatPage": {
     "riddleCollection": "Колекція загадок",
-    "loadOlder": "Завантажити попередні"
+    "loadOlder": "Завантажити попередні",
+    "newCrosswordTitle": "Згенерувати новий кросворд",
+    "newCrosswordTheme": "Тема",
+    "newCrosswordThemePlaceholder": "напр. Дослідження космосу",
+    "newCrosswordComplexity": "Складність",
+    "newCrosswordWordCount": "Кількість слів",
+    "newCrosswordWordCountValue": "{count} слів",
+    "newCrosswordGenerate": "Генерувати",
+    "newCrosswordError": "Помилка генерації. Спробуйте ще раз."
   },
   "chatInput": {
     "placeholder": "Введіть відповідь...",

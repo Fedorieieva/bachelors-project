@@ -29,11 +29,22 @@
     "crosswordThemePlaceholder": "e.g. Space exploration",
     "crosswordWords": "Specific Words (optional)",
     "crosswordWordsPlaceholder": "Type a word and press Enter",
+    "crosswordComplexity": "Difficulty",
+    "crosswordWordCount": "Word Count",
+    "crosswordWordCountValue": "{count} words",
     "crosswordGenerate": "Generate Crossword"
   },
   "chatPage": {
     "riddleCollection": "Riddle Collection",
-    "loadOlder": "Load older"
+    "loadOlder": "Load older",
+    "newCrosswordTitle": "Generate New Crossword",
+    "newCrosswordTheme": "Theme",
+    "newCrosswordThemePlaceholder": "e.g. Space exploration",
+    "newCrosswordComplexity": "Difficulty",
+    "newCrosswordWordCount": "Word Count",
+    "newCrosswordWordCountValue": "{count} words",
+    "newCrosswordGenerate": "Generate",
+    "newCrosswordError": "Generation failed. Please try again."
   },
   "chatInput": {
     "placeholder": "Enter your answer...",

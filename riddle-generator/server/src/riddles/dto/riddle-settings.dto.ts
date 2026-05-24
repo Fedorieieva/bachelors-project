@@ -104,6 +104,20 @@ export class CrosswordGenerateDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @ApiPropertyOptional({ example: 10, description: 'Number of words to generate (5–20)', minimum: 5, maximum: 20 })
+  @IsOptional()
+  @IsNumber()
+  @Min(5)
+  @Max(20)
+  wordCount?: number;
+
+  @ApiPropertyOptional({ example: 3, description: 'Vocabulary difficulty level (1–5)', minimum: 1, maximum: 5 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  complexity?: number;
 }
 
 export class CrosswordSaveDto {
@@ -120,6 +134,11 @@ export class CrosswordSaveDto {
   @IsOptional()
   @IsString()
   language?: string;
+
+  @ApiPropertyOptional({ example: 'uuid', description: 'Append the crossword into an existing chat session instead of creating a new chat' })
+  @IsOptional()
+  @IsString()
+  chatId?: string;
 }
 
 export class CrosswordProgressDto {

@@ -26,12 +26,9 @@ const WelcomeSettingsSchema = Yup.object().shape({
   is_interactive: Yup.boolean(),
   model: Yup.string(),
   generate_image: Yup.boolean(),
-  crosswordTheme: Yup.string().when('type', {
-    is: RiddleType.CROSSWORD,
-    then: (s) => s.optional(),
-    otherwise: (s) => s.optional(),
-  }),
+  crosswordTheme: Yup.string().optional(),
   crosswordCustomWords: Yup.array().of(Yup.string()).optional(),
+  crosswordWordCount: Yup.number().min(5).max(20).optional(),
 });
 
 export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
@@ -44,7 +41,7 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
   const [wordInput, setWordInput] = useState('');
 
   const formik = useFormik<RiddleSettings>({
-    initialValues: { ...initialSettings },
+    initialValues: { crosswordWordCount: 10, ...initialSettings },
     validationSchema: WelcomeSettingsSchema,
     onSubmit: () => {},
   });
@@ -153,6 +150,46 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
                     ))}
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className={styles.field}>
+              <Typography variant="details" className={styles.label}>
+                {t('crosswordComplexity')}
+              </Typography>
+              <div className={styles.complexityRow}>
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    className={cn(styles.levelDot, {
+                      [styles.active]: formik.values.complexity >= level,
+                    })}
+                    onClick={() => void formik.setFieldValue('complexity', level)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.field}>
+              <Typography variant="details" className={styles.label}>
+                {t('crosswordWordCount')}
+              </Typography>
+              <div className={styles.wordCountRow}>
+                <span className={styles.wordCountValue}>
+                  {t('crosswordWordCountValue', { count: formik.values.crosswordWordCount ?? 10 })}
+                </span>
+                <input
+                  type="range"
+                  className={styles.wordCountSlider}
+                  min={5}
+                  max={20}
+                  step={1}
+                  value={formik.values.crosswordWordCount ?? 10}
+                  onChange={(e) =>
+                    void formik.setFieldValue('crosswordWordCount', Number(e.target.value))
+                  }
+                />
               </div>
             </div>
 

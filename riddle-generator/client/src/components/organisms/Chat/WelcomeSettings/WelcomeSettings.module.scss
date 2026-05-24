@@ -135,6 +135,30 @@
   }
 }
 
+.wordCountRow {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.wordCountSlider {
+  width: 100%;
+  height: 4px;
+  accent-color: $pink;
+  cursor: pointer;
+  border-radius: $border-radius-primary;
+}
+
+.wordCountValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: $pink;
+  letter-spacing: 0.04em;
+  @include glow($pink, 0.4);
+}
+
 .crosswordActions {
   width: 100%;
   display: flex;

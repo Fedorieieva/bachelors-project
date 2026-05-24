@@ -1004,9 +1004,11 @@ export class RiddlesService {
     theme: string,
     customWords: string[] = [],
     language = 'english',
+    wordCount = 10,
+    complexity = 3,
   ): Promise<CrosswordLayout> {
-    this.logger.log(`[RiddlesService] Crossword generation — theme: "${theme}", words: ${customWords.length}, lang: ${language}`);
-    return this.aiService.generateCrossword(theme, customWords, language);
+    this.logger.log(`[RiddlesService] Crossword generation — theme: "${theme}", words: ${customWords.length}, lang: ${language}, wordCount: ${wordCount}, complexity: ${complexity}`);
+    return this.aiService.generateCrossword(theme, customWords, language, wordCount, complexity);
   }
 
   async saveCrosswordSession(
@@ -1014,19 +1016,38 @@ export class RiddlesService {
     layout: CrosswordLayout,
     theme: string,
     language = 'english',
+    existingChatId?: string,
   ): Promise<{ chatId: string; riddleId: string }> {
     return this.prisma.$transaction(async (tx) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const txAny = tx as any;
-      const chat = await tx.chat.create({
-        data: {
-          user_id: userId,
-          type: 'CROSSWORD' as RiddleType,
-          is_interactive: false,
-          complexity: 3,
-          language,
-        },
-      });
+
+      let chatId: string;
+
+      if (existingChatId) {
+        const existing = await tx.chat.findUnique({
+          where: { id: existingChatId },
+          select: { id: true, user_id: true },
+        });
+        if (!existing) throw new NotFoundException('Chat session not found');
+        if (existing.user_id !== userId) throw new ForbiddenException('You do not own this chat session');
+        chatId = existingChatId;
+      } else {
+        const chat = await tx.chat.create({
+          data: {
+            user_id: userId,
+            type: 'CROSSWORD' as RiddleType,
+            is_interactive: false,
+            complexity: 3,
+            language,
+          },
+        });
+        chatId = chat.id;
+        // User message only for new sessions — helps sidebar history display
+        await tx.message.create({
+          data: { chat_id: chatId, role: 'user', content: theme, is_initial: true },
+        });
+      }
 
       const riddle = await tx.riddles.create({
         data: {
@@ -1044,20 +1065,16 @@ export class RiddlesService {
       });
 
       await tx.message.create({
-        data: { chat_id: chat.id, role: 'user', content: theme, is_initial: true },
-      });
-
-      await tx.message.create({
         data: {
-          chat_id: chat.id,
+          chat_id: chatId,
           role: 'model',
           content: JSON.stringify({ type: 'CROSSWORD_LAYOUT', layout, theme, riddle_id: riddle.id }),
-          is_initial: true,
+          is_initial: !existingChatId,
           saved_riddle_id: riddle.id,
         },
       });
 
-      return { chatId: chat.id, riddleId: riddle.id };
+      return { chatId, riddleId: riddle.id };
     });
   }
 
@@ -1101,9 +1118,22 @@ export class RiddlesService {
       complexity: riddle.complexity as number,
       image_url: riddle.image_url as string | null,
       prompt_context: riddle.prompt_context as Record<string, unknown> | null,
+      is_public: riddle.is_public as boolean,
       is_solved: cp?.is_solved ?? false,
       crossword_progress: cp?.progress ?? null,
     };
+  }
+
+  async unpublishRiddle(userId: string, riddleId: string): Promise<void> {
+    const riddle = await this.prisma.riddles.findFirst({
+      where: { id: riddleId, author_id: userId },
+      select: { id: true },
+    });
+    if (!riddle) throw new NotFoundException('Загадку не знайдено або ви не є її автором');
+    await this.prisma.riddles.update({
+      where: { id: riddleId },
+      data: { is_public: false },
+    });
   }
 
   async saveCrosswordProgress(

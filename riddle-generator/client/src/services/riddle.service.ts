@@ -104,7 +104,7 @@ export const RiddleService = {
     return data;
   },
 
-  async saveCrossword(req: { layout: CrosswordLayout; theme: string; language?: string }): Promise<{ chatId: string; riddleId: string }> {
+  async saveCrossword(req: { layout: CrosswordLayout; theme: string; language?: string; chatId?: string }): Promise<{ chatId: string; riddleId: string }> {
     const { data } = await apiClient.post<{ chatId: string; riddleId: string }>('/riddles/crossword/save', req);
     return data;
   },
@@ -121,5 +121,9 @@ export const RiddleService = {
   async completeCrossword(riddleId: string): Promise<{ xp_earned: number }> {
     const { data } = await apiClient.post<{ xp_earned: number }>(`/riddles/crossword/${riddleId}/complete`);
     return data;
+  },
+
+  async unpublishCrossword(riddleId: string): Promise<void> {
+    await apiClient.delete(`/riddles/${riddleId}/public`);
   },
 };

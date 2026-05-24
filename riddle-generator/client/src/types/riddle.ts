@@ -24,6 +24,8 @@ export interface CrosswordGenerateRequest {
   theme: string;
   customWords?: string[];
   language?: string;
+  wordCount?: number;
+  complexity?: number;
 }
 
 export interface RiddleDetail {
@@ -34,6 +36,7 @@ export interface RiddleDetail {
   complexity: number;
   image_url?: string | null;
   prompt_context?: Record<string, unknown> | null;
+  is_public?: boolean;
   is_solved?: boolean;
   crossword_progress?: Record<string, string> | null;
 }
@@ -50,6 +53,7 @@ export interface RiddleSettings {
   // Crossword-specific — only relevant when type === CROSSWORD
   crosswordTheme?: string;
   crosswordCustomWords?: string[];
+  crosswordWordCount?: number;
 }
 
 export const GEMINI_MODELS = [

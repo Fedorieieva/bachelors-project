@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, Put, Delete, Patch, ParseUUIDPipe, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, Put, Delete, Patch, ParseUUIDPipe, NotFoundException, HttpCode, HttpStatus } from '@nestjs/common';
 import { RiddlesService } from './riddles.service';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
@@ -32,7 +32,7 @@ export class RiddlesController {
   @Public()
   @Post('crossword/generate')
   async generateCrossword(@Body() dto: CrosswordGenerateDto): Promise<CrosswordLayout> {
-    return this.riddlesService.generateCrossword(dto.theme, dto.customWords, dto.language);
+    return this.riddlesService.generateCrossword(dto.theme, dto.customWords, dto.language, dto.wordCount, dto.complexity);
   }
 
   @Post('crossword/save')
@@ -45,6 +45,7 @@ export class RiddlesController {
       dto.layout as unknown as CrosswordLayout,
       dto.theme,
       dto.language,
+      dto.chatId,
     );
   }
 
@@ -148,6 +149,15 @@ export class RiddlesController {
   @Put(':id/public')
   async togglePublic(@Param('id') riddleId: string, @CurrentUser() user: PrismaModels.User) {
     return this.riddlesService.makeRiddlePublic(user.id, riddleId);
+  }
+
+  @Delete(':id/public')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unpublishRiddle(
+    @Param('id', ParseUUIDPipe) riddleId: string,
+    @CurrentUser() user: PrismaModels.User,
+  ): Promise<void> {
+    await this.riddlesService.unpublishRiddle(user.id, riddleId);
   }
 
   @Post(':id/save')

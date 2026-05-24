@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, GenerativeModel, Content } from '@google/generative-ai';
 import { AiHintResponse, AiImageRiddleResult, AiRiddleResponse, CrosswordLayout, RiddleIntentAnalysis } from './ai-responses.dto';
 import { RiddleType } from '@prisma/client';
+import { generateLayout } from 'crossword-layout-generator';
 
 @Injectable()
 export class AiService {
@@ -341,41 +342,80 @@ export class AiService {
     theme: string,
     customWords: string[] = [],
     language = 'english',
+    wordCount = 10,
+    complexity = 3,
   ): Promise<CrosswordLayout> {
     const requiredBlock =
       customWords.length > 0
-        ? `\nREQUIRED WORDS — you MUST include every one of these in the puzzle: ${customWords.map((w) => w.toUpperCase()).join(', ')}.`
+        ? `\nREQUIRED WORDS — you MUST include every one of these: ${customWords.map((w) => w.toUpperCase()).join(', ')}.`
         : '';
 
-    const prompt = `You are a master crossword puzzle compiler. Produce a geometrically valid, fully interlocked crossword puzzle.
+    const complexityGuide =
+      complexity <= 2
+        ? 'Use SHORT, COMMON, everyday words (3–6 letters). Clues must be very simple, direct definitions a child could understand.'
+        : complexity === 3
+          ? 'Use BALANCED words (4–8 letters), a mix of common and moderately specific vocabulary. Clues should be clear, standard dictionary definitions.'
+          : 'Use LONG, RARE, or ADVANCED academic/technical/specialist words (6–12 letters). Clues must be tricky, indirect, or riddle-like — challenge an expert.';
+
+    const fictionalUniverseRule = `
+FICTIONAL UNIVERSE RULE: If the theme references a specific novel, book series, film franchise, video game, or any fictional universe (e.g. "Throne of Glass", "Harry Potter", "The Witcher", "Game of Thrones", "Трон зі скла"), you MUST restrict your vocabulary EXCLUSIVELY to proper nouns, named characters, locations, artifacts, magical systems, factions, spells, creatures, and plot-specific terminology from that canon. Do NOT fall back to generic real-world dictionary words — every word must be a recognisable in-universe lore term that a fan of that specific work would instantly recognise.`;
+
+    const prompt = `You are a crossword vocabulary expert. Your ONLY job is to select thematic words and write clues.
+DO NOT place words on a grid. DO NOT output coordinates, directions, or grid sizes.
+${fictionalUniverseRule}
 
 THEME: "${theme}"${requiredBlock}
-OUTPUT LANGUAGE: Every "word" value and every "clue" value MUST be written strictly in ${language}. Capitalize all words (UPPERCASE).
+OUTPUT LANGUAGE: Both "word" and "clue" values MUST be written strictly in ${language}. Output words in UPPERCASE.
+DIFFICULTY (${complexity}/5): ${complexityGuide}
 
-CONSTRUCTION RULES — follow precisely:
-1. Choose 8–12 thematic words, each 4–10 letters long.${customWords.length > 0 ? ' Include ALL required words listed above.' : ''}
-2. Arrange words on a 2D grid using ACROSS (left-to-right) and DOWN (top-to-bottom) directions.
-3. Coordinate system: x = column index (0-based, left→right), y = row index (0-based, top→bottom).
-4. A word at (x, y, direction="across") occupies cells (x+0,y),(x+1,y),…,(x+len-1,y).
-5. A word at (x, y, direction="down") occupies cells (x,y+0),(x,y+1),…,(x,y+len-1).
-6. INTERSECTION RULE: every crossing pair of words must share exactly one letter at their crossing cell — that letter must match identically in both words.
-7. No two non-crossing words may share a cell.
-8. The entire puzzle must form one connected component (no isolated words).
-9. Place words near the origin — minimize empty border padding.
-10. gridSize must be the tight bounding box of all placed cells (rows = max occupied row + 1, cols = max occupied col + 1).
-11. Number starting cells sequentially: 1, 2, 3… ordered top-to-bottom then left-to-right.
-12. Write a concise, accurate clue for each word in ${language}.
+RULES:
+1. Choose EXACTLY ${wordCount} distinct thematic words, no spaces or hyphens.${customWords.length > 0 ? ' Include ALL required words listed above — they count toward the total.' : ''}
+2. Every word must be strongly related to the theme.
+3. Write one clue per word in ${language}, matching the difficulty level above.
+4. No duplicate words.
 
-RETURN ONLY this JSON, no markdown fences or extra keys:
-{
-  "gridSize": { "rows": <int>, "cols": <int> },
-  "words": [
-    { "word": "UPPERCASE_WORD", "clue": "clue text", "x": <int>, "y": <int>, "direction": "across"|"down", "number": <int> }
-  ]
-}`;
+RETURN ONLY a JSON array with exactly ${wordCount} items, no markdown fences, no extra keys:
+[
+  { "word": "UPPERCASE_WORD", "clue": "clue text" }
+]`;
 
-    this.logger.log(`[AI Crossword] Generating crossword — theme: "${theme}", requiredWords: ${customWords.length}, lang: ${language}`);
-    return this.askGemini<CrosswordLayout>(prompt, 3);
+    this.logger.log(`[AI Crossword] Fetching word seeds — theme: "${theme}", requiredWords: ${customWords.length}, lang: ${language}, wordCount: ${wordCount}, complexity: ${complexity}`);
+
+    const seeds = await this.askGemini<Array<{ word: string; clue: string }>>(prompt, 3);
+
+    if (!Array.isArray(seeds) || seeds.length < 4) {
+      throw new InternalServerErrorException(
+        `AI returned too few word seeds (${Array.isArray(seeds) ? seeds.length : 0}). Try a different theme.`,
+      );
+    }
+
+    this.logger.log(`[AI Crossword] Received ${seeds.length} word seeds — running crossword-layout-generator`);
+
+    const generated = generateLayout(
+      seeds.map(s => ({ answer: s.word.toUpperCase().replace(/[^А-ЯІЇЄҐA-Z0-9]/gi, ''), clue: s.clue })),
+    );
+
+    const placed = generated.result.filter(item => item.orientation !== 'none');
+
+    if (placed.length < 4) {
+      throw new InternalServerErrorException(
+        `Layout generator could only place ${placed.length} words. Try a different theme or custom words.`,
+      );
+    }
+
+    this.logger.log(`[AI Crossword] Layout complete — ${placed.length} words placed on ${generated.rows}×${generated.cols} grid`);
+
+    return {
+      gridSize: { rows: generated.rows, cols: generated.cols },
+      words: placed.map(item => ({
+        word: item.answer,
+        clue: item.clue,
+        x: item.startx - 1,
+        y: item.starty - 1,
+        direction: item.orientation as 'across' | 'down',
+        number: item.position,
+      })),
+    };
   }
 
   async generateImageRiddle(riddleContent: string): Promise<AiImageRiddleResult> {
