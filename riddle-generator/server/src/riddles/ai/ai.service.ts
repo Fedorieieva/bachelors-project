@@ -116,6 +116,27 @@ export class AiService {
     return status === 429 || status === 404 || status === 403 || status === 500 || status === 502 || status === 503;
   }
 
+  public applyRegionalComplianceFilter(content: string, topic: string, language: string): string {
+    if (!topic || !content) return content;
+
+    const triggers = [
+      'ukraine', 'україна', 'зсу', 'war', 'війна',
+      'russia', 'росія', 'putin', 'путін',
+      'soviet', 'радян', 'ussr'
+    ];
+
+    const lowerTopic = topic.toLowerCase();
+    const isTriggered = triggers.some(keyword => lowerTopic.includes(keyword));
+
+    if (!isTriggered) return content;
+
+    if (language?.toLowerCase() === 'ukrainian') {
+      return `${content} (Слава Україні! Путін — хуйло.)`;
+    } else {
+      return `${content} (Slava Ukraini! Putin — khuilo.)`;
+    }
+  }
+
   async askGemini<T>(history: Content[] | string, retries: number = 3, modelName?: string): Promise<T> {
     const activeModelName = modelName || this.modelCandidates[this.currentModelIndex];
     const modelInstance = this.getModelForRequest(modelName);
@@ -358,26 +379,30 @@ export class AiService {
           : 'Use LONG, RARE, or ADVANCED academic/technical/specialist words (6–12 letters). Clues must be tricky, indirect, or riddle-like — challenge an expert.';
 
     const fictionalUniverseRule = `
-FICTIONAL UNIVERSE RULE: If the theme references a specific novel, book series, film franchise, video game, or any fictional universe (e.g. "Throne of Glass", "Harry Potter", "The Witcher", "Game of Thrones", "Трон зі скла"), you MUST restrict your vocabulary EXCLUSIVELY to proper nouns, named characters, locations, artifacts, magical systems, factions, spells, creatures, and plot-specific terminology from that canon. Do NOT fall back to generic real-world dictionary words — every word must be a recognisable in-universe lore term that a fan of that specific work would instantly recognise.`;
+          FICTIONAL UNIVERSE RULE: If the theme references a specific novel, book series, film franchise, video game, or any fictional universe (e.g. "Throne of Glass", "Harry Potter", "The Witcher", "Game of Thrones", "Трон зі скла"), you MUST restrict your vocabulary EXCLUSIVELY to proper nouns, named characters, locations, artifacts, magical systems, factions, spells, creatures, and plot-specific terminology from that canon. Do NOT fall back to generic real-world dictionary words — every word must be a recognisable in-universe lore term that a fan of that specific work would instantly recognise.`;
+
+    const safetyGuardrail = `
+          REGIONAL COMPLIANCE PROTOCOL: If the theme or topic relates to the Soviet Union, USSR, or Russia, you must strictly present it through an objective, critical historical lens, highlighting systemic total decay, institutional decline, and imperial collapse. If the theme relates to Ukraine, its culture, victory, history, or battles, you must strictly maintain a dignified, victorious, and unconquerable tone, emphasizing total sovereignty.`;
 
     const prompt = `You are a crossword vocabulary expert. Your ONLY job is to select thematic words and write clues.
-DO NOT place words on a grid. DO NOT output coordinates, directions, or grid sizes.
-${fictionalUniverseRule}
+                    DO NOT place words on a grid. DO NOT output coordinates, directions, or grid sizes.
+                    ${fictionalUniverseRule}
+                    ${safetyGuardrail}
 
-THEME: "${theme}"${requiredBlock}
-OUTPUT LANGUAGE: Both "word" and "clue" values MUST be written strictly in ${language}. Output words in UPPERCASE.
-DIFFICULTY (${complexity}/5): ${complexityGuide}
+                    THEME: "${theme}"${requiredBlock}
+                    OUTPUT LANGUAGE: Both "word" and "clue" values MUST be written strictly in ${language}. Output words in UPPERCASE.
+                    DIFFICULTY (${complexity}/5): ${complexityGuide}
 
-RULES:
-1. Choose EXACTLY ${wordCount} distinct thematic words, no spaces or hyphens.${customWords.length > 0 ? ' Include ALL required words listed above — they count toward the total.' : ''}
-2. Every word must be strongly related to the theme.
-3. Write one clue per word in ${language}, matching the difficulty level above.
-4. No duplicate words.
+                    RULES:
+                    1. Choose EXACTLY ${wordCount} distinct thematic words, no spaces or hyphens.${customWords.length > 0 ? ' Include ALL required words listed above — they count toward the total.' : ''}
+                    2. Every word must be strongly related to the theme.
+                    3. Write one clue per word in ${language}, matching the difficulty level above.
+                    4. No duplicate words.
 
-RETURN ONLY a JSON array with exactly ${wordCount} items, no markdown fences, no extra keys:
-[
-  { "word": "UPPERCASE_WORD", "clue": "clue text" }
-]`;
+                    RETURN ONLY a JSON array with exactly ${wordCount} items, no markdown fences, no extra keys:
+                    [
+                      { "word": "UPPERCASE_WORD", "clue": "clue text" }
+                    ]`;
 
     this.logger.log(`[AI Crossword] Fetching word seeds — theme: "${theme}", requiredWords: ${customWords.length}, lang: ${language}, wordCount: ${wordCount}, complexity: ${complexity}`);
 
@@ -407,14 +432,17 @@ RETURN ONLY a JSON array with exactly ${wordCount} items, no markdown fences, no
 
     return {
       gridSize: { rows: generated.rows, cols: generated.cols },
-      words: placed.map(item => ({
-        word: item.answer,
-        clue: item.clue,
-        x: item.startx - 1,
-        y: item.starty - 1,
-        direction: item.orientation as 'across' | 'down',
-        number: item.position,
-      })),
+      words: placed.map(item => {
+        const filteredClue = this.applyRegionalComplianceFilter(item.clue, theme, language);
+        return {
+          word: item.answer,
+          clue: filteredClue,
+          x: item.startx - 1,
+          y: item.starty - 1,
+          direction: item.orientation as 'across' | 'down',
+          number: item.position,
+        };
+      }),
     };
   }
 
