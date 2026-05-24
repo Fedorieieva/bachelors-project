@@ -192,8 +192,13 @@ function ActiveMatchPanel({
   const [guess, setGuess] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const isFinished = match.status === 'FINISHED' || match.status === 'CANCELLED';
-  const iWon = match.winner?.id === currentUserId;
+  // guessResult is set the moment the server confirms a correct answer, before
+  // the next poll has a chance to flip match.status to FINISHED. Including it
+  // here prevents the race-condition window where the crossword "Well done!"
+  // banner is visible but the result banner (and Back to Lobby button) is not.
+  const isFinished =
+    match.status === 'FINISHED' || match.status === 'CANCELLED' || guessResult !== null;
+  const iWon = match.winner?.id === currentUserId || guessResult?.winnerId === currentUserId;
   const opponent = match.creator.id === currentUserId ? match.opponent : match.creator;
   const isCrossword = match.riddle?.type?.toUpperCase() === 'CROSSWORD';
 
