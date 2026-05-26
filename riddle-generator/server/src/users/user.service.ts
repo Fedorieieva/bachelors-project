@@ -6,6 +6,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { CreateUserDto } from './dto/CreateUserDto';
 import { UpdateUserDto } from './dto/UpdateUserDto';
 import { UserStatsResponseDto } from './dto/user-stats.dto';
+import { SafeUser, sanitizeUser, sanitizeUsers } from './safe-user.util';
 
 @Injectable()
 export class UserService {
@@ -32,12 +33,13 @@ export class UserService {
     return this.prisma.user.create({ data: createUserDto });
   }
 
-  async update(id: string, updateData: UpdateUserDto): Promise<User> {
+  async update(id: string, updateData: UpdateUserDto): Promise<SafeUser> {
     try {
-      return await this.prisma.user.update({
+      const user = await this.prisma.user.update({
         where: { id },
         data: updateData,
       });
+      return sanitizeUser(user);
     } catch (e) {
       if (e.code === 'P2025') {
         throw new NotFoundException(`User with ID ${id} not found`);
@@ -101,20 +103,20 @@ export class UserService {
     }
   }
 
-  async getFollowers(userId: string): Promise<User[]> {
+  async getFollowers(userId: string): Promise<SafeUser[]> {
     const follows = await this.prisma.follow.findMany({
       where: { following_id: userId },
       include: { follower: true },
     });
-    return follows.map(f => f.follower);
+    return sanitizeUsers(follows.map(f => f.follower));
   }
 
-  async getFollowing(userId: string): Promise<User[]> {
+  async getFollowing(userId: string): Promise<SafeUser[]> {
     const follows = await this.prisma.follow.findMany({
       where: { follower_id: userId },
       include: { following: true },
     });
-    return follows.map(f => f.following);
+    return sanitizeUsers(follows.map(f => f.following));
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {

@@ -29,7 +29,7 @@ const dropdownVariants = {
 };
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick, isSidebarOpen = false, className, hideAvatar }) => {
-  const { user: authUser, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user: authUser, isAuthenticated, isGuest } = useAppSelector((state) => state.auth);
   const { data: stats } = useUserStats();
   const logoutMutation = useLogout();
   const t = useTranslations('header');
@@ -37,6 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, isSidebarOpen = fal
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const displayUser = stats?.profile || authUser;
+  const isFullUser = isAuthenticated && !!authUser && !isGuest;
 
   return (
     <header className={cn(styles.header, className)}>
@@ -51,11 +52,11 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, isSidebarOpen = fal
       </Button>
 
       <div className={styles.userStatus}>
-        {isAuthenticated && authUser && <StreakWidget />}
-        {isAuthenticated && authUser && <NotificationBell />}
+        {isFullUser && <StreakWidget />}
+        {isFullUser && <NotificationBell />}
         {!hideAvatar && (
           <>
-            {isAuthenticated && authUser ? (
+            {isFullUser ? (
               <button
                 type="button"
                 aria-expanded={isDropdownOpen}

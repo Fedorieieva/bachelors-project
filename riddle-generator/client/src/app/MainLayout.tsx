@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname, useParams } from 'next/navigation';
 import { useAppSelector } from '@/store/hooks';
 import { Sidebar } from '@/components/organisms/Sidebar/Sidebar';
@@ -11,6 +11,20 @@ import { Header } from '@/components/organisms/Header/Header';
 export default function MainLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+
+  // One-time migration: wipe any legacy localStorage entry that still carries
+  // a password field (written by server versions before the sanitizeUser fix).
+  useEffect(() => {
+    const legacyUser = localStorage.getItem('user');
+    if (legacyUser?.includes('"password"')) {
+      localStorage.removeItem('user');
+    }
+    const persisted = localStorage.getItem('persist:root');
+    if (persisted?.includes('"password"')) {
+      localStorage.removeItem('persist:root');
+      localStorage.setItem('is_guest', 'true');
+    }
+  }, []);
   const params = useParams();
 
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);

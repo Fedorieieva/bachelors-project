@@ -6,6 +6,7 @@ import { UserService } from '../user.service';
 import { RegisterDto } from './dto/Register.dto';
 import { CreateUserDto } from '../dto/CreateUserDto';
 import { LoginDto } from './dto/Login.dto';
+import { sanitizeUser } from '../safe-user.util';
 
 @Injectable()
 export class AuthService {
@@ -37,7 +38,7 @@ export class AuthService {
 
     return {
       message: 'User registered successfully',
-      user,
+      user: sanitizeUser(user),
       token: session.token,
       refreshToken: session.refresh_token,
       expiresAt: session.expires_at,
@@ -66,7 +67,7 @@ export class AuthService {
 
     return {
       message: 'Login successful',
-      user,
+      user: sanitizeUser(user),
       token: session.token,
       refreshToken: session.refresh_token,
       expiresAt: session.expires_at,

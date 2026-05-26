@@ -16,8 +16,9 @@ import { UpdateUserDto } from './dto/UpdateUserDto';
 import { ChangePasswordDto } from './dto/ChangePassword.dto';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
-import { Follow, User } from '@prisma/client';
+import { Follow } from '@prisma/client';
 import { Public } from '../utils/decorators/public.decorator';
+import { SafeUser, sanitizeUser } from './safe-user.util';
 
 @ApiTags('Users')
 @Controller('users')
@@ -29,12 +30,12 @@ export class UserController {
   @ApiParam({ name: 'id', type: 'string', description: 'User ID (UUID)' })
   @ApiResponse({ status: 200, description: 'User found' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<User> {
+  async findOne(@Param('id', ParseUUIDPipe) id: string): Promise<SafeUser> {
     const user = await this.userService.findOne(id);
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    return user;
+    return sanitizeUser(user);
   }
 
   @Put(':id')
@@ -42,7 +43,7 @@ export class UserController {
   @ApiParam({ name: 'id', type: 'string', description: 'User ID (UUID)' })
   @ApiResponse({ status: 200, description: 'User updated' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async update(@Param('id', ParseUUIDPipe) id: string, @Body() data: UpdateUserDto): Promise<User> {
+  async update(@Param('id', ParseUUIDPipe) id: string, @Body() data: UpdateUserDto): Promise<SafeUser> {
     return this.userService.update(id, data);
   }
 
@@ -88,13 +89,13 @@ export class UserController {
 
   @Get(':id/followers')
   @ApiOperation({ summary: 'Followers list' })
-  async getFollowers(@Param('id', ParseUUIDPipe) id: string): Promise<User[]> {
+  async getFollowers(@Param('id', ParseUUIDPipe) id: string): Promise<SafeUser[]> {
     return this.userService.getFollowers(id);
   }
 
   @Get(':id/following')
   @ApiOperation({ summary: 'Following list' })
-  async getFollowing(@Param('id', ParseUUIDPipe) id: string): Promise<User[]> {
+  async getFollowing(@Param('id', ParseUUIDPipe) id: string): Promise<SafeUser[]> {
     return this.userService.getFollowing(id);
   }
 

@@ -55,9 +55,11 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           <Button variant="primary" href="/leaderboard" leftIcon={<Trophy size={20} />}>
             {t('leaderboard')}
           </Button>
-          <Button variant="primary" href="/pvp" leftIcon={<Swords size={20} />}>
-            {t('pvp')}
-          </Button>
+          {isRegisteredUser && (
+            <Button variant="primary" href="/pvp" leftIcon={<Swords size={20} />}>
+              {t('pvp')}
+            </Button>
+          )}
         </div>
 
         <div className={styles.historySection}>
@@ -127,8 +129,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile }) =
   const { deleteChat, isDeleting, deletingId } = useDeleteChat();
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
-  const isRegisteredUser = isAuthenticated && !user?.is_guest;
+  const { isAuthenticated, user, isGuest } = useAppSelector((state) => state.auth);
+  const isRegisteredUser = isAuthenticated && !isGuest;
   const activeChatId: string | null = pathname?.startsWith('/chat/') ? pathname.split('/chat/')[1] : null;
 
   const handleDeleteChat = (chatId: string) => {
