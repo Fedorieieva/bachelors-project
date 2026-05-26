@@ -33,7 +33,6 @@ export class AuthService {
     };
 
     const user = await this.userService.createUserOnly(createUserDto);
-
     const session = await this.sessionService.createForUser(user);
 
     return {
@@ -86,7 +85,6 @@ export class AuthService {
     };
 
     const user = await this.userService.createUserOnly(createGuestDto);
-
     const session = await this.sessionService.createForUser(user);
 
     return {

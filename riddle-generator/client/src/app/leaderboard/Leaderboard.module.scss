@@ -204,6 +204,20 @@
   }
 }
 
+.podiumLevel {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba($violet, 0.25);
+  border: 1px solid rgba($violet, 0.4);
+  font-family: $font-second;
+  font-size: 10px;
+  font-weight: 700;
+  color: $violet;
+  letter-spacing: 0.03em;
+}
+
 .podiumName {
   font-family: $font-second;
   font-size: 11px;
@@ -224,6 +238,31 @@
 
   @include respond-to("sm") {
     font-size: 12px;
+  }
+}
+
+.podiumStatsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  margin-top: 2px;
+}
+
+.podiumStatItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba($white, 0.55);
+  white-space: nowrap;
+
+  svg {
+    opacity: 0.65;
+    flex-shrink: 0;
   }
 }
 
@@ -290,12 +329,63 @@
   flex-shrink: 0;
 }
 
-.listName {
+.listInfo {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.listNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.listName {
   font-size: 13px;
   font-weight: 500;
   color: $white;
   @include truncate;
+}
+
+.levelBadge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 20px;
+  background: rgba($violet, 0.2);
+  border: 1px solid rgba($violet, 0.35);
+  font-family: $font-second;
+  font-size: 10px;
+  font-weight: 700;
+  color: $violet;
+  letter-spacing: 0.03em;
+}
+
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: $font-second;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba($white, 0.35);
+  white-space: nowrap;
+
+  svg {
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
 }
 
 .listXp {

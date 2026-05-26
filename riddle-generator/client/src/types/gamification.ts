@@ -25,6 +25,9 @@ export interface LeaderboardEntry {
   xp: number;
   level: number;
   streak_count: number;
+  riddles_solved: number;
+  pvp_won_count: number;
+  weekly_quests_count: number;
 }
 
 export interface LeaderboardPage {

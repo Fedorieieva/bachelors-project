@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PvpStatus } from '@prisma/client';
 
 export interface LeaderboardEntry {
   rank: number;
@@ -9,6 +10,9 @@ export interface LeaderboardEntry {
   xp: number;
   level: number;
   streak_count: number;
+  riddles_solved: number;
+  pvp_won_count: number;
+  weekly_quests_count: number;
 }
 
 export interface LeaderboardPage {
@@ -18,6 +22,22 @@ export interface LeaderboardPage {
   limit: number;
 }
 
+interface UserRow {
+  id: string;
+  name: string | null;
+  avatar_url: string | null;
+  xp: number;
+  level: number;
+  streak_count: number;
+  riddles_solved: number;
+  _count: { pvp_won: number; user_quests: number };
+}
+
+interface CacheEntry {
+  payload: LeaderboardPage;
+  expiresAt: number;
+}
+
 const USER_SELECT = {
   id: true,
   name: true,
@@ -25,11 +45,28 @@ const USER_SELECT = {
   xp: true,
   level: true,
   streak_count: true,
-} as const;
+  riddles_solved: true,
+  _count: {
+    select: {
+      pvp_won: { where: { status: PvpStatus.FINISHED } },
+      user_quests: { where: { is_completed: true } },
+    },
+  },
+};
 
-interface CacheEntry {
-  payload: LeaderboardPage;
-  expiresAt: number;
+function toEntry(u: UserRow, rank: number): LeaderboardEntry {
+  return {
+    rank,
+    id: u.id,
+    name: u.name,
+    avatar_url: u.avatar_url,
+    xp: u.xp,
+    level: u.level,
+    streak_count: u.streak_count,
+    riddles_solved: u.riddles_solved,
+    pvp_won_count: u._count.pvp_won,
+    weekly_quests_count: u._count.user_quests,
+  };
 }
 
 @Injectable()
@@ -45,10 +82,10 @@ export class LeaderboardService {
     if (cached) return cached;
 
     const skip = (page - 1) * limit;
-    const [users, total] = await Promise.all([
+    const [rawUsers, total] = await Promise.all([
       this.prisma.user.findMany({
         where: { is_guest: false },
-        orderBy: { xp: 'desc' },
+        orderBy: [{ level: 'desc' }, { xp: 'desc' }],
         skip,
         take: limit,
         select: USER_SELECT,
@@ -56,8 +93,9 @@ export class LeaderboardService {
       this.prisma.user.count({ where: { is_guest: false } }),
     ]);
 
+    const users = rawUsers as unknown as UserRow[];
     const result: LeaderboardPage = {
-      data: users.map((u, i) => ({ rank: skip + i + 1, ...u })),
+      data: users.map((u, i) => toEntry(u, skip + i + 1)),
       total,
       page,
       limit,
@@ -75,10 +113,10 @@ export class LeaderboardService {
     const skip = (page - 1) * limit;
     const weekStart = this.getStartOfWeek();
 
-    const [users, total] = await Promise.all([
+    const [rawUsers, total] = await Promise.all([
       this.prisma.user.findMany({
         where: { is_guest: false, last_active_at: { gte: weekStart } },
-        orderBy: { xp: 'desc' },
+        orderBy: [{ level: 'desc' }, { xp: 'desc' }],
         skip,
         take: limit,
         select: USER_SELECT,
@@ -88,8 +126,9 @@ export class LeaderboardService {
       }),
     ]);
 
+    const users = rawUsers as unknown as UserRow[];
     const result: LeaderboardPage = {
-      data: users.map((u, i) => ({ rank: skip + i + 1, ...u })),
+      data: users.map((u, i) => toEntry(u, skip + i + 1)),
       total,
       page,
       limit,
@@ -102,17 +141,26 @@ export class LeaderboardService {
   async getUserRank(userId: string, period: 'all' | 'weekly' = 'all'): Promise<{ rank: number }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { xp: true },
+      select: { xp: true, level: true },
     });
 
     if (!user) return { rank: 0 };
 
-    const where =
+    const baseWhere =
       period === 'weekly'
-        ? { is_guest: false, last_active_at: { gte: this.getStartOfWeek() }, xp: { gt: user.xp } }
-        : { is_guest: false, xp: { gt: user.xp } };
+        ? { is_guest: false, last_active_at: { gte: this.getStartOfWeek() } }
+        : { is_guest: false };
 
-    const count = await this.prisma.user.count({ where });
+    const count = await this.prisma.user.count({
+      where: {
+        ...baseWhere,
+        OR: [
+          { level: { gt: user.level } },
+          { level: user.level, xp: { gt: user.xp } },
+        ],
+      },
+    });
+
     return { rank: count + 1 };
   }
 

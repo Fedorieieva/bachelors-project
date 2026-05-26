@@ -178,10 +178,10 @@ export class ChallengesService {
     );
 
     const { streakIncremented } = await this.streakService.updateStreak(userId);
-    await this.questsService.incrementProgress(userId, QuestType.SOLVE_RIDDLES);
-    await this.questsService.incrementProgress(userId, QuestType.EARN_XP, xpEarned);
+    await this.questsService.updateQuestProgress(userId, QuestType.SOLVE_RIDDLES);
+    await this.questsService.updateQuestProgress(userId, QuestType.EARN_XP, xpEarned);
     if (streakIncremented) {
-      await this.questsService.incrementProgress(userId, QuestType.MAINTAIN_STREAK);
+      await this.questsService.updateQuestProgress(userId, QuestType.MAINTAIN_STREAK);
     }
 
     void this.notificationsService.createNotification({

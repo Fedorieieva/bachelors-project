@@ -479,7 +479,7 @@ export class RiddlesService {
     });
 
     if (newRiddle.image_url) {
-      void this.questsService.incrementProgress(authorId, QuestType.GENERATE_IMAGE_RIDDLE);
+      void this.questsService.updateQuestProgress(authorId, QuestType.GENERATE_IMAGE_RIDDLE);
     }
 
     const fallback_occurred = (!model && this.aiService.consumeFallbackFlag()) || undefined;
@@ -547,15 +547,15 @@ export class RiddlesService {
 
       const { streakIncremented } = await this.streakService.updateStreak(authorId);
 
-      await this.questsService.incrementProgress(authorId, QuestType.SOLVE_RIDDLES);
-      await this.questsService.incrementProgress(authorId, QuestType.EARN_XP, xpEarned);
+      await this.questsService.updateQuestProgress(authorId, QuestType.SOLVE_RIDDLES);
+      await this.questsService.updateQuestProgress(authorId, QuestType.EARN_XP, xpEarned);
       if (chat.type === RiddleType.MATH) {
-        await this.questsService.incrementProgress(authorId, QuestType.SOLVE_MATH);
+        await this.questsService.updateQuestProgress(authorId, QuestType.SOLVE_MATH);
       } else if (chat.type === RiddleType.LOGIC) {
-        await this.questsService.incrementProgress(authorId, QuestType.SOLVE_LOGIC);
+        await this.questsService.updateQuestProgress(authorId, QuestType.SOLVE_LOGIC);
       }
       if (streakIncremented) {
-        await this.questsService.incrementProgress(authorId, QuestType.MAINTAIN_STREAK);
+        await this.questsService.updateQuestProgress(authorId, QuestType.MAINTAIN_STREAK);
       }
 
       await this.prisma.chat.update({
@@ -644,15 +644,15 @@ export class RiddlesService {
       }
 
       const { streakIncremented } = await this.streakService.updateStreak(userId);
-      await this.questsService.incrementProgress(userId, QuestType.SOLVE_RIDDLES);
-      await this.questsService.incrementProgress(userId, QuestType.EARN_XP, actualXp);
+      await this.questsService.updateQuestProgress(userId, QuestType.SOLVE_RIDDLES);
+      await this.questsService.updateQuestProgress(userId, QuestType.EARN_XP, actualXp);
       if (riddle.type === RiddleType.MATH) {
-        await this.questsService.incrementProgress(userId, QuestType.SOLVE_MATH);
+        await this.questsService.updateQuestProgress(userId, QuestType.SOLVE_MATH);
       } else if (riddle.type === RiddleType.LOGIC) {
-        await this.questsService.incrementProgress(userId, QuestType.SOLVE_LOGIC);
+        await this.questsService.updateQuestProgress(userId, QuestType.SOLVE_LOGIC);
       }
       if (streakIncremented) {
-        await this.questsService.incrementProgress(userId, QuestType.MAINTAIN_STREAK);
+        await this.questsService.updateQuestProgress(userId, QuestType.MAINTAIN_STREAK);
       }
 
       await this.prisma.riddleAttempt.upsert({

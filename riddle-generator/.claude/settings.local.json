@@ -40,7 +40,8 @@
       "Bash(Get-ChildItem *)",
       "Bash(Find-Content -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\src\\\\riddles\\\\riddles.service.ts\" -ErrorAction SilentlyContinue)",
       "Bash(Select-Object -First 50)",
-      "PowerShell(Get-Item *)"
+      "PowerShell(Get-Item *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\" -Directory | ForEach-Object { \"$\\($_.Name\\)/\" })"
     ]
   }
 }

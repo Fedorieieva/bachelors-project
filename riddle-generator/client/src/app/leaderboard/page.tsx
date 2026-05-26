@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Trophy, Medal, Award, Flame } from 'lucide-react';
+import { Trophy, Medal, Award, Flame, CheckCircle2, Swords, Calendar } from 'lucide-react';
 import { useLeaderboard, useMyRank } from '@/hooks/gamification/useLeaderboard';
 import { QuestsBoard } from '@/components/organisms/Gamification/QuestsBoard/QuestsBoard';
 import { useAppSelector } from '@/store/hooks';
@@ -68,8 +68,23 @@ function PodiumCard({ entry, index }: { entry: LeaderboardEntry; index: number }
           className={styles.podiumAvatar}
           fallbackClass={styles.podiumAvatarFallback}
         />
+        <span className={styles.podiumLevel}>Lvl {entry.level}</span>
         <span className={styles.podiumName}>{entry.name ?? 'Anonymous'}</span>
         <span className={styles.podiumXp}>{entry.xp.toLocaleString()} XP</span>
+        <div className={styles.podiumStatsRow}>
+          <span className={styles.podiumStatItem}>
+            <CheckCircle2 size={13} />
+            {entry.riddles_solved}
+          </span>
+          <span className={styles.podiumStatItem}>
+            <Swords size={13} />
+            {entry.pvp_won_count}
+          </span>
+          <span className={styles.podiumStatItem}>
+            <Calendar size={13} />
+            {entry.weekly_quests_count}
+          </span>
+        </div>
       </motion.div>
     </Link>
   );
@@ -99,7 +114,26 @@ function PlayerRow({
           className={styles.listAvatar}
           fallbackClass={styles.listAvatarFallback}
         />
-        <span className={styles.listName}>{entry.name ?? 'Anonymous'}</span>
+        <div className={styles.listInfo}>
+          <div className={styles.listNameRow}>
+            <span className={styles.listName}>{entry.name ?? 'Anonymous'}</span>
+            <span className={styles.levelBadge}>Lvl {entry.level}</span>
+          </div>
+          <div className={styles.statsRow}>
+            <span className={styles.statItem}>
+              <CheckCircle2 size={12} />
+              {entry.riddles_solved}
+            </span>
+            <span className={styles.statItem}>
+              <Swords size={12} />
+              {entry.pvp_won_count}
+            </span>
+            <span className={styles.statItem}>
+              <Calendar size={12} />
+              {entry.weekly_quests_count}
+            </span>
+          </div>
+        </div>
         {entry.streak_count > 0 && (
           <span className={styles.listStreak}>
             <Flame size={13} className={styles.listStreakIcon} />

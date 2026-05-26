@@ -340,13 +340,13 @@ RETURN JSON ONLY — no markdown, no extra text:
       this.streakService.updateStreak(loserId),
     ]);
 
-    await this.questsService.incrementProgress(userId, QuestType.SOLVE_RIDDLES);
-    await this.questsService.incrementProgress(userId, QuestType.EARN_XP, winnerXp);
+    await this.questsService.updateQuestProgress(userId, QuestType.SOLVE_RIDDLES);
+    await this.questsService.updateQuestProgress(userId, QuestType.EARN_XP, winnerXp);
     if (winnerStreak.streakIncremented) {
-      await this.questsService.incrementProgress(userId, QuestType.MAINTAIN_STREAK);
+      await this.questsService.updateQuestProgress(userId, QuestType.MAINTAIN_STREAK);
     }
     if (loserStreak.streakIncremented) {
-      await this.questsService.incrementProgress(loserId, QuestType.MAINTAIN_STREAK);
+      await this.questsService.updateQuestProgress(loserId, QuestType.MAINTAIN_STREAK);
     }
 
     void this.notificationsService.createNotification({

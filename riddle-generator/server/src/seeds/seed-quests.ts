@@ -7,7 +7,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 // Гарантовано підтягуємо .env з кореня папки server, де б WebStorm не запустив процес
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const dbUrl = process.env.DATABASE_URL;
+const dbUrl = "postgresql://postgres.ldztqcnyhgoxrgagveov:v5lwTaEEotiLNXJu@aws-1-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1";
 if (!dbUrl) {
   console.error('❌ Error: DATABASE_URL is missing in your .env file!');
   process.exit(1);
