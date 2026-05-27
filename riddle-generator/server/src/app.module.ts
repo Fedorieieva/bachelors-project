@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SessionModule } from './sessions/session.module';
@@ -27,6 +28,11 @@ import { ChallengesModule } from './challenges/challenges.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([{
+      name: 'global',
+      ttl: 60000,
+      limit: 60,
+    }]),
     NestScheduleModule.forRoot(),
     PrismaModule,
     UserModule,
@@ -53,6 +59,10 @@ import { ChallengesModule } from './challenges/challenges.module';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
   exports: [],

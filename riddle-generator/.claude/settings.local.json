@@ -43,7 +43,9 @@
       "PowerShell(Get-Item *)",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\" -Directory | ForEach-Object { \"$\\($_.Name\\)/\" })",
       "Bash(xargs grep -l \"useEffect\\\\|useLayoutEffect\")",
-      "Bash(Sort-Object FullName)"
+      "Bash(Sort-Object FullName)",
+      "Bash(Test-Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\\\\app.module.js\")",
+      "Bash(Write-Host \"dist OK\")"
     ]
   }
 }

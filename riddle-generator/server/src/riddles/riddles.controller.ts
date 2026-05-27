@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Param, Get, Put, Delete, Patch, ParseUUIDPipe, NotFoundException, HttpCode, HttpStatus } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { RiddlesService } from './riddles.service';
 import { CurrentUser } from '../utils/decorators/user.decorator';
 import * as PrismaModels from '@prisma/client';
@@ -21,6 +22,7 @@ export class RiddlesController {
   })
   @ApiResponse({ status: 201, description: 'Riddle successfully generated.' })
   @ApiResponse({ status: 400, description: 'Invalid parameters or safety violation.' })
+  @Throttle({ global: { ttl: 60000, limit: 5 } })
   @Public()
   @Post('generate')
   async createGeneratedRiddle(@Body() dto: RiddleDto) {
@@ -29,6 +31,7 @@ export class RiddlesController {
 
   @ApiOperation({ summary: 'Generate Crossword', description: 'Produce an AI-compiled crossword layout for a given theme and optional seed words.' })
   @ApiResponse({ status: 201, description: 'Crossword layout returned.' })
+  @Throttle({ global: { ttl: 60000, limit: 5 } })
   @Public()
   @Post('crossword/generate')
   async generateCrossword(@Body() dto: CrosswordGenerateDto): Promise<CrosswordLayout> {
@@ -66,6 +69,7 @@ export class RiddlesController {
     return this.riddlesService.completeCrossword(user.id, riddleId);
   }
 
+  @Throttle({ global: { ttl: 60000, limit: 5 } })
   @Public()
   @Post('chat/:chatId/regenerate')
   async regenerateRiddle(@Param('chatId') chatId: string, @Body() settings: RiddleSettingsDto) {
@@ -88,6 +92,7 @@ export class RiddlesController {
   @ApiParam({ name: 'chatId', format: 'uuid', description: 'The active game session ID.' })
   @ApiResponse({ status: 200, description: 'Successfully processed message.' })
   @ApiResponse({ status: 403, description: 'User is banned due to content violations.' })
+  @Throttle({ global: { ttl: 60000, limit: 5 } })
   @Public()
   @Post('chat/:chatId')
   async handleChat(
