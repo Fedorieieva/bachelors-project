@@ -220,3 +220,60 @@
     opacity: 1;
   }
 }
+
+/* ── Responsive ─────────────────────────────────────────────────────────────
+ *
+ * Two-tier breakpoint strategy:
+ *
+ * ≤ 1239px  (tablets + phones, or desktop with sidebar open)
+ *   Grid stacks above clues; gridWrapper constrains to container width and
+ *   scrolls horizontally so fixed 36px cells never clip or overflow parents.
+ *
+ * ≤ 767px   (phones only)
+ *   Additional padding reduction and tighter clue-row dimensions.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1239px) {
+  // Switch to vertical stack so the grid takes full width on top
+  .body {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  // Constrain gridWrapper to the container width, then let the fixed-column
+  // .grid / .colLabels (set via inline gridTemplateColumns) overflow it
+  // horizontally with touch-friendly inertia scroll.
+  .gridWrapper {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px; // breathing room so the scrollbar doesn't overlap cells
+  }
+
+  // Clue list fills the full column below the grid
+  .clueInputList {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  // Recover horizontal space on phones by tightening outer padding
+  .container {
+    padding: 20px 12px;
+    gap: 20px;
+  }
+
+  // Tighter gutter and padding inside each clue row
+  .clueRow {
+    gap: 8px;
+    padding: 7px 10px;
+  }
+
+  // Narrower answer input gives the 1fr clue-text column more room
+  .clueInput {
+    width: 100px;
+  }
+}

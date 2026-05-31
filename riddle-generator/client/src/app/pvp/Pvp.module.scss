@@ -410,7 +410,9 @@
 
 .historyRow {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
   border-radius: $border-radius-primary;
@@ -427,6 +429,16 @@
   }
 }
 
+.historyRowLeft {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  flex: 1;
+  min-width: 0;
+}
+
 .historyBadge {
   font-family: $font-second;
   font-size: 10px;
@@ -441,8 +453,8 @@
 }
 
 .historyOpponent {
-  flex: 1;
   min-width: 0;
+  flex-shrink: 1;
 }
 
 .opponentLink {
@@ -680,9 +692,10 @@
 
 .historyMeta {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -863,5 +876,59 @@
   &.complexityDotFilled {
     background: $pink;
     box-shadow: 0 0 4px rgba($pink, 0.45);
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────
+ *
+ * Two-tier strategy:
+ *
+ * ≤ 1023px  Tighten spacing; historyRowLeft wraps its badges natively while
+ *           historyMeta stays on the same horizontal line (space-between row).
+ *
+ * ≤ 767px   Switch historyRow to a column — historyMeta drops into a clean
+ *           standalone bottom strip with a hairline separator and left-aligned
+ *           text so nothing competes with the opponent identity block above.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1023px) {
+  .historyRow {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .historyRowLeft {
+    gap: 6px 10px;
+  }
+
+  .puzzleRow {
+    flex-wrap: wrap;
+    column-gap: 6px;
+    row-gap: 6px;
+    padding: 10px 12px;
+  }
+
+  .challengeHeader {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 767px) {
+  .historyRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 10px 12px;
+  }
+
+  .historyMeta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 16px;
+    margin-top: 6px;
+    padding-top: 8px;
+    border-top: 1px solid rgba($white, 0.05);
+    font-size: 0.8rem;
   }
 }

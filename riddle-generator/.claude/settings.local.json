@@ -46,7 +46,9 @@
       "Bash(Sort-Object FullName)",
       "Bash(Test-Path \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\server\\\\dist\\\\app.module.js\")",
       "Bash(Write-Host \"dist OK\")",
-      "Bash(echo \"EXIT_CODE:$?\")"
+      "Bash(echo \"EXIT_CODE:$?\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\Admin\\\\OneDrive\\\\desktop\\\\kpi\\\\4-course\\\\bachelors-project\\\\riddle-generator\\\\client\\\\src\\\\app\\\\pvp\\\\Pvp.module.scss\")",
+      "Bash(Select-Object -Last 30)"
     ]
   }
 }

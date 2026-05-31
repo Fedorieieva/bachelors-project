@@ -545,52 +545,56 @@ function DuelsLog({ matches, userId }: { matches: PvpMatch[]; userId: string }) 
               isFinished && (iWon ? styles.historyWin : styles.historyLoss),
             )}
           >
-            <span
-              className={cn(
-                styles.historyBadge,
-                isFinished
-                  ? iWon
-                    ? styles.badgeWin
-                    : styles.badgeLoss
-                  : styles.badgeCancelled,
-              )}
-            >
-              {!isFinished ? 'Cancelled' : iWon ? 'Victory' : 'Defeat'}
-            </span>
+            {/* Left group — status + badges + opponent, wraps natively */}
+            <div className={styles.historyRowLeft}>
+              <span
+                className={cn(
+                  styles.historyBadge,
+                  isFinished
+                    ? iWon
+                      ? styles.badgeWin
+                      : styles.badgeLoss
+                    : styles.badgeCancelled,
+                )}
+              >
+                {!isFinished ? 'Cancelled' : iWon ? 'Victory' : 'Defeat'}
+              </span>
 
-            {m.riddle?.type && (
-              <Badge variant={riddleTypeToVariant(m.riddle.type)} className={styles.riddleTypeBadge}>
-                {m.riddle.type}
-              </Badge>
-            )}
-            {m.riddle?.complexity !== undefined && (
-              <div className={styles.historyComplexity}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <span
-                    key={i}
-                    className={cn(styles.complexityDot, { [styles.complexityDotFilled]: i <= m.riddle!.complexity })}
-                  />
-                ))}
+              {m.riddle?.type && (
+                <Badge variant={riddleTypeToVariant(m.riddle.type)} className={styles.riddleTypeBadge}>
+                  {m.riddle.type}
+                </Badge>
+              )}
+              {m.riddle?.complexity !== undefined && (
+                <div className={styles.historyComplexity}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <span
+                      key={i}
+                      className={cn(styles.complexityDot, { [styles.complexityDotFilled]: i <= m.riddle!.complexity })}
+                    />
+                  ))}
+                </div>
+              )}
+              {m.riddle?.type?.toUpperCase() === 'CROSSWORD' && (() => {
+                try {
+                  const layout = JSON.parse(m.riddle!.content) as CrosswordLayout;
+                  return <span className={styles.crosswordWordCount}>{layout.words.length}w</span>;
+                } catch { return null; }
+              })()}
+
+              <div className={styles.historyOpponent}>
+                {opponent ? (
+                  <Link href={`/profile/${opponent.id}`} className={styles.opponentLink}>
+                    <PlayerAvatar name={opponent.name} avatarUrl={opponent.avatar_url} size={24} />
+                    <span>{opponent.name ?? 'Anonymous'}</span>
+                  </Link>
+                ) : (
+                  <span className={styles.opponentUnknown}>No opponent</span>
+                )}
               </div>
-            )}
-            {m.riddle?.type?.toUpperCase() === 'CROSSWORD' && (() => {
-              try {
-                const layout = JSON.parse(m.riddle!.content) as CrosswordLayout;
-                return <span className={styles.crosswordWordCount}>{layout.words.length}w</span>;
-              } catch { return null; }
-            })()}
-
-            <div className={styles.historyOpponent}>
-              {opponent ? (
-                <Link href={`/profile/${opponent.id}`} className={styles.opponentLink}>
-                  <PlayerAvatar name={opponent.name} avatarUrl={opponent.avatar_url} size={24} />
-                  <span>{opponent.name ?? 'Anonymous'}</span>
-                </Link>
-              ) : (
-                <span className={styles.opponentUnknown}>No opponent</span>
-              )}
             </div>
 
+            {/* Right meta — XP + peek riddle + date, anchored right */}
             <div className={styles.historyMeta}>
               {isFinished && iWon && <span className={styles.historyXp}>+100 XP</span>}
               {m.riddle && (
