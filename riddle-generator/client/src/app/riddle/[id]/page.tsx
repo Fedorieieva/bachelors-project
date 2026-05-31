@@ -95,7 +95,15 @@ export default function RiddlePreviewPage() {
   }, [riddle?.crossword_progress]);
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 16px' }}>
+    <div
+      style={{
+        maxWidth: isCrossword && crosswordLayout ? '100%' : 760,
+        width: '100%',
+        margin: '0 auto',
+        padding: '32px 16px',
+        boxSizing: 'border-box',
+      }}
+    >
       <Button
         variant="grey-glass-link"
         size="auto"

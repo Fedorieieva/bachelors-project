@@ -8,14 +8,36 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { AiService } from '../riddles/ai/ai.service';
 import { NotificationType, QuestType } from '@prisma/client';
 
-const CHALLENGE_XP = 150;
 // Fires every Monday at 00:00 UTC
 const WEEKLY_ROTATION_CRON = '0 0 * * 1';
+const CHALLENGE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+const CHALLENGE_TYPES = ['LOGIC', 'MATH', 'DANETKI', 'CROSSWORD'] as const;
+
+const AI_THEMES = [
+  'Ancient Civilizations',
+  'Space Exploration',
+  'Human Biology',
+  'World Literature',
+  'Philosophy and Ethics',
+  'Quantum Physics',
+  'Marine Biology',
+  'Cryptography',
+  'World Mythology',
+  'Artificial Intelligence',
+];
+
+type ChallengeContent = {
+  title: string;
+  description: string;
+  riddle_content: string;
+  riddle_answer: string;
+  riddle_type: string;
+};
 
 @Injectable()
 export class ChallengesService {
   private readonly logger = new Logger(ChallengesService.name);
-  private provisioning = false;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -26,70 +48,141 @@ export class ChallengesService {
     private readonly aiService: AiService,
   ) {}
 
-  // ─── Weekly rotation ─────────────────────────────────────────
+  // ─── Weekly cron rotation ─────────────────────────────────────────────────
 
   @Cron(WEEKLY_ROTATION_CRON)
   async rotateWeeklyChallenge(): Promise<void> {
-    this.logger.log('[Challenges] Weekly rotation triggered');
-    await this.prisma.communityChallenge.updateMany({
-      where: { is_active: true },
-      data: { is_active: false },
-    });
-    await this.provisionWeeklyChallenge();
+    this.logger.log('[Challenges] Weekly cron rotation triggered');
+    await this.generateAndRotate();
   }
 
-  private async provisionWeeklyChallenge(): Promise<void> {
-    if (this.provisioning) return;
-    this.provisioning = true;
+  // ─── AI challenge content generation ─────────────────────────────────────
+
+  private async generateAiChallengeContent(): Promise<ChallengeContent> {
+    const type = CHALLENGE_TYPES[Math.floor(Math.random() * CHALLENGE_TYPES.length)];
+    const theme = AI_THEMES[Math.floor(Math.random() * AI_THEMES.length)];
+
+    if (type === 'CROSSWORD') {
+      const layout = await this.aiService.generateCrossword(theme, [], 'english', 12, 5);
+      return {
+        title: `Weekly Crossword: ${theme}`,
+        description: "Fill in this week's expert crossword puzzle before time runs out!",
+        riddle_content: JSON.stringify(layout),
+        riddle_answer: 'CROSSWORD_COMPLETE',
+        riddle_type: 'CROSSWORD',
+      };
+    }
+
+    const typeGuidance =
+      type === 'MATH'
+        ? 'Create an advanced mathematical or algebraic problem with a single definite numerical answer.'
+        : type === 'LOGIC'
+          ? 'Create a sophisticated deductive or lateral thinking puzzle requiring multi-step reasoning.'
+          : 'Create a mystery yes/no deductive scenario (danetki) where the solver must uncover the hidden situation.';
+
+    const prompt = `You are a premium puzzle designer crafting an expert-level weekly community challenge.
+
+Type: ${type}
+Theme: ${theme}
+Complexity: 5/5 (hardest — must challenge an advanced solver)
+
+${typeGuidance}
+
+Return ONLY valid JSON (no markdown fences) with exactly these four fields:
+{
+  "title": "short catchy title, max 60 characters",
+  "description": "engaging teaser for the challenge page, max 180 characters",
+  "riddle_content": "the full riddle, problem, or puzzle statement",
+  "riddle_answer": "exact correct answer, 1-5 words"
+}`;
+
+    const result = await this.aiService.askGemini<{
+      title: string;
+      description: string;
+      riddle_content: string;
+      riddle_answer: string;
+    }>(prompt);
+
+    return {
+      title: result.title,
+      description: result.description,
+      riddle_content: result.riddle_content,
+      riddle_answer: result.riddle_answer,
+      riddle_type: type,
+    };
+  }
+
+  // ─── Rotation engine ──────────────────────────────────────────────────────
+  //
+  // Serverless-safe: AI generation happens outside the transaction (avoids
+  // long-held DB locks). The transaction then does a double-check so that if a
+  // concurrent worker already rotated, this one exits cleanly without writing a
+  // second row. Any write error is swallowed; the subsequent fetchActiveRow in
+  // getCurrentChallenge will pick up the race-winner's row automatically.
+
+  private async generateAndRotate(): Promise<void> {
+    let content: ChallengeContent;
     try {
-      const count = await this.prisma.riddles.count({
-        where: { complexity: 5, is_public: true, is_verified: true },
-      });
-
-      if (count === 0) {
-        this.logger.warn('[Challenges] No complexity-5 verified riddles available — skipping provision');
-        return;
-      }
-
-      // Deterministic week seed — number of complete weeks since UNIX epoch
-      const weekSeed = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
-      const riddle = await this.prisma.riddles.findFirst({
-        where: { complexity: 5, is_public: true, is_verified: true },
-        skip: weekSeed % count,
-        orderBy: { id: 'asc' },
-      });
-
-      if (!riddle) return;
-
-      // Expires next Monday 00:00 UTC
-      const endsAt = new Date();
-      endsAt.setUTCDate(endsAt.getUTCDate() + ((8 - endsAt.getUTCDay()) % 7 || 7));
-      endsAt.setUTCHours(0, 0, 0, 0);
-
-      await this.prisma.communityChallenge.create({
-        data: {
-          title: `Week ${weekSeed} Challenge`,
-          description: 'Solve this week\'s hardest brain-teaser before time runs out!',
-          riddle_content: riddle.content,
-          riddle_answer: riddle.answer,
-          riddle_type: riddle.type,
-          riddle_complexity: riddle.complexity,
-          xp_reward: CHALLENGE_XP,
-          starts_at: new Date(),
-          ends_at: endsAt,
-          is_active: true,
-        },
-      });
-
-      this.logger.log(`[Challenges] Provisioned week-${weekSeed} challenge from riddle ${riddle.id}`);
+      content = await this.generateAiChallengeContent();
     } catch (err) {
-      this.logger.error(`[Challenges] Provision failed: ${(err as Error).message}`);
-    } finally {
-      this.provisioning = false;
+      this.logger.error(
+        `[Challenges] AI generation failed during rotation: ${(err as Error).message}`,
+      );
+      return;
+    }
+
+    const now = new Date();
+    const endsAt = new Date(now.getTime() + CHALLENGE_DURATION_MS);
+
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        // Race guard: abort if another worker already provisioned a fresh challenge
+        const alreadyActive = await tx.communityChallenge.findFirst({
+          where: { is_active: true, ends_at: { gt: now } },
+          select: { id: true },
+        });
+        if (alreadyActive) {
+          this.logger.debug(
+            '[Challenges] Rotation skipped — concurrent worker already provisioned a challenge',
+          );
+          return;
+        }
+
+        // Atomically deactivate all stale active rows before creating the new one
+        await tx.communityChallenge.updateMany({
+          where: { is_active: true },
+          data: { is_active: false },
+        });
+
+        await tx.communityChallenge.create({
+          data: {
+            title: content.title,
+            description: content.description,
+            riddle_content: content.riddle_content,
+            riddle_answer: content.riddle_answer,
+            riddle_type: content.riddle_type,
+            riddle_complexity: 5,
+            xp_reward: 500,
+            starts_at: now,
+            ends_at: endsAt,
+            is_active: true,
+          },
+        });
+
+        this.logger.log(
+          `[Challenges] Provisioned AI-generated ${content.riddle_type} challenge: "${content.title}"`,
+        );
+      });
+    } catch (err) {
+      // Swallowed: the post-rotation fetchActiveRow in getCurrentChallenge will
+      // find any race-created row, so the caller degrades gracefully to null.
+      this.logger.error(
+        `[Challenges] Rotation transaction failed: ${(err as Error).message}`,
+      );
     }
   }
 
-  // ─── Shared fetch helper ──────────────────────────────────────
+  // ─── Shared fetch helper ──────────────────────────────────────────────────
 
   private async fetchActiveRow() {
     const now = new Date();
@@ -119,20 +212,19 @@ export class ChallengesService {
     });
   }
 
-  // ─── Queries ──────────────────────────────────────────────────
+  // ─── Public API ───────────────────────────────────────────────────────────
 
   async getCurrentChallenge(userId: string) {
     let row = await this.fetchActiveRow();
 
-    // Lazy-load fallback: provision on first call if no active challenge exists
+    // Lazy hydration: no active non-expired challenge — rotate on-demand
     if (!row) {
-      await this.provisionWeeklyChallenge();
+      await this.generateAndRotate();
       row = await this.fetchActiveRow();
     }
 
     if (!row) return null;
 
-    // Targeted single-row check — does NOT load all solvers
     const userSolver = await this.prisma.challengeSolver.findUnique({
       where: { user_id_challenge_id: { user_id: userId, challenge_id: row.id } },
       select: { id: true },
@@ -159,7 +251,7 @@ export class ChallengesService {
     const aiResult = await this.aiService.getContextualHint([], guess, challenge.riddle_answer);
     if (!aiResult.is_solved) return { correct: false };
 
-    // Race-safe: atomic claim — double-check inside TX, DB unique constraint is the final backstop
+    // Race-safe atomic claim — double-check inside TX; DB unique constraint is the final backstop
     const solverCreated = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.challengeSolver.findUnique({
         where: { user_id_challenge_id: { user_id: userId, challenge_id: challengeId } },
@@ -174,7 +266,7 @@ export class ChallengesService {
     const xpEarned = await this.experienceService.awardXpForSolving(
       userId,
       `Community Challenge: ${challenge.title}`,
-      CHALLENGE_XP,
+      challenge.xp_reward,
     );
 
     const { streakIncremented } = await this.streakService.updateStreak(userId);
@@ -207,7 +299,6 @@ export class ChallengesService {
     });
   }
 
-  // Full history with speedrunner rank — used by /challenges/history
   async getSolvedHistory(userId: string) {
     const solved = await this.prisma.challengeSolver.findMany({
       where: { user_id: userId },
@@ -221,7 +312,6 @@ export class ChallengesService {
 
     return Promise.all(
       solved.map(async (s) => {
-        // Rank = how many users solved it strictly before this user + 1
         const rank =
           (await this.prisma.challengeSolver.count({
             where: { challenge_id: s.challenge_id, solved_at: { lt: s.solved_at } },

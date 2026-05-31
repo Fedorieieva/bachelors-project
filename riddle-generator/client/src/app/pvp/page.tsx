@@ -372,6 +372,27 @@ function ChallengePanel() {
   const { showGlobalToast } = useGlobalToast();
   const [guess, setGuess] = useState('');
 
+  const isCrossword = challenge?.riddle_type?.toUpperCase() === 'CROSSWORD';
+
+  const crosswordLayout = useMemo<CrosswordLayout | null>(() => {
+    if (!challenge || !isCrossword) return null;
+    try {
+      return JSON.parse(challenge.riddle_content) as CrosswordLayout;
+    } catch {
+      return null;
+    }
+  }, [challenge, isCrossword]);
+
+  const handleCrosswordComplete = useCallback(async () => {
+    if (!challenge) return;
+    const result = await submitMutation
+      .mutateAsync({ challengeId: challenge.id, guess: 'CROSSWORD_COMPLETE' })
+      .catch(() => null);
+    if (result?.correct) {
+      showGlobalToast(`Crossword complete! +${result.xpEarned} XP`, 'success');
+    }
+  }, [challenge, submitMutation, showGlobalToast]);
+
   const handleSubmit = async () => {
     if (!challenge || !guess.trim()) return;
     const result = await submitMutation
@@ -440,16 +461,34 @@ function ChallengePanel() {
         </div>
       )}
 
-      <div className={styles.riddleBox}>
-        <p className={styles.riddleContent}>{challenge.riddle_content}</p>
-      </div>
+      {isCrossword && crosswordLayout ? (
+        <div className={styles.crosswordMatchWrap}>
+          <div className={styles.crosswordMatchMeta}>
+            <span className={styles.crosswordWordCount}>
+              <span className={styles.wordCountLabel}>Words:</span>
+              {crosswordLayout.words.length}
+            </span>
+          </div>
+          <CrosswordResult
+            layout={crosswordLayout}
+            isSolved={challenge.already_solved}
+            onReset={() => {}}
+            onComplete={() => void handleCrosswordComplete()}
+            hideControls
+          />
+        </div>
+      ) : (
+        <div className={styles.riddleBox}>
+          <p className={styles.riddleContent}>{challenge.riddle_content}</p>
+        </div>
+      )}
 
       {challenge.already_solved ? (
         <div className={styles.solvedBanner}>
           <CheckCircle2 size={18} />
           You have solved this challenge!
         </div>
-      ) : (
+      ) : !isCrossword ? (
         <div className={styles.guessRow}>
           <input
             className={styles.guessInput}
@@ -473,7 +512,7 @@ function ChallengePanel() {
             Submit
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -663,6 +702,7 @@ export default function PvpPage() {
   const [tab, setTab] = useState<Tab>('lobby');
   const { user: authUser } = useAppSelector((s) => s.auth);
   const { showGlobalToast } = useGlobalToast();
+  const { data: challengeData } = useCommunityChallenge();
 
   const lobby = usePvpLobby();
 
@@ -688,6 +728,10 @@ export default function PvpPage() {
     lobby.phase === 'active' &&
     lobby.match?.riddle?.type?.toUpperCase() === 'CROSSWORD';
 
+  const isChallengeTabCrossword =
+    tab === 'challenge' &&
+    challengeData?.riddle_type?.toUpperCase() === 'CROSSWORD';
+
   return (
     <div className={styles.page}>
       <h1 className={styles.pageTitle}>
@@ -695,7 +739,7 @@ export default function PvpPage() {
         Competitive Arena
       </h1>
 
-      <div className={cn(styles.contentGrid, isActiveCrossword && styles.fullWidthGrid)}>
+      <div className={cn(styles.contentGrid, (isActiveCrossword || isChallengeTabCrossword) && styles.fullWidthGrid)}>
         <div className={styles.main}>
           {/* Tab bar — hidden during an active match */}
           {!inMatch && (

@@ -110,6 +110,16 @@ export class QuestsService implements OnModuleInit {
     if (!user || user.is_guest) return;
 
     const now = new Date();
+
+    // Purge ALL expired quest records for this user before seeding fresh ones.
+    // No filter on is_completed — completed history from previous days is wiped too.
+    await this.prisma.userQuest.deleteMany({
+      where: {
+        user_id: userId,
+        quest: { expires_at: { lt: now } },
+      },
+    });
+
     const activeQuests = await this.prisma.quest.findMany({
       where: { is_active: true, expires_at: { gt: now } },
       select: { id: true },
@@ -253,9 +263,9 @@ export class QuestsService implements OnModuleInit {
     if (expiredQuests.length > 0) {
       const expiredIds = expiredQuests.map((q) => q.id);
       const { count } = await this.prisma.userQuest.deleteMany({
-        where: { quest_id: { in: expiredIds }, is_completed: false },
+        where: { quest_id: { in: expiredIds } },
       });
-      this.logger.log(`[Quests] Garbage collected ${count} stale uncompleted UserQuest rows.`);
+      this.logger.log(`[Quests] Garbage collected ${count} expired UserQuest rows (completed + uncompleted).`);
     }
 
     // Deactivate current active quests
