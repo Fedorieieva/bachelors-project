@@ -19,7 +19,7 @@ import styles from './ChatPage.module.scss';
 import { RiddleCollectionModal } from '@/components/organisms/Modals/RiddlesCollectionModal/RiddlesCollectionModal';
 import { Modal } from '@/components/atoms/Modal/Modal';
 import { useRiddleMessages } from '@/hooks/riddles/useRiddleMessages';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 const MODEL_STORAGE_KEY = 'genigma-model';
@@ -71,6 +71,11 @@ function parseCrosswordMessage(content: string): ParsedCrossword | null {
 
 export default function ChatPage() {
   const t = useTranslations('chatPage');
+  // Derive the explicit language string from the active next-intl locale so
+  // that Gemini generates content in the user's current UI language rather
+  // than defaulting to English. Extend the mapping below as new locales land.
+  const locale = useLocale();
+  const localeLanguage = locale === 'uk' ? 'ukrainian' : 'english';
   const { showGlobalToast } = useGlobalToast();
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -88,13 +93,20 @@ export default function ChatPage() {
     loadOlderMessages,
     isFetchingOlder,
     hasOlderMessages,
-  } = useRiddleChat(chatId, (fallbackModel) => {
-    setCurrentSettings(prev => ({
-      ...prev,
-      model: fallbackModel,
-      generate_image: fallbackModel === IMAGE_GENERATION_MODEL,
-    }));
-  });
+  } = useRiddleChat(
+    chatId,
+    // onModelFallback — sync the UI model selector to whichever model the backend fell back to
+    (fallbackModel) => {
+      setCurrentSettings(prev => ({
+        ...prev,
+        model: fallbackModel,
+        generate_image: fallbackModel === IMAGE_GENERATION_MODEL,
+      }));
+    },
+    // onMessageSettled — clear the optimistic ghost bubble once the mutation settles
+    // (success or error) so the message is never duplicated in the display list.
+    () => setOptimisticMessage(null),
+  );
 
   const {
     riddleMessages,
@@ -273,12 +285,14 @@ export default function ChatPage() {
         theme: inlineTheme.trim(),
         complexity: inlineComplexity,
         wordCount: inlineWordCount,
-        language: currentSettings.language,
+        // Use the locale-derived language so inline crossword clues are also
+        // generated in the user's current UI language.
+        language: localeLanguage,
       });
       await RiddleService.saveCrossword({
         layout,
         theme: inlineTheme.trim(),
-        language: currentSettings.language,
+        language: localeLanguage,
         chatId,
       });
       void queryClient.invalidateQueries({ queryKey: ['chat-history', chatId] });
@@ -289,7 +303,7 @@ export default function ChatPage() {
     } finally {
       setIsInlineGenerating(false);
     }
-  }, [inlineTheme, inlineComplexity, inlineWordCount, chatId, currentSettings.language, queryClient, t]);
+  }, [inlineTheme, inlineComplexity, inlineWordCount, chatId, localeLanguage, queryClient, t]);
 
   useEffect(() => {
     if (currentSettings.model) {
@@ -334,33 +348,54 @@ export default function ChatPage() {
     void generateCrossword({
       theme,
       customWords,
-      language: currentSettings.language,
+      // Use locale-derived language for welcome-screen crossword generation too.
+      language: localeLanguage,
       complexity: currentSettings.complexity,
       wordCount: currentSettings.crosswordWordCount ?? 10,
     });
-  }, [generateCrossword, currentSettings.language, currentSettings.complexity, currentSettings.crosswordWordCount]);
+  }, [generateCrossword, localeLanguage, currentSettings.complexity, currentSettings.crosswordWordCount]);
 
   const handleSend = useCallback(() => {
     if (!inputValue.trim() || isSending) return;
     setOptimisticMessage(inputValue);
-    sendGuess(inputValue, currentSettings);
+
+    // Build a sanitized settings object:
+    //  1. Strip crossword-only fields for non-CROSSWORD types so the NestJS
+    //     ValidationPipe (forbidNonWhitelisted: true) never sees unknown keys.
+    //  2. Force the language field from the active next-intl locale so Gemini
+    //     generates content in the user's current UI language, not English.
+    const settingsToSend: RiddleSettings = {
+      ...currentSettings,
+      language: localeLanguage,
+    };
+    if (settingsToSend.type !== RiddleType.CROSSWORD) {
+      delete settingsToSend.crosswordTheme;
+      delete settingsToSend.crosswordCustomWords;
+      delete settingsToSend.crosswordWordCount;
+    }
+
+    sendGuess(inputValue, settingsToSend);
     setInputValue('');
-  }, [inputValue, currentSettings, sendGuess, isSending]);
+    // Note: optimisticMessage is cleared via the onMessageSettled callback
+    // passed to useRiddleChat, which fires in both onSuccess and onError.
+    // This avoids a race where clearing it here would remove the bubble before
+    // the real message arrives from the server.
+  }, [inputValue, currentSettings, localeLanguage, sendGuess, isSending]);
 
   const displayMessages = useMemo<Message[]>(() => {
     const base = messages || [];
     const withOptimistic: Message[] = optimisticMessage
       ? [
-          ...base,
-          {
-            id: 'optimistic',
-            role: 'user' as const,
-            chat_id: chatId || '',
-            content: optimisticMessage,
-            is_initial: false,
-            createdAt: new Date().toISOString(),
-          },
-        ]
+        ...base,
+        {
+          id: 'optimistic',
+          role: 'user' as const,
+          chat_id: chatId || '',
+          content: optimisticMessage,
+          is_initial: false,
+          createdAt: new Date().toISOString(),
+        },
+      ]
       : base;
     return extraMessages.length > 0 ? [...withOptimistic, ...extraMessages] : withOptimistic;
   }, [messages, extraMessages, optimisticMessage, chatId]);

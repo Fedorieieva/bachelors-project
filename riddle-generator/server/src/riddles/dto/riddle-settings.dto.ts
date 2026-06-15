@@ -11,10 +11,14 @@ import {
   Matches,
   IsArray,
   IsObject,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RiddleType } from '@prisma/client';
+
+const isCrossword = (o: RiddleSettingsDto): boolean =>
+  o.type === RiddleType.CROSSWORD || (o.type as string) === 'CROSSWORD';
 
 export class RiddleSettingsDto {
   @ApiPropertyOptional({
@@ -70,6 +74,38 @@ export class RiddleSettingsDto {
   @IsOptional()
   @IsBoolean()
   generate_image?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'Space exploration',
+    description: 'Theme for the crossword puzzle (CROSSWORD type only)',
+  })
+  @ValidateIf(isCrossword)
+  @IsOptional()
+  @IsString()
+  crosswordTheme?: string;
+
+  @ApiPropertyOptional({
+    example: ['ORBIT', 'NEBULA'],
+    description: 'Custom words to include in the crossword (CROSSWORD type only)',
+  })
+  @ValidateIf(isCrossword)
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  crosswordCustomWords?: string[];
+
+  @ApiPropertyOptional({
+    minimum: 5,
+    maximum: 20,
+    example: 10,
+    description: 'Number of words to generate for the crossword (CROSSWORD type only)',
+  })
+  @ValidateIf(isCrossword)
+  @IsOptional()
+  @IsNumber()
+  @Min(5)
+  @Max(20)
+  crosswordWordCount?: number;
 }
 
 export class RiddleDto {

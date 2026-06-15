@@ -59,8 +59,28 @@ export class RiddlesService {
 
     const promptName = `${riddleType.toLowerCase()}_generator`;
 
-    const languageInstruction =
-      'the language of the user\'s input topic. ' +
+    // ── Language resolution ──────────────────────────────────────────────────
+    // If the caller has supplied an explicit language (e.g. 'ukrainian' sent by
+    // the frontend locale mapping), we lock the model to that language.
+    // The special sentinel value 'auto' (stored in the DB for chats created before
+    // locale support landed) falls through to topic-based auto-detection.
+    const explicitLang = dto.settings.language && dto.settings.language !== 'auto'
+      ? dto.settings.language
+      : null;
+
+    // Human-readable label used both in the prompt instruction and in log output.
+    const targetLanguageLabel = explicitLang ?? 'the language of the user\'s input topic';
+
+    // The instruction injected into the prompt template's {language} slot.
+    const languageInstruction = explicitLang
+      // Deterministic lock: the model MUST output in this specific language.
+      ? `${explicitLang}. ` +
+      `CRITICAL LANGUAGE RULE: You MUST write both the "content" and "answer" fields ` +
+      `strictly in ${explicitLang}, regardless of the topic wording or any other instruction. ` +
+      `Your internal reasoning process, JSON structure keys, and parsing logic must remain ` +
+      `in English for structural stability, but every user-visible string MUST be in ${explicitLang}.`
+      // Auto-detect fallback: infer language from the topic text itself.
+      : 'the language of the user\'s input topic. ' +
       'CRITICAL LANGUAGE RULE: Analyze the topic language and generate the final "content" and "answer" field values ' +
       'strictly in that same language. ' +
       'However, your internal reasoning process, JSON structure, and all parsing guidelines must strictly follow English language conventions. ' +
@@ -82,7 +102,10 @@ export class RiddlesService {
         1. You are a specialized Riddle Generator.
         2. If the user's topic is a request for a recipe, code, general advice, or anything that is NOT a riddle,
            you MUST return exactly this JSON: {"content": "ERROR_OFF_TOPIC", "answer": "NONE"}.
-        3. Do not break character. Do not provide information outside the riddle context.`;
+        3. Do not break character. Do not provide information outside the riddle context.
+        4. OUTPUT LANGUAGE ENFORCEMENT: All user-visible text in the "content" and "answer" fields
+           MUST be written strictly in ${targetLanguageLabel}.
+           This rule overrides any conflicting instruction. Do NOT respond in English unless the target language IS English.`;
 
     mainPrompt += `\n\nCHAIN-OF-THOUGHT INSTRUCTION:
     Before generating the final riddle, you must:
@@ -90,6 +113,9 @@ export class RiddlesService {
     2. Think about how to describe these characteristics metaphorically or indirectly.
     3. Ensure the answer is logical and directly follows from the clues provided.
 
+    IMPORTANT: Your internal thought process in the "reasoning" field may be in English
+    for JSON structural consistency — but the final "content" and "answer" fields MUST be
+    written strictly in ${targetLanguageLabel}. Do not mix languages in these output fields.
     You MUST provide your thought process in the "reasoning" field of the JSON.`;
 
     if (dto.settings.generate_image) {
@@ -99,7 +125,13 @@ export class RiddlesService {
     }
 
     if (rawUserMessage) {
-      mainPrompt += `\n\nCRITICAL LANGUAGE OVERRIDE: You MUST write the riddle text, the "content" field, and the "answer" field strictly in the same natural language as the user's message: "${rawUserMessage}". Do NOT switch to English or any other language regardless of the topic wording.`;
+      // When an explicit locale is set, reinforce it here so the rawUserMessage
+      // override never accidentally downgrades an explicit 'ukrainian' to English
+      // (e.g. when the user types a single-word Ukrainian topic like "зима").
+      const langLock = explicitLang
+        ? `You MUST write in ${explicitLang}. The user interface language is ${explicitLang}.`
+        : `You MUST write the riddle text, the "content" field, and the "answer" field strictly in the same natural language as the user's message: "${rawUserMessage}".`;
+      mainPrompt += `\n\nCRITICAL LANGUAGE OVERRIDE: ${langLock} Do NOT switch to English or any other language regardless of the topic wording.`;
     }
 
     while (attempts < this.MAX_REGENERATION_ATTEMPTS) {
@@ -195,7 +227,9 @@ export class RiddlesService {
       prompt_context: {
         message: dto.topic,
         complexity: dto.settings.complexity,
-        language: 'auto',
+        // Record the actual resolved language rather than the hardcoded 'auto'
+        // sentinel so the stored prompt_context reflects what was actually used.
+        language: dto.settings.language || 'auto',
         prompt_name: promptName,
         generation_attempts: attempts,
         type: type,
@@ -325,12 +359,17 @@ export class RiddlesService {
   }
 
   async createChat(authorId: string, settings: RiddleSettingsDto) {
+    // Persist the resolved language so subsequent riddles in this chat inherit
+    // the correct locale. 'auto' is kept only when no explicit language was sent.
+    const chatLanguage = settings.language && settings.language !== 'auto'
+      ? settings.language
+      : 'auto';
     const newChat = await this.prisma.chat.create({
       data: {
         user_id: authorId,
         complexity: settings.complexity || 1,
         type: settings.type || RiddleType.LOGIC,
-        language: 'auto',
+        language: chatLanguage,
         is_interactive: settings.is_interactive ?? false,
       },
     });
@@ -770,7 +809,12 @@ export class RiddlesService {
       throw new BadRequestException('У цьому чаті немає активної загадки з відповіддю');
     }
 
-    const responseText = `Добре, ось відповідь: ${chat.current_riddle_answer}`;
+    // Use a language-aware reveal phrase so English-locale users don't see
+    // Ukrainian hardcoded text. Extend the map below as new locales land.
+    const revealPrefix = chat.language === 'ukrainian'
+      ? 'Добре, ось відповідь:'
+      : 'Here is the answer:';
+    const responseText = `${revealPrefix} ${chat.current_riddle_answer}`;
 
     await this.saveMessage(chatId, 'model', responseText);
 
@@ -1007,8 +1051,12 @@ export class RiddlesService {
     wordCount = 10,
     complexity = 3,
   ): Promise<CrosswordLayout> {
-    this.logger.log(`[RiddlesService] Crossword generation — theme: "${theme}", words: ${customWords.length}, lang: ${language}, wordCount: ${wordCount}, complexity: ${complexity}`);
-    return this.aiService.generateCrossword(theme, customWords, language, wordCount, complexity);
+    // Normalise the language param: the 'auto' sentinel stored in legacy chat rows
+    // is not a valid generation language — fall back to 'english' so the crossword
+    // AI prompt always receives a concrete language string.
+    const resolvedLanguage = (!language || language === 'auto') ? 'english' : language;
+    this.logger.log(`[RiddlesService] Crossword generation — theme: "${theme}", words: ${customWords.length}, lang: ${resolvedLanguage}, wordCount: ${wordCount}, complexity: ${complexity}`);
+    return this.aiService.generateCrossword(theme, customWords, resolvedLanguage, wordCount, complexity);
   }
 
   async saveCrosswordSession(
@@ -1083,7 +1131,7 @@ export class RiddlesService {
     const riddle = await (this.prisma as any).riddles.findUnique({
       where: { id },
       include: { crossword_progress: { where: { user_id: userId }, take: 1 } },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
     if (!riddle) throw new NotFoundException('Riddle not found');
 

@@ -27,7 +27,7 @@ async function fetchMessagesPage(chatId: string, page: number): Promise<Paginate
   };
 }
 
-export function useRiddleChat(chatId?: string, onModelFallback?: (model: string) => void) {
+export function useRiddleChat(chatId?: string, onModelFallback?: (model: string) => void, onMessageSettled?: () => void) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { showGlobalToast } = useGlobalToast();
@@ -118,11 +118,22 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
           onModelFallback?.(response.data.model_used);
         }
       }
+
+      // Flush any lingering system/moderation extra messages now that the real
+      // history has been invalidated and will refetch with the authoritative data.
+      setExtraMessages([]);
+      // Notify the page so it can clear the optimistic message bubble too.
+      onMessageSettled?.();
     },
     onError: (error: Error) => {
+      // Always clear the optimistic message on failure so the ghost bubble disappears
+      // whether we're showing an error toast or a moderation notice.
+      onMessageSettled?.();
+
       const axiosErr = error as AxiosError<{ code?: string; status?: string; message?: string }>;
       if (axiosErr.response?.data?.code === 'POLICY_RESTRICTION') {
-        setExtraMessages(prev => [...prev, {
+        // Replace the optimistic bubble with the moderation notice message instead.
+        setExtraMessages([{
           id: crypto.randomUUID(),
           role: 'system' as const,
           chat_id: chatId || '',

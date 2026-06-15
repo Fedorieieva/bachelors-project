@@ -32,16 +32,25 @@ const WelcomeSettingsSchema = Yup.object().shape({
 });
 
 export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
-  initialSettings,
-  onSync,
-  onGenerate,
-  isGenerating = false,
-}) => {
+                                                                  initialSettings,
+                                                                  onSync,
+                                                                  onGenerate,
+                                                                  isGenerating = false,
+                                                                }) => {
   const t = useTranslations('welcomeSettings');
   const [wordInput, setWordInput] = useState('');
 
   const formik = useFormik<RiddleSettings>({
-    initialValues: { crosswordWordCount: 10, ...initialSettings },
+    // Do NOT seed crosswordWordCount unconditionally — spreading it into every
+    // settings object caused forbidNonWhitelisted: true on the NestJS ValidationPipe
+    // to reject non-crossword requests ("property crosswordWordCount should not exist").
+    // The field is only present when the user is on the CROSSWORD tab.
+    initialValues: {
+      ...initialSettings,
+      ...(initialSettings.type === RiddleType.CROSSWORD
+        ? { crosswordWordCount: initialSettings.crosswordWordCount ?? 10 }
+        : {}),
+    },
     validationSchema: WelcomeSettingsSchema,
     onSubmit: () => {},
   });
@@ -94,6 +103,12 @@ export const WelcomeSettings: React.FC<WelcomeSettingsProps> = ({
                   if (type !== RiddleType.CROSSWORD) {
                     void formik.setFieldValue('crosswordTheme', undefined);
                     void formik.setFieldValue('crosswordCustomWords', []);
+                    void formik.setFieldValue('crosswordWordCount', undefined);
+                  } else {
+                    // Re-seed the word count default when switching back to CROSSWORD
+                    if (!formik.values.crosswordWordCount) {
+                      void formik.setFieldValue('crosswordWordCount', 10);
+                    }
                   }
                 }}
                 fullWidth
