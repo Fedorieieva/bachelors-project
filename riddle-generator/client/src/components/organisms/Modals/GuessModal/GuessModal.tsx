@@ -17,6 +17,7 @@ interface GuessModalProps {
   crosswordLayout?: CrosswordLayout;
   riddleId?: string;
   onCrosswordComplete?: () => void;
+  hideCrosswordControls?: boolean;
 }
 
 export const GuessModal: React.FC<GuessModalProps> = ({
@@ -27,6 +28,7 @@ export const GuessModal: React.FC<GuessModalProps> = ({
   crosswordLayout,
   riddleId,
   onCrosswordComplete,
+  hideCrosswordControls = false,
 }) => {
   const t = useTranslations('guessModal');
   const [answer, setAnswer] = React.useState('');
@@ -46,6 +48,7 @@ export const GuessModal: React.FC<GuessModalProps> = ({
             riddleId={riddleId}
             onReset={onClose}
             onComplete={onCrosswordComplete}
+            hideControls={hideCrosswordControls}
           />
         </div>
       </Modal>

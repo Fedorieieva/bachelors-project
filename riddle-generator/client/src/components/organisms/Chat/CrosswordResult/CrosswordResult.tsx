@@ -11,23 +11,17 @@ interface CrosswordResultProps {
   layout: CrosswordLayout;
   riddleId?: string;
   onReset: () => void;
-  /** When provided, replaces onReset on the header button to open an in-session generation panel */
   onNewCrossword?: () => void;
   onComplete?: () => void;
   onShare?: () => void;
   isSharing?: boolean;
   isShared?: boolean;
-  /** True when the riddle is already published to the social feed */
   isPublic?: boolean;
   onUnshare?: () => void;
   isUnsharing?: boolean;
-  /** Pre-loaded partial answers from the DB (word number → typed string) */
   initialAnswers?: Record<number, string>;
-  /** True when the riddle was already solved in a previous session */
   isSolved?: boolean;
-  /** Called whenever the user changes an answer so the parent can debounce-save progress */
   onProgressChange?: (answers: Record<number, string>) => void;
-  /** Hides the "New crossword" header button — use in PvP and read-only history contexts */
   hideControls?: boolean;
 }
 
@@ -36,15 +30,13 @@ type WordStatus = 'pending' | 'correct' | 'wrong';
 interface CellData {
   letter: string;
   number?: number;
-  wordNumbers: string[]; // Fixed type: track full compound string tags to prevent intersection leaking
+  wordNumbers: string[];
 }
 
 function normalizeWord(s: string): string {
   return s.toUpperCase().replace(/[\s'\-]/g, '');
 }
 
-/** Unique state key per word — combines number + direction to avoid collisions
- *  when across and down words share the same number (e.g. 1-across vs 1-down). */
 function wordKey(word: CrosswordWord): string {
   return `${word.number}-${word.direction}`;
 }
@@ -86,7 +78,6 @@ function buildCellMap(words: CrosswordWord[]): Map<string, CellData> {
 }
 
 function getCellStatus(cell: CellData, wordStatuses: Record<string, WordStatus>): WordStatus {
-  // Directly evaluate the precise string keys registered on the active cell layout node
   const statuses = cell.wordNumbers.map((key) => wordStatuses[key] ?? 'pending');
 
   if (statuses.some((s) => s === 'correct')) return 'correct';
@@ -94,28 +85,27 @@ function getCellStatus(cell: CellData, wordStatuses: Record<string, WordStatus>)
   return 'pending';
 }
 
-/** Stable fingerprint based on word content — survives reference churn across polls. */
 function layoutKey(layout: CrosswordLayout): string {
   return layout.words.map((w) => `${w.number}:${w.word}`).join('|');
 }
 
 export const CrosswordResult: React.FC<CrosswordResultProps> = ({
-                                                                  layout,
-                                                                  riddleId,
-                                                                  onReset,
-                                                                  onNewCrossword,
-                                                                  onComplete,
-                                                                  onShare,
-                                                                  isSharing = false,
-                                                                  isShared = false,
-                                                                  isPublic = false,
-                                                                  onUnshare,
-                                                                  isUnsharing = false,
-                                                                  initialAnswers,
-                                                                  isSolved = false,
-                                                                  onProgressChange,
-                                                                  hideControls = false,
-                                                                }) => {
+  layout,
+  riddleId,
+  onReset,
+  onNewCrossword,
+  onComplete,
+  onShare,
+  isSharing = false,
+  isShared = false,
+  isPublic = false,
+  onUnshare,
+  isUnsharing = false,
+  initialAnswers,
+  isSolved = false,
+  onProgressChange,
+  hideControls = false,
+}) => {
   const solvedAnswers = useMemo<Record<string, string>>(
     () => Object.fromEntries(layout.words.map((w) => [wordKey(w), w.word])),
     [layout.words],

@@ -104,7 +104,6 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
   const queryClient = useQueryClient();
 
   const crosswordLayout = React.useMemo(() => parseCrosswordContent(content), [content]);
-  // Prefer explicit enum value; fall back to content-parse for legacy LOGIC records
   const isCrossword = type === 'CROSSWORD' || crosswordLayout !== null;
   const displayType = isCrossword ? 'CROSSWORD' : type;
   const crosswordTheme = isCrossword
@@ -325,16 +324,21 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
               {complexity}
             </Badge>
 
-            {solved && (
-              <Badge variant="success" glow icon={<SolvedIcon />}>
-                {t('solved')}
-              </Badge>
+            {!isOwnPost && (
+              <>
+                {solved && (
+                  <Badge variant="success" glow icon={<SolvedIcon />}>
+                    {t('solved')}
+                  </Badge>
+                )}
+                {!solved && !canAttemptLocal && (
+                  <Badge variant="error" glow icon={<LockIcon />}>
+                    {t('blocked')}
+                  </Badge>
+                )}
+              </>
             )}
-            {!solved && !canAttemptLocal && (
-              <Badge variant="error" glow icon={<LockIcon />}>
-                {t('blocked')}
-              </Badge>
-            )}
+
             {isOwnPost && (
               <>
                 <VisibilityToggle
@@ -457,6 +461,7 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
         crosswordLayout={crosswordLayout ?? undefined}
         riddleId={isCrossword ? id : undefined}
         onCrosswordComplete={() => void handleCrosswordComplete()}
+        hideCrosswordControls={true}
       />
 
       <RiddleStatusModal
