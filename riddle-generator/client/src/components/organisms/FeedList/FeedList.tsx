@@ -43,6 +43,7 @@ export const FeedList: React.FC<FeedListProps> = ({ type, userId }) => {
           userName={riddle.author.name || 'Anonymous'}
           avatarUrl={riddle.author.avatar_url}
           content={riddle.content}
+          answer={riddle.answer} 
           complexity={riddle.complexity}
           type={riddle.type}
           promptContext={riddle.prompt_context}

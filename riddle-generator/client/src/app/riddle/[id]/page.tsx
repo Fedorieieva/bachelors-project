@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation'; // Added useSearchParams hook
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, BookOpen, Loader2, Lock } from 'lucide-react';
@@ -45,6 +45,7 @@ function ComplexityDots({ value }: { value: number }) {
 export default function RiddlePreviewPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams(); // Read live query variables from address bar location
   const id = Array.isArray(params.id) ? params.id[0] : (params.id as string);
 
   const [riddle, setRiddle] = useState<RiddleDetail | null>(null);
@@ -90,6 +91,21 @@ export default function RiddlePreviewPage() {
       Object.entries(progressRecord).map(([k, v]) => [Number(k), v]),
     );
   }, [riddle?.crossword_progress]);
+
+  // Evaluate explicit origin label deterministically based on explicit URL parameters context mapping
+  const pageTitleLabel = useMemo(() => {
+    if (!riddle) return 'Riddle Preview';
+
+    const sourceParam = searchParams.get('from');
+    if (sourceParam === 'social') return 'Social Riddle';
+    if (sourceParam === 'pvp') return 'PvP Riddle';
+
+    // Fallback if accessed via a clean direct layout link without tracking tokens
+    if (riddle.prompt_context && Object.keys(riddle.prompt_context).length > 0) {
+      return 'Social Riddle';
+    }
+    return 'PvP Riddle';
+  }, [riddle, searchParams]);
 
   return (
     <div
@@ -149,7 +165,7 @@ export default function RiddlePreviewPage() {
             {/* ── Header row ────────────────────────────────────── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <BookOpen size={20} />
-              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>PvP Riddle</h2>
+              <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{pageTitleLabel}</h2>
               <div style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
                 {riddle.type && (
                   <Badge variant={typeToVariant(riddle.type)}>{riddle.type}</Badge>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation'; // Added for seamless navigation redirection
 import { cn } from '@/lib/utils';
 import { Typography } from '@/components/atoms/Typography/Typography';
 import { Button } from '@/components/atoms/Button/Button';
@@ -23,6 +24,7 @@ import FlameIcon from '@/assets/flame-icon.svg';
 import ZapIcon from '@/assets/zap-icon.svg';
 import SproutIcon from '@/assets/sprout-icon.svg';
 import TrashIcon from '@/assets/trash-icon.svg';
+import { Eye as EyeIcon } from 'lucide-react'; // Typed import clean resolution from lucide package
 
 import { RiddleStatus, RiddleStatusModal } from '@/components/organisms/Modals/RiddleStatusModal/RiddleStatusModal';
 import { useSolveRiddle, useRiddleEconomy, useDeleteRiddle } from '@/hooks/riddles/useRiddleActions';
@@ -45,6 +47,7 @@ interface RiddleCardProps {
   userName: string;
   avatarUrl?: string | null;
   content: string;
+  answer?: string | null;
   complexity: number;
   type: string;
   promptContext?: Record<string, unknown> | null;
@@ -81,25 +84,27 @@ const getComplexityConfig = (level: number): { variant: BadgeVariant; icon: Reac
 };
 
 export const RiddleCard: React.FC<RiddleCardProps> = ({
-  id,
-  userId,
-  userName,
-  avatarUrl,
-  content,
-  complexity,
-  type,
-  promptContext,
-  likesCount: initialLikesCount = 0,
-  commentsCount: initialCommentsCount = 0,
-  isLiked: initialIsLiked = false,
-  isSaved: initialIsSaved = false,
-  isSolved: initialIsSolved = false,
-  isPublic: initialIsPublic = false,
-  canAttempt: initialCanAttempt = true,
-  imageUrl,
-  className,
-}) => {
+                                                        id,
+                                                        userId,
+                                                        userName,
+                                                        avatarUrl,
+                                                        content,
+                                                        answer,
+                                                        complexity,
+                                                        type,
+                                                        promptContext,
+                                                        likesCount: initialLikesCount = 0,
+                                                        commentsCount: initialCommentsCount = 0,
+                                                        isLiked: initialIsLiked = false,
+                                                        isSaved: initialIsSaved = false,
+                                                        isSolved: initialIsSolved = false,
+                                                        isPublic: initialIsPublic = false,
+                                                        canAttempt: initialCanAttempt = true,
+                                                        imageUrl,
+                                                        className,
+                                                      }) => {
   const t = useTranslations('riddleCard');
+  const router = useRouter(); // Initialize standard Next.js router instance
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const queryClient = useQueryClient();
 
@@ -302,6 +307,10 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
     setShowComments(!showComments);
   };
 
+  const handleRevealSolution = () => {
+    router.push(`/riddle/${id}?from=social`);
+  };
+
   return (
     <>
       <div className={cn(styles.card, className)}>
@@ -413,10 +422,20 @@ export const RiddleCard: React.FC<RiddleCardProps> = ({
             )}
           </div>
 
-          {canInteract && !isOwnPost && !solved && canAttemptLocal && (
-            <Button variant="icon-only" onClick={() => setIsGuessModalOpen(true)} aria-label={t('aria.solve')}>
-              <PuzzleIcon className={cn(styles.icon, styles.puzzle)} />
-            </Button>
+          {canInteract && (
+            isOwnPost || solved ? (
+              <Button
+                variant="icon-only"
+                onClick={handleRevealSolution}
+                aria-label="Navigate to solution workspace"
+              >
+                <EyeIcon size={18} className={styles.puzzle} style={{ color: '#a855f7' }} />
+              </Button>
+            ) : canAttemptLocal ? (
+              <Button variant="icon-only" onClick={() => setIsGuessModalOpen(true)} aria-label={t('aria.solve')}>
+                <PuzzleIcon className={cn(styles.icon, styles.puzzle)} />
+              </Button>
+            ) : null
           )}
         </div>
 

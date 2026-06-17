@@ -590,11 +590,10 @@ function DuelsLog({ matches, userId }: { matches: PvpMatch[]; userId: string }) 
               </div>
             </div>
 
-            {/* Right meta — XP + peek riddle + date, anchored right */}
             <div className={styles.historyMeta}>
               {isFinished && iWon && <span className={styles.historyXp}>+100 XP</span>}
               {m.riddle && (
-                <Link href={`/riddle/${m.riddle.id}`} className={styles.peekRiddle}>
+                <Link href={`/riddle/${m.riddle.id}?from=pvp`} className={styles.peekRiddle}>
                   Peek Riddle
                 </Link>
               )}
