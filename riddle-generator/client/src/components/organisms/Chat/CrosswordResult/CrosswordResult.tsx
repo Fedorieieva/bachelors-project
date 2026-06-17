@@ -36,11 +36,17 @@ type WordStatus = 'pending' | 'correct' | 'wrong';
 interface CellData {
   letter: string;
   number?: number;
-  wordNumbers: number[];
+  wordNumbers: string[]; // Fixed type: track full compound string tags to prevent intersection leaking
 }
 
 function normalizeWord(s: string): string {
   return s.toUpperCase().replace(/[\s'\-]/g, '');
+}
+
+/** Unique state key per word — combines number + direction to avoid collisions
+ *  when across and down words share the same number (e.g. 1-across vs 1-down). */
+function wordKey(word: CrosswordWord): string {
+  return `${word.number}-${word.direction}`;
 }
 
 function getWordStatus(input: string, target: string): WordStatus {
@@ -54,14 +60,15 @@ function getWordStatus(input: string, target: string): WordStatus {
 function buildCellMap(words: CrosswordWord[]): Map<string, CellData> {
   const map = new Map<string, CellData>();
   for (const word of words) {
+    const compoundKey = wordKey(word);
     for (let i = 0; i < word.word.length; i++) {
       const cx = word.direction === 'across' ? word.x + i : word.x;
       const cy = word.direction === 'across' ? word.y : word.y + i;
       const key = `${cx},${cy}`;
       const existing = map.get(key);
       if (existing) {
-        if (!existing.wordNumbers.includes(word.number)) {
-          existing.wordNumbers.push(word.number);
+        if (!existing.wordNumbers.includes(compoundKey)) {
+          existing.wordNumbers.push(compoundKey);
         }
         if (i === 0 && existing.number === undefined) {
           existing.number = word.number;
@@ -70,7 +77,7 @@ function buildCellMap(words: CrosswordWord[]): Map<string, CellData> {
         map.set(key, {
           letter: word.word[i],
           number: i === 0 ? word.number : undefined,
-          wordNumbers: [word.number],
+          wordNumbers: [compoundKey],
         });
       }
     }
@@ -78,8 +85,10 @@ function buildCellMap(words: CrosswordWord[]): Map<string, CellData> {
   return map;
 }
 
-function getCellStatus(cell: CellData, wordStatuses: Record<number, WordStatus>): WordStatus {
-  const statuses = cell.wordNumbers.map((n) => wordStatuses[n] ?? 'pending');
+function getCellStatus(cell: CellData, wordStatuses: Record<string, WordStatus>): WordStatus {
+  // Directly evaluate the precise string keys registered on the active cell layout node
+  const statuses = cell.wordNumbers.map((key) => wordStatuses[key] ?? 'pending');
+
   if (statuses.some((s) => s === 'correct')) return 'correct';
   if (statuses.some((s) => s === 'wrong')) return 'wrong';
   return 'pending';
@@ -91,52 +100,50 @@ function layoutKey(layout: CrosswordLayout): string {
 }
 
 export const CrosswordResult: React.FC<CrosswordResultProps> = ({
-  layout,
-  riddleId,
-  onReset,
-  onNewCrossword,
-  onComplete,
-  onShare,
-  isSharing = false,
-  isShared = false,
-  isPublic = false,
-  onUnshare,
-  isUnsharing = false,
-  initialAnswers,
-  isSolved = false,
-  onProgressChange,
-  hideControls = false,
-}) => {
-  const solvedAnswers = useMemo<Record<number, string>>(
-    () => Object.fromEntries(layout.words.map((w) => [w.number, w.word])),
+                                                                  layout,
+                                                                  riddleId,
+                                                                  onReset,
+                                                                  onNewCrossword,
+                                                                  onComplete,
+                                                                  onShare,
+                                                                  isSharing = false,
+                                                                  isShared = false,
+                                                                  isPublic = false,
+                                                                  onUnshare,
+                                                                  isUnsharing = false,
+                                                                  initialAnswers,
+                                                                  isSolved = false,
+                                                                  onProgressChange,
+                                                                  hideControls = false,
+                                                                }) => {
+  const solvedAnswers = useMemo<Record<string, string>>(
+    () => Object.fromEntries(layout.words.map((w) => [wordKey(w), w.word])),
     [layout.words],
   );
 
-  const [userAnswers, setUserAnswers] = useState<Record<number, string>>(
-    () => (isSolved ? solvedAnswers : (initialAnswers ?? {})),
+  const normalizedInitialAnswers = useMemo<Record<string, string>>(() => {
+    if (!initialAnswers) return {};
+    const out: Record<string, string> = {};
+    for (const word of layout.words) {
+      const val = initialAnswers[word.number];
+      if (val !== undefined) out[wordKey(word)] = val;
+    }
+    return out;
+  }, [initialAnswers, layout.words]);
+
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>(
+    () => (isSolved ? solvedAnswers : normalizedInitialAnswers),
   );
 
-  // Word number whose input is currently held in browser focus.
-  // Used by the hydration gate to skip overwriting the cell being edited.
   const [focusedWordNumber, setFocusedWordNumber] = useState<number | null>(null);
 
   const completedRef = useRef(false);
 
-  // Live mirror of the isSolved prop. Updated every render so that the
-  // 1200ms delayed-clear timer reads the current value at fire time, not
-  // the stale closure value from when the timer was scheduled. This prevents
-  // the clear from running after the puzzle is solved or the match ends.
   const isSolvedRef = useRef(isSolved);
   isSolvedRef.current = isSolved;
 
-  // Fingerprint of the last layout that triggered a full state reset.
-  // Guards against same-riddle re-renders (PvP polling, React Strict Mode)
-  // resetting userAnswers mid-session.
   const layoutKeyRef = useRef<string>(layoutKey(layout));
 
-  // Per-word delayed-clear timers. One entry per word that is showing a
-  // wrong-answer highlight. Stored in a ref so they survive re-renders and
-  // are drained on unmount.
   const clearTimersRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const cellMap = useMemo(() => buildCellMap(layout.words), [layout.words]);
@@ -150,25 +157,23 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
     [layout.words],
   );
 
-  const wordStatuses = useMemo<Record<number, WordStatus>>(() => {
-    const out: Record<number, WordStatus> = {};
+  const wordStatuses = useMemo<Record<string, WordStatus>>(() => {
+    const out: Record<string, WordStatus> = {};
     for (const word of layout.words) {
-      out[word.number] = getWordStatus(userAnswers[word.number] ?? '', word.word);
+      out[wordKey(word)] = getWordStatus(userAnswers[wordKey(word)] ?? '', word.word);
     }
     return out;
   }, [userAnswers, layout.words]);
 
-  // Correct words are processed LAST so their letters win at intersection cells,
-  // preventing pending/wrong word inputs from overwriting locked correct letters.
   const displayLetters = useMemo<Map<string, string>>(() => {
     const map = new Map<string, string>();
     const ordered = [...layout.words].sort((a, b) => {
-      const ca = wordStatuses[a.number] === 'correct' ? 1 : 0;
-      const cb = wordStatuses[b.number] === 'correct' ? 1 : 0;
+      const ca = wordStatuses[wordKey(a)] === 'correct' ? 1 : 0;
+      const cb = wordStatuses[wordKey(b)] === 'correct' ? 1 : 0;
       return ca - cb;
     });
     for (const word of ordered) {
-      const input = userAnswers[word.number] ?? '';
+      const input = userAnswers[wordKey(word)] ?? '';
       for (let i = 0; i < word.word.length; i++) {
         const cx = word.direction === 'across' ? word.x + i : word.x;
         const cy = word.direction === 'across' ? word.y : word.y + i;
@@ -180,11 +185,10 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
   }, [userAnswers, layout.words, wordStatuses]);
 
   const allCorrect = useMemo(
-    () => layout.words.length > 0 && layout.words.every((w) => wordStatuses[w.number] === 'correct'),
+    () => layout.words.length > 0 && layout.words.every((w) => wordStatuses[wordKey(w)] === 'correct'),
     [layout.words, wordStatuses],
   );
 
-  // Fire onComplete exactly once per puzzle session when all words are solved.
   useEffect(() => {
     if (allCorrect && !completedRef.current && !isSolved) {
       completedRef.current = true;
@@ -192,97 +196,87 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
     }
   }, [allCorrect, onComplete, isSolved]);
 
-  // Unified layout-change + server-hydration effect.
-  //
-  // Branch A — layout fingerprint changed (new riddle):
-  //   Full state reset. All pending clears are cancelled and answers are
-  //   seeded from initialAnswers (or solvedAnswers if already solved).
-  //
-  // Branch B — same riddle, initialAnswers updated (background DB sync):
-  //   Selective hydration. Only words that are locally empty AND not currently
-  //   focused are eligible. This lets a returning player's saved progress load
-  //   without disturbing any cell they are actively editing.
   useEffect(() => {
     const key = layoutKey(layout);
 
     if (key !== layoutKeyRef.current) {
-      // ── Branch A: new riddle ─────────────────────────────────────
       layoutKeyRef.current = key;
       clearTimersRef.current.forEach((t) => clearTimeout(t));
       clearTimersRef.current.clear();
       completedRef.current = false;
-      setUserAnswers(isSolved ? solvedAnswers : (initialAnswers ?? {}));
+      setUserAnswers(isSolved ? solvedAnswers : normalizedInitialAnswers);
       return;
     }
 
-    // ── Branch B: same riddle — partial hydration only ───────────
-    // Skip entirely when there is no server payload or puzzle is already solved.
-    if (!initialAnswers || isSolved) return;
+    if (!normalizedInitialAnswers || isSolved) return;
 
     setUserAnswers((prev) => {
       const next = { ...prev };
       let changed = false;
-      for (const [rawNum, serverVal] of Object.entries(initialAnswers)) {
-        const num = Number(rawNum);
-        const localVal = prev[num] ?? '';
-        // Hydrate only if: the local cell is empty AND the word is not focused
-        if (serverVal && !localVal && num !== focusedWordNumber) {
-          next[num] = serverVal;
+      for (const word of layout.words) {
+        const key = wordKey(word);
+        const serverVal = normalizedInitialAnswers[key] ?? '';
+        const localVal = prev[key] ?? '';
+        if (serverVal && !localVal && word.number !== focusedWordNumber) {
+          next[key] = serverVal;
           changed = true;
         }
       }
       return changed ? next : prev;
     });
-  }, [layout, isSolved, solvedAnswers, initialAnswers, focusedWordNumber]);
+  }, [layout, isSolved, solvedAnswers, normalizedInitialAnswers, focusedWordNumber]);
 
-  // Drain all pending delayed-clear timers when the component unmounts.
-  // This covers the PvP match-end path: ActiveMatchPanel unmounts CrosswordResult
-  // when isFinished becomes true, and this cleanup runs immediately.
   useEffect(() => {
     return () => {
       clearTimersRef.current.forEach((t) => clearTimeout(t));
     };
   }, []);
 
+  const toExternalAnswers = useCallback(
+    (internal: Record<string, string>): Record<number, string> => {
+      const out: Record<number, string> = {};
+      for (const word of layout.words) {
+        const val = internal[wordKey(word)];
+        if (val !== undefined) out[word.number] = val;
+      }
+      return out;
+    },
+    [layout.words],
+  );
+
   const handleChange = useCallback(
-    (wordNumber: number, value: string) => {
+    (word: CrosswordWord, value: string) => {
       if (isSolved) return;
 
-      // User resumed typing — cancel any in-flight delayed clear for this word
-      const pending = clearTimersRef.current.get(wordNumber);
+      const key = wordKey(word);
+
+      const pending = clearTimersRef.current.get(word.number);
       if (pending) {
         clearTimeout(pending);
-        clearTimersRef.current.delete(wordNumber);
+        clearTimersRef.current.delete(word.number);
       }
 
       setUserAnswers((prev) => {
-        const next = { ...prev, [wordNumber]: value };
-        onProgressChange?.(next);
+        const next = { ...prev, [key]: value };
+        onProgressChange?.(toExternalAnswers(next));
         return next;
       });
 
-      // Schedule a delayed clear only when the word slot is fully filled and wrong.
-      // If the match ends or the puzzle is solved during the 1200ms window,
-      // isSolvedRef.current will be true and the clear is aborted — leaving
-      // letters intact for post-match grid inspection.
-      const word = layout.words.find((w) => w.number === wordNumber);
-      if (word && getWordStatus(value, word.word) === 'wrong') {
+      if (getWordStatus(value, word.word) === 'wrong') {
         const timer = setTimeout(() => {
-          clearTimersRef.current.delete(wordNumber);
-          // Abort if the puzzle was solved or match terminated during the delay
+          clearTimersRef.current.delete(word.number);
           if (isSolvedRef.current) return;
           setUserAnswers((prev) => {
-            // Guard: skip if the user already changed the value since scheduling
-            if ((prev[wordNumber] ?? '') !== value) return prev;
-            const next = { ...prev, [wordNumber]: '' };
-            onProgressChange?.(next);
+            if ((prev[key] ?? '') !== value) return prev;
+            const next = { ...prev, [key]: '' };
+            onProgressChange?.(toExternalAnswers(next));
             return next;
           });
         }, 1200);
-        clearTimersRef.current.set(wordNumber, timer);
+        clearTimersRef.current.set(word.number, timer);
       }
     },
-    [isSolved, onProgressChange, layout.words],
+    [isSolved, onProgressChange, toExternalAnswers],
   );
 
   return (
@@ -327,7 +321,6 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
       )}
 
       <div className={styles.body}>
-        {/* Visual grid with chess-style column labels */}
         <div className={styles.gridWrapper}>
           <div
             className={styles.colLabels}
@@ -372,21 +365,20 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
           </div>
         </div>
 
-        {/* Per-clue input list */}
         <div className={styles.clueInputList}>
           {sortedWords.map((word, idx) => {
-            const status = wordStatuses[word.number];
+            const status = wordStatuses[wordKey(word)];
             const isLocked = status === 'correct' || isSolved;
             return (
               <div
-                key={`${word.direction}-${word.number}`}
+                key={wordKey(word)}
                 className={cn(styles.clueRow, {
                   [styles.clueCorrect]: status === 'correct',
                   [styles.clueWrong]: status === 'wrong',
                 })}
               >
                 <span className={styles.clueLabel}>
-                  {idx + 1}&thinsp;{word.direction === 'across' ? 'A' : 'D'}
+                  {word.number}&thinsp;{word.direction === 'across' ? 'A' : 'D'}
                 </span>
                 <span className={styles.clueText}>{word.clue}</span>
                 <input
@@ -394,17 +386,19 @@ export const CrosswordResult: React.FC<CrosswordResultProps> = ({
                     [styles.inputCorrect]: status === 'correct',
                     [styles.inputWrong]: status === 'wrong',
                   })}
+                  id={`clue-${wordKey(word)}`}
+                  name={`clue-${wordKey(word)}`}
                   type="text"
                   maxLength={word.word.length}
                   placeholder={`${normalizeWord(word.word).length} letters`}
-                  value={userAnswers[word.number] ?? ''}
-                  onChange={(e) => handleChange(word.number, e.target.value)}
+                  value={userAnswers[wordKey(word)] ?? ''}
+                  onChange={(e) => handleChange(word, e.target.value)}
                   onFocus={() => setFocusedWordNumber(word.number)}
                   onBlur={() => setFocusedWordNumber(null)}
                   disabled={isLocked}
                   aria-label={`${word.number} ${word.direction}`}
                   spellCheck={false}
-                  autoComplete="off"
+                  autoComplete="new-password"
                 />
               </div>
             );

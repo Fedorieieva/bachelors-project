@@ -71,9 +71,6 @@ function parseCrosswordMessage(content: string): ParsedCrossword | null {
 
 export default function ChatPage() {
   const t = useTranslations('chatPage');
-  // Derive the explicit language string from the active next-intl locale so
-  // that Gemini generates content in the user's current UI language rather
-  // than defaulting to English. Extend the mapping below as new locales land.
   const locale = useLocale();
   const localeLanguage = locale === 'uk' ? 'ukrainian' : 'english';
   const { showGlobalToast } = useGlobalToast();
@@ -95,7 +92,6 @@ export default function ChatPage() {
     hasOlderMessages,
   } = useRiddleChat(
     chatId,
-    // onModelFallback — sync the UI model selector to whichever model the backend fell back to
     (fallbackModel) => {
       setCurrentSettings(prev => ({
         ...prev,
@@ -103,8 +99,6 @@ export default function ChatPage() {
         generate_image: fallbackModel === IMAGE_GENERATION_MODEL,
       }));
     },
-    // onMessageSettled — clear the optimistic ghost bubble once the mutation settles
-    // (success or error) so the message is never duplicated in the display list.
     () => setOptimisticMessage(null),
   );
 
@@ -148,7 +142,6 @@ export default function ChatPage() {
 
   const [crosswordIndex, setCrosswordIndex] = useState(0);
 
-  // Clamp index when older messages load additional crosswords
   useEffect(() => {
     if (allParsedCrosswords.length > 0 && crosswordIndex >= allParsedCrosswords.length) {
       setCrosswordIndex(allParsedCrosswords.length - 1);
@@ -168,10 +161,8 @@ export default function ChatPage() {
   const [crosswordInitialAnswers, setCrosswordInitialAnswers] = useState<Record<number, string> | undefined>(undefined);
   const [crosswordIsSolved, setCrosswordIsSolved] = useState(false);
 
-  // Fetch persisted progress / solved state / public state when riddleId is known
   useEffect(() => {
     if (!activeRiddleId) return;
-    // Reset session-local share state when switching crosswords
     setIsShared(false);
     setCrosswordIsPublic(false);
     setCrosswordInitialAnswers(undefined);
@@ -189,12 +180,11 @@ export default function ChatPage() {
           setCrosswordInitialAnswers(asNumbers);
         }
       })
-      .catch(() => {/* guest or network error — play without progress */});
+      .catch(() => {});
   }, [activeRiddleId]);
 
   const progressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cancel any pending debounced save when unmounting
   useEffect(() => {
     return () => {
       if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current);
@@ -250,7 +240,6 @@ export default function ChatPage() {
       }
       void queryClient.invalidateQueries({ queryKey: ['user-stats'] });
     } catch {
-      // award XP failed — non-fatal
     }
   }, [activeRiddleId, showGlobalToast, queryClient]);
 
@@ -259,7 +248,6 @@ export default function ChatPage() {
   const [optimisticMessage, setOptimisticMessage] = useState<string | null>(null);
   const [isCollectionModalOpen, setIsCollectionModalOpen] = useState(false);
 
-  // ── Inline "New Crossword" panel (session-bound, no redirect) ────────────────
   const [isNewPanelOpen, setIsNewPanelOpen] = useState(false);
   const [inlineTheme, setInlineTheme] = useState('');
   const [inlineComplexity, setInlineComplexity] = useState(3);
@@ -267,7 +255,6 @@ export default function ChatPage() {
   const [isInlineGenerating, setIsInlineGenerating] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
 
-  // Auto-advance paginator when messages reload with a newly appended crossword
   const prevCrosswordCountRef = useRef(0);
   useEffect(() => {
     if (allParsedCrosswords.length > prevCrosswordCountRef.current && prevCrosswordCountRef.current > 0) {
@@ -285,8 +272,6 @@ export default function ChatPage() {
         theme: inlineTheme.trim(),
         complexity: inlineComplexity,
         wordCount: inlineWordCount,
-        // Use the locale-derived language so inline crossword clues are also
-        // generated in the user's current UI language.
         language: localeLanguage,
       });
       await RiddleService.saveCrossword({
@@ -348,7 +333,6 @@ export default function ChatPage() {
     void generateCrossword({
       theme,
       customWords,
-      // Use locale-derived language for welcome-screen crossword generation too.
       language: localeLanguage,
       complexity: currentSettings.complexity,
       wordCount: currentSettings.crosswordWordCount ?? 10,
@@ -359,11 +343,6 @@ export default function ChatPage() {
     if (!inputValue.trim() || isSending) return;
     setOptimisticMessage(inputValue);
 
-    // Build a sanitized settings object:
-    //  1. Strip crossword-only fields for non-CROSSWORD types so the NestJS
-    //     ValidationPipe (forbidNonWhitelisted: true) never sees unknown keys.
-    //  2. Force the language field from the active next-intl locale so Gemini
-    //     generates content in the user's current UI language, not English.
     const settingsToSend: RiddleSettings = {
       ...currentSettings,
       language: localeLanguage,
@@ -376,10 +355,6 @@ export default function ChatPage() {
 
     sendGuess(inputValue, settingsToSend);
     setInputValue('');
-    // Note: optimisticMessage is cleared via the onMessageSettled callback
-    // passed to useRiddleChat, which fires in both onSuccess and onError.
-    // This avoids a race where clearing it here would remove the bubble before
-    // the real message arrives from the server.
   }, [inputValue, currentSettings, localeLanguage, sendGuess, isSending]);
 
   const displayMessages = useMemo<Message[]>(() => {
@@ -595,7 +570,6 @@ export default function ChatPage() {
         isDeleting={isDeleting}
       />
 
-      {/* Inline "New Crossword" generation panel — no redirect, session-bound */}
       <Modal
         isOpen={isNewPanelOpen}
         onClose={() => { setIsNewPanelOpen(false); setInlineError(null); }}
@@ -616,7 +590,6 @@ export default function ChatPage() {
             />
           </div>
 
-          {/* Complexity */}
           <div className={styles.inlinePanelField}>
             <span className={styles.inlinePanelLabel}>{t('newCrosswordComplexity')}</span>
             <div className={styles.inlinePanelComplexity}>
@@ -631,7 +604,6 @@ export default function ChatPage() {
             </div>
           </div>
 
-          {/* Word count */}
           <div className={styles.inlinePanelField}>
             <span className={styles.inlinePanelLabel}>{t('newCrosswordWordCount')}</span>
             <div className={styles.inlinePanelSliderRow}>

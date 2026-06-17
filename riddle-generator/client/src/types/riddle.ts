@@ -50,7 +50,6 @@ export interface RiddleSettings {
   is_interactive?: boolean;
   model?: string;
   generate_image?: boolean;
-  // Crossword-specific — only relevant when type === CROSSWORD
   crosswordTheme?: string;
   crosswordCustomWords?: string[];
   crosswordWordCount?: number;

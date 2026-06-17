@@ -112,7 +112,6 @@ export const FollowListModal: React.FC<FollowListModalProps> = ({
                 user={user}
                 currentUserId={currentUser?.id}
                 isAuthenticated={isAuthenticated}
-                // When viewing own following list, all entries are already followed
                 initialIsFollowing={type === 'following' && isOwnProfile ? true : undefined}
               />
             ))}

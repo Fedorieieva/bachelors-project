@@ -879,18 +879,6 @@
   }
 }
 
-/* ── Responsive ─────────────────────────────────────────────────────────────
- *
- * Two-tier strategy:
- *
- * ≤ 1023px  Tighten spacing; historyRowLeft wraps its badges natively while
- *           historyMeta stays on the same horizontal line (space-between row).
- *
- * ≤ 767px   Switch historyRow to a column — historyMeta drops into a clean
- *           standalone bottom strip with a hairline separator and left-aligned
- *           text so nothing competes with the opponent identity block above.
- * ─────────────────────────────────────────────────────────────────────────── */
-
 @media (max-width: 1023px) {
   .historyRow {
     padding: 10px 12px;

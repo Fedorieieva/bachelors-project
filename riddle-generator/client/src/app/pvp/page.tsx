@@ -192,10 +192,6 @@ function ActiveMatchPanel({
   const [guess, setGuess] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // guessResult is set the moment the server confirms a correct answer, before
-  // the next poll has a chance to flip match.status to FINISHED. Including it
-  // here prevents the race-condition window where the crossword "Well done!"
-  // banner is visible but the result banner (and Back to Lobby button) is not.
   const isFinished =
     match.status === 'FINISHED' || match.status === 'CANCELLED' || guessResult !== null;
   const iWon = match.winner?.id === currentUserId || guessResult?.winnerId === currentUserId;
@@ -745,7 +741,6 @@ export default function PvpPage() {
 
       <div className={cn(styles.contentGrid, (isActiveCrossword || isChallengeTabCrossword) && styles.fullWidthGrid)}>
         <div className={styles.main}>
-          {/* Tab bar — hidden during an active match */}
           {!inMatch && (
             <div className={styles.tabs}>
               {(['lobby', 'challenge', 'logs'] as Tab[]).map((t) => (
@@ -761,7 +756,6 @@ export default function PvpPage() {
           )}
 
           <AnimatePresence mode="wait">
-            {/* ── LOBBY TAB ── */}
             {tab === 'lobby' && (
               <motion.div
                 key="lobby"
@@ -828,7 +822,6 @@ export default function PvpPage() {
               </motion.div>
             )}
 
-            {/* ── CHALLENGE TAB ── */}
             {tab === 'challenge' && (
               <motion.div
                 key="challenge"
@@ -840,7 +833,6 @@ export default function PvpPage() {
               </motion.div>
             )}
 
-            {/* ── BATTLE LOGS TAB ── */}
             {tab === 'logs' && (
               <motion.div
                 key="logs"

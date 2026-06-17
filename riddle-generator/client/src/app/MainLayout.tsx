@@ -12,8 +12,6 @@ export default function MainLayout({ children }: Readonly<{ children: React.Reac
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // One-time migration: wipe any legacy localStorage entry that still carries
-  // a password field (written by server versions before the sanitizeUser fix).
   useEffect(() => {
     const legacyUser = localStorage.getItem('user');
     if (legacyUser?.includes('"password"')) {

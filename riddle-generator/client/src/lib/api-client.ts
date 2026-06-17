@@ -36,8 +36,6 @@ apiClient.interceptors.response.use(
       isHandlingUnauthorized = true;
       try {
         store.dispatch(logout());
-        // Synchronous disk wipe — must happen before any async step so a
-        // concurrent page reload cannot rehydrate the stale persist:root entry.
         localStorage.removeItem('persist:root');
         localStorage.setItem('is_guest', 'true');
         await persistor.purge();

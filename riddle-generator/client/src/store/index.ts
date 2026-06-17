@@ -15,11 +15,6 @@ import rootReducer from './rootReducer';
 
 type RootReducerState = ReturnType<typeof rootReducer>;
 
-// Intercepts auth/logout before persistReducer sees it. Passing `undefined`
-// as state forces every slice back to its initialState (which now carries
-// isGuest:true from the logout reducer). The localStorage wipe is a
-// belt-and-suspenders guard for browsers that reload before the async
-// persistor.purge() resolves.
 const sanitizingReducer = (
   state: RootReducerState | undefined,
   action: { type: string },

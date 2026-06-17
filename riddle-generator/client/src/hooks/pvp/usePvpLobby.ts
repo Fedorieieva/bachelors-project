@@ -29,18 +29,11 @@ export function usePvpLobby() {
   const [pendingRooms, setPendingRooms] = useState<PendingRoom[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // mountedRef guards all setState calls that arrive after unmount.
-  // Set back to true on every (re)mount so React 18 Strict Mode double-fire
-  // doesn't leave it permanently false.
   const mountedRef = useRef(true);
 
-  // isPollingRef acts as a cancellation flag for the recursive match-poll loop.
-  // Flipping it false mid-flight prevents the in-flight tick from scheduling a
-  // successor without requiring AbortController plumbing.
   const isPollingRef = useRef(false);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Lifecycle cleanup ──────────────────────────────────────────
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -53,7 +46,6 @@ export function usePvpLobby() {
     };
   }, []);
 
-  // ── Polling control ────────────────────────────────────────────
   const clearPoll = useCallback(() => {
     isPollingRef.current = false;
     if (pollTimerRef.current !== null) {
@@ -62,13 +54,11 @@ export function usePvpLobby() {
     }
   }, []);
 
-  // ── Pending rooms — recursive setTimeout, no request stacking ──
   const fetchPending = useCallback(async () => {
     try {
       const rooms = await PvpService.getPending();
       if (mountedRef.current) setPendingRooms(rooms);
     } catch {
-      // silent — network blip
     }
   }, []);
 
@@ -91,21 +81,17 @@ export function usePvpLobby() {
     };
   }, [fetchPending]);
 
-  // ── Match state — recursive setTimeout, next tick fires only after
-  //    the previous network round-trip fully settles ───────────────
   const startPoll = useCallback(
     (matchId: string, interval: number) => {
       clearPoll();
       isPollingRef.current = true;
 
       const tick = async () => {
-        // Abort if clearPoll() was called or the component unmounted
         if (!isPollingRef.current || !mountedRef.current) return;
 
         try {
           const match = await PvpService.getMatch(matchId);
 
-          // Re-check after the await — phase may have changed while in-flight
           if (!isPollingRef.current || !mountedRef.current) return;
 
           const nextPhase: LobbyPhase =
@@ -119,13 +105,11 @@ export function usePvpLobby() {
 
           if (nextPhase === 'finished') {
             isPollingRef.current = false;
-            return; // terminal state — no successor tick
+            return;
           }
         } catch {
-          // Transient network error — keep polling
         }
 
-        // Schedule successor only after the current round-trip has settled
         if (isPollingRef.current && mountedRef.current) {
           pollTimerRef.current = setTimeout(tick, interval);
         }
@@ -136,7 +120,6 @@ export function usePvpLobby() {
     [clearPoll],
   );
 
-  // Respond to phase transitions with the appropriate polling cadence
   useEffect(() => {
     if (!state.matchId) return;
     if (state.phase === 'waiting') startPoll(state.matchId, POLL_WAITING_MS);
@@ -146,7 +129,6 @@ export function usePvpLobby() {
     return clearPoll;
   }, [state.phase, state.matchId, startPoll, clearPoll]);
 
-  // ── Public actions ─────────────────────────────────────────────
   const createRoom = useCallback(async () => {
     setIsLoading(true);
     setState((prev) => ({ ...prev, error: null }));
@@ -207,7 +189,6 @@ export function usePvpLobby() {
     try {
       await PvpService.cancelMatch(state.matchId);
     } catch {
-      // silent — already removed or not the creator
     } finally {
       clearPoll();
       setState({ phase: 'idle', matchId: null, match: null, guessResult: null, error: null });

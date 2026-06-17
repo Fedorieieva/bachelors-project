@@ -42,7 +42,6 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
   const extractErrorToast = (error: Error): { message: string; type: 'error' | 'warning' } => {
     const axiosErr = error as AxiosError<{ message?: string | string[] }>;
     const status = axiosErr.response?.status;
-    // NestJS validation errors send message as string[]; coerce to a single string
     const rawMsg = axiosErr.response?.data?.message;
     const backendMsg: string | undefined = Array.isArray(rawMsg)
       ? rawMsg.join('; ')
@@ -119,20 +118,14 @@ export function useRiddleChat(chatId?: string, onModelFallback?: (model: string)
         }
       }
 
-      // Flush any lingering system/moderation extra messages now that the real
-      // history has been invalidated and will refetch with the authoritative data.
       setExtraMessages([]);
-      // Notify the page so it can clear the optimistic message bubble too.
       onMessageSettled?.();
     },
     onError: (error: Error) => {
-      // Always clear the optimistic message on failure so the ghost bubble disappears
-      // whether we're showing an error toast or a moderation notice.
       onMessageSettled?.();
 
       const axiosErr = error as AxiosError<{ code?: string; status?: string; message?: string }>;
       if (axiosErr.response?.data?.code === 'POLICY_RESTRICTION') {
-        // Replace the optimistic bubble with the moderation notice message instead.
         setExtraMessages([{
           id: crypto.randomUUID(),
           role: 'system' as const,

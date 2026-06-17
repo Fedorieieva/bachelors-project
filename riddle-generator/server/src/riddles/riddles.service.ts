@@ -59,27 +59,18 @@ export class RiddlesService {
 
     const promptName = `${riddleType.toLowerCase()}_generator`;
 
-    // ── Language resolution ──────────────────────────────────────────────────
-    // If the caller has supplied an explicit language (e.g. 'ukrainian' sent by
-    // the frontend locale mapping), we lock the model to that language.
-    // The special sentinel value 'auto' (stored in the DB for chats created before
-    // locale support landed) falls through to topic-based auto-detection.
     const explicitLang = dto.settings.language && dto.settings.language !== 'auto'
       ? dto.settings.language
       : null;
 
-    // Human-readable label used both in the prompt instruction and in log output.
     const targetLanguageLabel = explicitLang ?? 'the language of the user\'s input topic';
 
-    // The instruction injected into the prompt template's {language} slot.
     const languageInstruction = explicitLang
-      // Deterministic lock: the model MUST output in this specific language.
       ? `${explicitLang}. ` +
       `CRITICAL LANGUAGE RULE: You MUST write both the "content" and "answer" fields ` +
       `strictly in ${explicitLang}, regardless of the topic wording or any other instruction. ` +
       `Your internal reasoning process, JSON structure keys, and parsing logic must remain ` +
       `in English for structural stability, but every user-visible string MUST be in ${explicitLang}.`
-      // Auto-detect fallback: infer language from the topic text itself.
       : 'the language of the user\'s input topic. ' +
       'CRITICAL LANGUAGE RULE: Analyze the topic language and generate the final "content" and "answer" field values ' +
       'strictly in that same language. ' +
@@ -125,9 +116,6 @@ export class RiddlesService {
     }
 
     if (rawUserMessage) {
-      // When an explicit locale is set, reinforce it here so the rawUserMessage
-      // override never accidentally downgrades an explicit 'ukrainian' to English
-      // (e.g. when the user types a single-word Ukrainian topic like "зима").
       const langLock = explicitLang
         ? `You MUST write in ${explicitLang}. The user interface language is ${explicitLang}.`
         : `You MUST write the riddle text, the "content" field, and the "answer" field strictly in the same natural language as the user's message: "${rawUserMessage}".`;
@@ -227,8 +215,6 @@ export class RiddlesService {
       prompt_context: {
         message: dto.topic,
         complexity: dto.settings.complexity,
-        // Record the actual resolved language rather than the hardcoded 'auto'
-        // sentinel so the stored prompt_context reflects what was actually used.
         language: dto.settings.language || 'auto',
         prompt_name: promptName,
         generation_attempts: attempts,
@@ -359,8 +345,6 @@ export class RiddlesService {
   }
 
   async createChat(authorId: string, settings: RiddleSettingsDto) {
-    // Persist the resolved language so subsequent riddles in this chat inherit
-    // the correct locale. 'auto' is kept only when no explicit language was sent.
     const chatLanguage = settings.language && settings.language !== 'auto'
       ? settings.language
       : 'auto';
@@ -809,8 +793,6 @@ export class RiddlesService {
       throw new BadRequestException('У цьому чаті немає активної загадки з відповіддю');
     }
 
-    // Use a language-aware reveal phrase so English-locale users don't see
-    // Ukrainian hardcoded text. Extend the map below as new locales land.
     const revealPrefix = chat.language === 'ukrainian'
       ? 'Добре, ось відповідь:'
       : 'Here is the answer:';
@@ -1051,9 +1033,6 @@ export class RiddlesService {
     wordCount = 10,
     complexity = 3,
   ): Promise<CrosswordLayout> {
-    // Normalise the language param: the 'auto' sentinel stored in legacy chat rows
-    // is not a valid generation language — fall back to 'english' so the crossword
-    // AI prompt always receives a concrete language string.
     const resolvedLanguage = (!language || language === 'auto') ? 'english' : language;
     this.logger.log(`[RiddlesService] Crossword generation — theme: "${theme}", words: ${customWords.length}, lang: ${resolvedLanguage}, wordCount: ${wordCount}, complexity: ${complexity}`);
     return this.aiService.generateCrossword(theme, customWords, resolvedLanguage, wordCount, complexity);
@@ -1091,7 +1070,6 @@ export class RiddlesService {
           },
         });
         chatId = chat.id;
-        // User message only for new sessions — helps sidebar history display
         await tx.message.create({
           data: { chat_id: chatId, role: 'user', content: theme, is_initial: true },
         });
@@ -1148,7 +1126,6 @@ export class RiddlesService {
 
         if (!pvpMatch) throw new ForbiddenException('Access denied');
 
-        // Anti-cheat gate: block answer exposure while a duel is still in progress
         const concluded = pvpMatch.status === PvpStatus.FINISHED || pvpMatch.status === PvpStatus.CANCELLED;
         if (!concluded) {
           throw new ForbiddenException('Riddle answer is locked until the match concludes');
@@ -1191,7 +1168,6 @@ export class RiddlesService {
   ): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = this.prisma as any;
-    // Allow both the riddle author AND active PvP participants to save progress
     const riddle = await db.riddles.findFirst({
       where: {
         id: riddleId,
@@ -1242,7 +1218,6 @@ export class RiddlesService {
       update: { progress: {}, is_solved: true, solved_at: now },
     });
 
-    // Mirror solve in RiddleAttempt so feed cards show the solved badge after refresh
     await this.prisma.riddleAttempt.upsert({
       where: { user_id_riddle_id: { user_id: userId, riddle_id: riddleId } },
       create: { user_id: userId, riddle_id: riddleId, attempts: -1 },

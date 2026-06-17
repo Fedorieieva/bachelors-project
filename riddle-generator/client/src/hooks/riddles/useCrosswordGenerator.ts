@@ -28,7 +28,6 @@ export function useCrosswordGenerator() {
     try {
       const layout = await RiddleService.generateCrossword(req);
 
-      // Persist the session; fails gracefully for unauthenticated users
       let chatId: string | null = null;
       let riddleId: string | null = null;
       try {
@@ -40,7 +39,6 @@ export function useCrosswordGenerator() {
         chatId = saved.chatId;
         riddleId = saved.riddleId;
       } catch {
-        // Guest or network failure — crossword is still playable without persistence
       }
 
       setState({ layout, chatId, riddleId, isGenerating: false, error: null });

@@ -18,7 +18,6 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action: PayloadAction<UserProfile>) => {
-      // Strip any credential fields the backend may include but must never reach the store
       const { password, password_hash, ...safeUser } = action.payload as UserProfile & {
         password?: string;
         password_hash?: string;

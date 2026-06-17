@@ -238,9 +238,11 @@ export default function LeaderboardPage() {
           </AnimatePresence>
         </div>
 
-        <div className={styles.sidebar}>
-          <QuestsBoard />
-        </div>
+        {authUser && !authUser.is_guest && (
+          <div className={styles.sidebar}>
+            <QuestsBoard />
+          </div>
+        )}
       </div>
     </div>
   );

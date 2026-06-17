@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Zap } from 'lucide-react';
+import { CheckCircle, Zap, Lock } from 'lucide-react';
 import { useDailyQuests } from '@/hooks/gamification/useDailyQuests';
+import { useAppSelector } from '@/store/hooks';
 import { DailyQuest } from '@/types/gamification';
 import styles from './QuestsBoard.module.scss';
 import { cn } from '@/lib/utils';
@@ -51,7 +52,22 @@ const QuestCard: React.FC<{ quest: DailyQuest; index: number }> = ({ quest, inde
 };
 
 export const QuestsBoard: React.FC = () => {
+  const { user: authUser } = useAppSelector((state) => state.auth);
   const { data: quests, isLoading, isError } = useDailyQuests();
+
+  if (!authUser || authUser.is_guest) {
+    return (
+      <div className={styles.board}>
+        <h3 className={styles.boardTitle}>Daily Quests</h3>
+        <div className={styles.lockedContainer}>
+          <Lock size={24} className={styles.lockIcon} />
+          <p className={styles.lockedText}>
+            Daily quests are exclusive to registered players. Sign up now to unlock daily challenges and track your progression!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

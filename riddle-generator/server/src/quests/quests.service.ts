@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ForbiddenException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -22,7 +22,6 @@ export interface QuestProgressResult {
 export class QuestsService implements OnModuleInit {
   private readonly logger = new Logger(QuestsService.name);
 
-  // UTC+3 — Ukraine runs on permanent Eastern European Summer Time since 2022
   private readonly KYIV_OFFSET_MS = 3 * 60 * 60 * 1000;
 
   private readonly QUEST_POOL: QuestTemplate[] = [
@@ -75,8 +74,6 @@ export class QuestsService implements OnModuleInit {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  // ─── Startup seed guard ───────────────────────────────────────────────────────
-
   async onModuleInit(): Promise<void> {
     const now = new Date();
     const activeCount = await this.prisma.quest.count({
@@ -89,30 +86,18 @@ export class QuestsService implements OnModuleInit {
     }
   }
 
-  // ─── Lazy hydration ───────────────────────────────────────────────────────────
-
-  /**
-   * Ensures every non-guest user has a UserQuest stub for each active quest of
-   * the current calendar day.
-   *
-   * Called exclusively from GET /quests/daily to prevent parallel-request
-   * collision spikes from auth-layer or middleware-level triggers.
-   *
-   * A P2002 unique-constraint violation is caught and silenced: it means a
-   * concurrent request already inserted the rows, so we just return cleanly.
-   */
   async hydrateDailyQuestsForUser(userId: string): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { is_guest: true },
     });
 
-    if (!user || user.is_guest) return;
+    if (!user || user.is_guest) {
+      return;
+    }
 
     const now = new Date();
 
-    // Purge ALL expired quest records for this user before seeding fresh ones.
-    // No filter on is_completed — completed history from previous days is wiped too.
     await this.prisma.userQuest.deleteMany({
       where: {
         user_id: userId,
@@ -127,35 +112,37 @@ export class QuestsService implements OnModuleInit {
 
     if (activeQuests.length === 0) return;
 
-    try {
-      await this.prisma.userQuest.createMany({
-        data: activeQuests.map((q) => ({
-          user_id: userId,
-          quest_id: q.id,
-          progress: 0,
-        })),
-        skipDuplicates: true,
-      });
-    } catch (err) {
-      // A parallel request already inserted these rows — this is a no-op outcome.
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === 'P2002'
-      ) {
-        this.logger.debug(
-          `[Quests] P2002 on hydration for user ${userId} — rows already exist from concurrent request, skipping`,
-        );
-        return;
-      }
-      throw err;
-    }
+    await this.prisma.$transaction(
+      activeQuests.map((q) =>
+        this.prisma.userQuest.upsert({
+          where: {
+            user_id_quest_id: {
+              user_id: userId,
+              quest_id: q.id,
+            },
+          },
+          update: {},
+          create: {
+            user_id: userId,
+            quest_id: q.id,
+            progress: 0,
+            is_completed: false,
+          },
+        }),
+      ),
+    );
   }
 
-  // ─── Public API ───────────────────────────────────────────────────────────────
-
   async getDailyQuests(userId: string) {
-    // Hydrate first so progress rows exist before we read them.
-    // Trigger is deliberately scoped here — not in auth guards or middleware.
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { is_guest: true },
+    });
+
+    if (!user || user.is_guest) {
+      throw new ForbiddenException('Guests are restricted from participating in daily quests modules.');
+    }
+
     await this.hydrateDailyQuestsForUser(userId);
 
     const now = new Date();
@@ -181,11 +168,6 @@ export class QuestsService implements OnModuleInit {
     });
   }
 
-  /**
-   * Central progress-tracking hook for all gameplay events.
-   * Atomically increments progress and flags completion when the target is met.
-   * Callers: riddles.service, pvp.service, streak flows.
-   */
   async updateQuestProgress(
     userId: string,
     type: QuestType,
@@ -206,7 +188,6 @@ export class QuestsService implements OnModuleInit {
 
     for (const quest of activeQuests) {
       const txResult = await this.prisma.$transaction(async (tx) => {
-        // Atomically upsert with increment — no separate read before write
         const updated = await tx.userQuest.upsert({
           where: { user_id_quest_id: { user_id: userId, quest_id: quest.id } },
           create: {
@@ -217,7 +198,6 @@ export class QuestsService implements OnModuleInit {
           update: { progress: { increment: amount } },
         });
 
-        // Race-safe completion: conditional update that only wins once
         if (updated.progress >= quest.target_count && !updated.is_completed) {
           const marked = await tx.userQuest.updateMany({
             where: { id: updated.id, is_completed: false },
@@ -232,7 +212,6 @@ export class QuestsService implements OnModuleInit {
         return { completed: false, xp_reward: 0, quest_title: quest.title };
       });
 
-      // Fire notification outside the transaction so DB commit isn't blocked
       if (txResult.completed) {
         void this.notificationsService.createNotification({
           userId,
@@ -248,33 +227,14 @@ export class QuestsService implements OnModuleInit {
     return results;
   }
 
-  // ─── Midnight cron ────────────────────────────────────────────────────────────
-
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async seedDailyQuests(): Promise<void> {
     this.logger.log('[Quests] Running midnight cron — garbage collection + seeding...');
 
-    // Garbage collection: wipe uncompleted UserQuest rows for expired quests
-    const expiredQuests = await this.prisma.quest.findMany({
-      where: { expires_at: { lt: new Date() }, is_active: false },
-      select: { id: true },
-    });
+    await this.prisma.userQuest.deleteMany({});
 
-    if (expiredQuests.length > 0) {
-      const expiredIds = expiredQuests.map((q) => q.id);
-      const { count } = await this.prisma.userQuest.deleteMany({
-        where: { quest_id: { in: expiredIds } },
-      });
-      this.logger.log(`[Quests] Garbage collected ${count} expired UserQuest rows (completed + uncompleted).`);
-    }
+    await this.prisma.quest.deleteMany({});
 
-    // Deactivate current active quests
-    await this.prisma.quest.updateMany({
-      where: { is_active: true },
-      data: { is_active: false },
-    });
-
-    // Resolve Kyiv calendar day for day-of-week selection and expiry boundary
     const expiresAt = this.getKyivEndOfDay();
     const kyivNow = new Date(Date.now() + this.KYIV_OFFSET_MS);
     const isWeekend = kyivNow.getUTCDay() === 0 || kyivNow.getUTCDay() === 6;
@@ -290,13 +250,6 @@ export class QuestsService implements OnModuleInit {
     this.logger.log(`[Quests] ${selected.length} daily quests seeded. Expires at ${expiresAt.toISOString()} UTC (23:59:59 Kyiv).`);
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-  /**
-   * Returns 23:59:59.999 of the current calendar day in Kyiv time (UTC+3),
-   * expressed as a UTC Date. Avoids server-locale drift on cloud instances
-   * whose TZ env is set to UTC or another region.
-   */
   private getKyivEndOfDay(): Date {
     const kyivNow = new Date(Date.now() + this.KYIV_OFFSET_MS);
     return new Date(

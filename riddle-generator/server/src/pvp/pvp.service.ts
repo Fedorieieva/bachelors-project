@@ -84,7 +84,6 @@ export class PvpService {
     if (match.status !== PvpStatus.PENDING) throw new ForbiddenException('Match is not joinable');
     if (match.creator_id === opponentId) throw new ForbiddenException('Cannot join your own match');
 
-    // ── Resolve creator's preferred language from their most recent chat ──
     const creatorChat = await this.prisma.chat.findFirst({
       where: { user_id: match.creator_id },
       orderBy: { createdAt: 'desc' },
@@ -92,7 +91,6 @@ export class PvpService {
     });
     const riddleLanguage = creatorChat?.language ?? 'english';
 
-    // ── Random generation parameters ────────────────────────────
     const pvpTopics = [
       'ancient mysteries',
       'cyberpunk paradoxes',
@@ -107,16 +105,11 @@ export class PvpService {
     ];
     const randomTopic = pvpTopics[Math.floor(Math.random() * pvpTopics.length)];
 
-    // ── 50/50 dice: crossword vs text riddle ─────────────────────
     const isCrosswordRound = Math.random() < 0.5;
-    // Complexity 3-5 for both paths — PvP is always a challenge
     const randomComplexity = Math.floor(Math.random() * 3) + 3;
-    // Crossword word count: 9-20 words
     const crosswordWordCount = Math.floor(Math.random() * 12) + 9;
 
-    // ── Persist the freshly generated riddle ─────────────────────
     const riddle = await (async () => {
-      // ── Crossword path ──────────────────────────────────────────
       if (isCrosswordRound) {
         let layout: CrosswordLayout | null = null;
         try {
@@ -146,7 +139,6 @@ export class PvpService {
         }
       }
 
-      // ── Text riddle path (default or crossword fallback) ────────
       const generationPrompt = `Generate a riddle about the theme "${randomTopic}" at complexity level ${randomComplexity} out of 5.
 
 After generating the riddle, evaluate its content and classify it as exactly one of these types:
@@ -199,7 +191,6 @@ RETURN JSON ONLY — no markdown, no extra text:
       });
     })();
 
-    // ── Activate match with the new riddle atomically ─────────────
     const updated = await this.prisma.pvpMatch.update({
       where: { id: matchId },
       data: {
@@ -243,11 +234,9 @@ RETURN JSON ONLY — no markdown, no extra text:
     }
     if (!match.riddle) throw new ForbiddenException('No riddle assigned to match');
 
-    // ── Crossword match: server validates DB progress against layout ──
     if (match.riddle.type === RiddleType.CROSSWORD) {
       if (guess !== 'CROSSWORD_COMPLETE') return { correct: false };
 
-      // Parse the stored layout from riddle content
       let layout: CrosswordLayout;
       try {
         layout = JSON.parse(match.riddle.content) as CrosswordLayout;
@@ -258,7 +247,6 @@ RETURN JSON ONLY — no markdown, no extra text:
 
       const db = this.prisma as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-      // Atomic save: persist the final answers payload before validating
       if (answers && Object.keys(answers).length > 0) {
         await db.crosswordProgress.upsert({
           where: { user_id_riddle_id: { user_id: userId, riddle_id: match.riddle.id } },
@@ -267,7 +255,6 @@ RETURN JSON ONLY — no markdown, no extra text:
         });
       }
 
-      // Read this player's persisted grid state from the DB
       const cp = await db.crosswordProgress.findUnique({
         where: { user_id_riddle_id: { user_id: userId, riddle_id: match.riddle.id } },
         select: { progress: true },
@@ -277,7 +264,6 @@ RETURN JSON ONLY — no markdown, no extra text:
 
       const progress = cp.progress as Record<string, string>;
 
-      // Validate every word matches the solution using the same normaliser as the client
       const allCorrect = layout.words.every((word) => {
         const typed = progress[String(word.number)] ?? '';
         return this.normalizeCrosswordAnswer(typed) === this.normalizeCrosswordAnswer(word.word);
@@ -288,7 +274,6 @@ RETURN JSON ONLY — no markdown, no extra text:
         return { correct: false };
       }
     } else {
-      // ── Fast-path: local string normalisation (sub-millisecond) ──
       const answerText = match.riddle.answer ?? '';
       let isSolvedLocally = false;
 
@@ -301,7 +286,6 @@ RETURN JSON ONLY — no markdown, no extra text:
       }
 
       if (!isSolvedLocally) {
-        // ── Semantic fallback: AI handles synonyms, phrasing variants, and multilingual answers ──
         const riddleContext = [
           { role: 'user' as const, parts: [{ text: match.riddle.content }] },
         ];
@@ -312,7 +296,6 @@ RETURN JSON ONLY — no markdown, no extra text:
 
     const loserId = match.creator_id === userId ? match.opponent_id! : match.creator_id;
 
-    // Atomic commit — only one concurrent winner can land
     const committed = await this.prisma.$transaction(async (tx) => {
       const locked = await tx.pvpMatch.findUnique({
         where: { id: matchId },
@@ -381,7 +364,6 @@ RETURN JSON ONLY — no markdown, no extra text:
       .trim();
   }
 
-  /** Mirrors the client-side CrosswordResult normaliser for server-side grid validation. */
   private normalizeCrosswordAnswer(s: string): string {
     return s.toUpperCase().replace(/[\s'\-]/g, '');
   }
@@ -399,7 +381,6 @@ RETURN JSON ONLY — no markdown, no extra text:
     });
   }
 
-  // System-level cancel (disconnect grace expiry, no ownership check)
   async forceCancel(matchId: string): Promise<void> {
     await this.prisma.pvpMatch.updateMany({
       where: {

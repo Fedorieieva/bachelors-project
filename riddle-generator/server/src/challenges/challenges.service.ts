@@ -8,7 +8,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { AiService } from '../riddles/ai/ai.service';
 import { NotificationType, QuestType } from '@prisma/client';
 
-// Fires every Monday at 00:00 UTC
 const WEEKLY_ROTATION_CRON = '0 0 * * 1';
 const CHALLENGE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -48,7 +47,6 @@ export class ChallengesService {
     private readonly aiService: AiService,
   ) {}
 
-  // ─── Weekly cron rotation ─────────────────────────────────────────────────
 
   @Cron(WEEKLY_ROTATION_CRON)
   async rotateWeeklyChallenge(): Promise<void> {
@@ -56,7 +54,6 @@ export class ChallengesService {
     await this.generateAndRotate();
   }
 
-  // ─── AI challenge content generation ─────────────────────────────────────
 
   private async generateAiChallengeContent(): Promise<ChallengeContent> {
     const type = CHALLENGE_TYPES[Math.floor(Math.random() * CHALLENGE_TYPES.length)];
@@ -112,14 +109,6 @@ Return ONLY valid JSON (no markdown fences) with exactly these four fields:
     };
   }
 
-  // ─── Rotation engine ──────────────────────────────────────────────────────
-  //
-  // Serverless-safe: AI generation happens outside the transaction (avoids
-  // long-held DB locks). The transaction then does a double-check so that if a
-  // concurrent worker already rotated, this one exits cleanly without writing a
-  // second row. Any write error is swallowed; the subsequent fetchActiveRow in
-  // getCurrentChallenge will pick up the race-winner's row automatically.
-
   private async generateAndRotate(): Promise<void> {
     let content: ChallengeContent;
     try {
@@ -136,7 +125,6 @@ Return ONLY valid JSON (no markdown fences) with exactly these four fields:
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        // Race guard: abort if another worker already provisioned a fresh challenge
         const alreadyActive = await tx.communityChallenge.findFirst({
           where: { is_active: true, ends_at: { gt: now } },
           select: { id: true },
@@ -148,7 +136,6 @@ Return ONLY valid JSON (no markdown fences) with exactly these four fields:
           return;
         }
 
-        // Atomically deactivate all stale active rows before creating the new one
         await tx.communityChallenge.updateMany({
           where: { is_active: true },
           data: { is_active: false },
@@ -174,15 +161,11 @@ Return ONLY valid JSON (no markdown fences) with exactly these four fields:
         );
       });
     } catch (err) {
-      // Swallowed: the post-rotation fetchActiveRow in getCurrentChallenge will
-      // find any race-created row, so the caller degrades gracefully to null.
       this.logger.error(
         `[Challenges] Rotation transaction failed: ${(err as Error).message}`,
       );
     }
   }
-
-  // ─── Shared fetch helper ──────────────────────────────────────────────────
 
   private async fetchActiveRow() {
     const now = new Date();
@@ -212,12 +195,9 @@ Return ONLY valid JSON (no markdown fences) with exactly these four fields:
     });
   }
 
-  // ─── Public API ───────────────────────────────────────────────────────────
-
   async getCurrentChallenge(userId: string) {
     let row = await this.fetchActiveRow();
 
-    // Lazy hydration: no active non-expired challenge — rotate on-demand
     if (!row) {
       await this.generateAndRotate();
       row = await this.fetchActiveRow();

@@ -71,7 +71,6 @@ export default function RiddlePreviewPage() {
 
   const isCrossword = riddle?.type?.toUpperCase() === 'CROSSWORD';
 
-  // Parse the crossword layout JSON — null if content is not valid JSON or not a crossword
   const crosswordLayout = useMemo<CrosswordLayout | null>(() => {
     if (!riddle || !isCrossword) return null;
     try {
@@ -81,8 +80,6 @@ export default function RiddlePreviewPage() {
     }
   }, [riddle, isCrossword]);
 
-  // Extract the progress payload from the first element of the CrosswordProgress[]
-  // relation array (schema was redesigned for per-user PvP isolation).
   const crosswordInitialAnswers = useMemo<Record<number, string> | undefined>(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const progressRecord = (riddle?.crossword_progress as any)?.[0]?.progress as
@@ -173,11 +170,7 @@ export default function RiddlePreviewPage() {
               />
             )}
 
-            {/* ── Content ────────────────────────────────────────── */}
             {isCrossword && crosswordLayout ? (
-              // Render the fully solved, read-only crossword grid.
-              // isSolved=true seeds all words from the layout solution so the
-              // complete grid is visible without allowing any edits.
               <CrosswordResult
                 layout={crosswordLayout}
                 isSolved={true}
@@ -189,7 +182,6 @@ export default function RiddlePreviewPage() {
               <p style={{ fontSize: '1rem', lineHeight: 1.6, margin: 0 }}>{riddle.content}</p>
             )}
 
-            {/* ── Answer block — hidden for crosswords (answer is CROSSWORD_COMPLETE) */}
             {!isCrossword && (
               <div
                 style={{
